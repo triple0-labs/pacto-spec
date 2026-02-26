@@ -33,8 +33,11 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           registry-url: "https://registry.npmjs.org"
+
+      - name: Upgrade npm for trusted publishing compatibility
+        run: npm install -g npm@^11.5.1
 
       - name: Validate package version matches tag
         shell: bash
@@ -62,6 +65,4 @@ jobs:
             }
 
       - name: Publish package
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public --provenance

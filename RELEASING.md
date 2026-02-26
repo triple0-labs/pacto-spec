@@ -5,16 +5,22 @@ This project ships:
 - Go binaries via GitHub Releases (`v*` tags).
 - npm wrapper package `@triple0-labs/pacto-spec`.
 
-## One-time setup
+## One-time setup (Trusted Publishing)
 
-1. Add npm token in GitHub repo secrets:
-   - `NPM_TOKEN` (automation token with publish rights to `@triple0-labs` scope).
-2. Ensure npm scope/package ownership is correct:
+1. Ensure npm scope/package ownership is correct:
    - package: `@triple0-labs/pacto-spec`
+2. Configure npm Trusted Publisher for this package:
+   - Provider: GitHub Actions
+   - Owner: `triple0-labs`
+   - Repository: `pacto-spec`
+   - Workflow file: `.github/workflows/npm-publish.yml`
+   - Environment: _(none required)_
 3. Ensure release workflow is healthy:
    - `.github/workflows/release.yml`
-4. Ensure npm workflow exists:
-   - `.github/workflows/npm-publish.yml`
+4. Ensure npm workflow is present with OIDC permissions:
+   - `.github/workflows/npm-publish.yml` (`id-token: write`)
+
+No `NPM_TOKEN` secret is required when Trusted Publishing is configured correctly.
 
 ## Standard release flow
 
@@ -46,7 +52,7 @@ git push origin v<x.y.z>
    - checks out the same tag
    - verifies `package.json.version == <tag without v>`
    - verifies release has `checksums.txt` and `pacto_*.tar.gz` artifacts
-   - publishes to npm with provenance
+   - publishes to npm with provenance via OIDC Trusted Publishing
 
 If any validation fails, npm publish is blocked.
 

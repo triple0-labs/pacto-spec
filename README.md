@@ -152,7 +152,9 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-CI runs tests on pushes/PRs, and tags matching `v*` publish release artifacts via GoReleaser.
+CI runs tests on pushes/PRs. Tags matching `v*` publish Go release artifacts via GoReleaser, and then publish the npm wrapper package automatically.
+
+Detailed checklist: [RELEASING.md](./RELEASING.md)
 
 ## Notes
 

@@ -77,6 +77,17 @@ func commandCatalog() []CommandHelp {
 			},
 		},
 		{
+			Name:        "init",
+			Summary:     "Initialize local Pacto workspace in .pacto/plans.",
+			Usage:       "pacto init [--root .] [--with-agents] [--force]",
+			Description: "Bootstraps a project-local planning workspace and optional AGENTS.md managed guidance block.",
+			Examples: []string{
+				"pacto init",
+				"pacto init --root . --with-agents",
+				"pacto init --force",
+			},
+		},
+		{
 			Name:        "exec",
 			Summary:     "Execute plan slices and register deltas (planned).",
 			Usage:       "pacto exec <path-to-plan-md>",

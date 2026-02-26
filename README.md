@@ -30,16 +30,19 @@ Pacto gives teams a small, durable workflow:
 ## See It In Action
 
 ```text
-You: pacto new to-implement improve-auth-flow --root ./plans
-CLI: Created plan: to-implement/improve-auth-flow
-     - ./plans/to-implement/improve-auth-flow/README.md
-     - ./plans/to-implement/improve-auth-flow/PLAN_IMPROVE_AUTH_FLOW_2026-02-26.md
-     Updated index: ./plans/README.md
+You: pacto init
+CLI: Initialized Pacto workspace: ./.pacto/plans
 
-You: pacto status --root ./plans --format table
+You: pacto new to-implement improve-auth-flow
+CLI: Created plan: to-implement/improve-auth-flow
+     - ./.pacto/plans/to-implement/improve-auth-flow/README.md
+     - ./.pacto/plans/to-implement/improve-auth-flow/PLAN_IMPROVE_AUTH_FLOW_2026-02-26.md
+     Updated index: ./.pacto/plans/README.md
+
+You: pacto status --format table
 CLI: State summary + per-plan progress/blockers + verification outcomes
 
-You: pacto status --root ./plans --format json --fail-on partial
+You: pacto status --format json --fail-on partial
 CLI: JSON report suitable for CI gates
 ```
 
@@ -82,14 +85,17 @@ On first run, the wrapper downloads the matching `pacto` GitHub release binary f
 pacto help
 pacto version
 
-# Auto-detects ./plans if present
+# Bootstrap local workspace (default: ./.pacto/plans)
+pacto init
+
+# Auto-detects ./.pacto/plans first, then ./plans (legacy)
 pacto status
 
 # Explicit root
-pacto status --root ./plans --format table
+pacto status --root ./.pacto/plans --format table
 
 # Create a plan scaffold
-pacto new to-implement my-plan-slug --root ./plans
+pacto new to-implement my-plan-slug
 ```
 
 ## Commands
@@ -103,6 +109,11 @@ pacto new to-implement my-plan-slug --root ./plans
   - Creates plan folder scaffold (`README.md` + `PLAN_*.md`).
   - Updates root index metadata.
   - Supports canonical and minimal roots (`--allow-minimal-root`).
+- `pacto init`
+  - Bootstraps a project-local workspace at `./.pacto/plans`.
+  - Creates canonical docs/templates and state folders.
+  - Optional `--with-agents` adds a managed Pacto block in `AGENTS.md`.
+  - Supports `--force` to overwrite init-managed files.
 - `pacto exec`
   - Planned command, not implemented yet.
 
@@ -112,14 +123,17 @@ pacto new to-implement my-plan-slug --root ./plans
 .
 ├── cmd/                 # CLI entrypoints: pacto, pacto-engine
 ├── internal/            # parser, verify, analyze, report, discovery, config
-├── plans/               # canonical planning workspace
-│   ├── current/
-│   ├── to-implement/
-│   ├── done/
-│   ├── outdated/
-│   ├── PACTO.md
-│   ├── PLANTILLA_PACTO_PLAN.md
-│   └── README.md
+├── .pacto/
+│   └── plans/           # default workspace created by `pacto init`
+│       ├── current/
+│       ├── to-implement/
+│       ├── done/
+│       ├── outdated/
+│       ├── PACTO.md
+│       ├── PLANTILLA_PACTO_PLAN.md
+│       ├── SLASH_COMMANDS.md
+│       └── README.md
+├── plans/               # optional legacy workspace (still supported)
 └── samples/mock-pacto-repo/
 ```
 

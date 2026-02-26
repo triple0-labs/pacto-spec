@@ -9,9 +9,11 @@ func resolvePlanRoot(path string) (string, bool) {
 	if hasStateDirs(path) {
 		return path, true
 	}
-	cand := filepath.Join(path, "plans")
-	if hasStateDirs(cand) {
-		return cand, true
+	for _, rel := range []string{filepath.Join(".pacto", "plans"), "plans"} {
+		cand := filepath.Join(path, rel)
+		if hasStateDirs(cand) {
+			return cand, true
+		}
 	}
 	return path, false
 }

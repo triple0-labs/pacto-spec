@@ -54,6 +54,12 @@ func run(args []string) int {
 			return 0
 		}
 		return app.RunNew(rest)
+	case "init":
+		if wantsHelp(rest) {
+			fmt.Print(app.HelpFor("init"))
+			return 0
+		}
+		return app.RunInit(rest)
 	default:
 		fmt.Fprint(os.Stderr, app.UnknownCommandMessage(cmd))
 		fmt.Print(app.RootHelp())

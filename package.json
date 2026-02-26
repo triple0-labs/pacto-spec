@@ -1,7 +1,7 @@
 {
   "name": "@triple0-labs/pacto-spec",
   "version": "0.1.0",
-  "description": "npx installer for the Pacto CLI",
+  "description": "npm/npx wrapper for the Pacto CLI release binaries",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -12,7 +12,7 @@
     "url": "https://github.com/triple0-labs/pacto-spec/issues"
   },
   "bin": {
-    "pacto-install": "bin/pacto-install.js"
+    "pacto": "bin/pacto.js"
   },
   "files": [
     "bin"
@@ -20,6 +20,10 @@
   "engines": {
     "node": ">=18"
   },
+  "os": [
+    "linux",
+    "darwin"
+  ],
   "publishConfig": {
     "access": "public"
   }

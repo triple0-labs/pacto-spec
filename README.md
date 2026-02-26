@@ -45,9 +45,12 @@ CLI: JSON report suitable for CI gates
 
 ## Install
 
-Requires Go.
+Pacto supports both native Go install and npm/npx wrapper install.
+
+### Option 1: Go Native
 
 ```bash
+# from this repository root
 go install ./cmd/pacto
 ```
 
@@ -57,6 +60,21 @@ Or build binaries directly:
 go build -o pacto ./cmd/pacto
 go build -o pacto-engine ./cmd/pacto-engine
 ```
+
+### Option 2: npm / npx Wrapper
+
+Requires Node.js 18+.
+
+```bash
+# one-off execution via npx
+npx -y @triple0-labs/pacto-spec --help
+
+# global shim
+npm install -g @triple0-labs/pacto-spec
+pacto --help
+```
+
+On first run, the wrapper downloads the matching `pacto` GitHub release binary for your OS/arch, verifies checksums, caches it locally, and then executes it.
 
 ## Quick Start
 

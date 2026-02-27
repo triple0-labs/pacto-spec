@@ -1,220 +1,135 @@
-# Pacto de Planes
+# Pacto
 
-Creado por: `000geid`  
-Fecha: `2026-02-26`  
-Idioma oficial para documentos Pacto: **español**
+Created by: `pacto-cli`  
+Last updated: `2026-02-27`
 
-## Idioma y nomenclatura
+## Purpose
 
-- La documentación de planes se mantiene en **español**.
-- El código, identificadores técnicos y convenciones de naming se mantienen en **inglés**.
-- Esto aplica a: `id` de artefactos, slugs técnicos, nombres de archivos técnicos auxiliares y ejemplos de naming.
-- Las carpetas y secciones documentales de Pacto se nombran en español (ejemplo: `artefactos/`).
+Pacto is a lightweight workflow for AI-assisted engineering plans:
 
-## Propósito
+- write plans before implementation
+- keep plan state explicit
+- validate implementation claims against repository evidence
+- produce machine-readable status for CI/automation
 
-Definir una estructura formal y consistente para crear, revisar estado y ejecutar planes en `pacto`.
+## Workspace Model
 
-## Comandos Pacto
+Canonical plans root:
 
-Acciones canónicas:
+- `./.pacto/plans` (created by `pacto init`)
 
-- `pacto:status`
-- `pacto:create`
-- `pacto:execute`
+Also supported:
 
-Slash commands recomendados (agnósticos de IDE):
+- `./plans`
+- any directory that already contains the 4 state folders
 
-- `/pa-status` o `/pa:status`
-- `/pa-new` o `/pa:new`
-- `/pa-exec` o `/pa:exec`
+Required state folders:
 
-Formato de argumentos:
+- `current`
+- `to-implement`
+- `done`
+- `outdated`
 
-- `pacto:<acción> [opciones]`
+Core root files:
 
-## Alcance del sistema
+- `README.md` (index + counts)
+- `PACTO.md` (this contract)
+- `PLANTILLA_PACTO_PLAN.md` (plan template)
+- `SLASH_COMMANDS.md` (assistant command conventions)
 
-- Directorio fuente: `pacto`
-- Estados de plan: `current`, `to-implement`, `done`, `outdated`
-- Índice global: `pacto/README.md`
+## Plan Unit
 
-## Estructura canónica obligatoria
+Each plan lives at:
 
-Todo plan nuevo debe incluir, como mínimo:
+- `<plans-root>/<state>/<slug>/`
 
-1. Metadatos
+Minimum files per plan:
 
-- `Título`
-- `Versión`
-- `Fecha`
-- `Estado`
-- `Owner`
+- `README.md` (human summary and links)
+- `PLAN_<TOPIC>_<YYYY-MM-DD>.md` (detailed spec/progress)
 
-1. Marco del problema
+Slug rules:
 
-- `Resumen`
-- `Contexto`
-- `Objetivos`
-- `No objetivos`
+- lowercase
+- starts with `[a-z0-9]`
+- contains only `[a-z0-9-]`
 
-1. Ejecución
+## Command Behavior
 
-- `Fases` con estado por fase
-- `Duración estimada` y, cuando aplique, `duración real`
-- `Progreso global` y `restante estimado`
+Canonical CLI commands:
 
-1. Validación
+- `pacto init`
+- `pacto new`
+- `pacto status`
+- `pacto explore`
+- `pacto install`
+- `pacto update`
 
-- `Plan de pruebas`
-- `Checklist de smoke`
-- `Evidencia` (fecha + comandos/resultados clave)
+Notes:
 
-1. Gobernanza
+- `pacto exec` is planned but not implemented.
+- CLI output is English-only; `--lang` is deprecated/ignored.
+- `status` and `new` auto-discover plans root from current directory and parents.
 
-- `Decisiones` (tipo ADR breve)
-- `Dependencias`
-- `Riesgos y mitigaciones`
+## How Status Works
 
-1. Cierre
+`pacto status` performs five steps:
 
-- `Criterios de éxito`
-- `Entregables`
-- `Siguientes pasos`
+1. Resolve roots (`plans-root`, `repo-root`).
+2. Discover plans by state/filter.
+3. Parse plan documents (`compat` or `strict` mode).
+4. Extract claims from plan text.
+5. Verify claims against repository evidence.
 
-## Modelo mínimo de planificación
+Claim categories (configurable):
 
-Para mantener Pacto simple y útil, el modelo oficial es:
+- `paths`
+- `symbols`
+- `endpoints`
+- `test_refs`
 
-- `Plan` -> `Fases` -> `Tareas`
-- `Plan` -> `Artefactos` (opcionales, pero tipados)
-- `Plan` -> `Deltas` (unidad principal de avance y verificación)
+Verification outcomes:
 
-### Jerarquía operativa
+- `verified`
+- `partial`
+- `unverified`
 
-1. **Plan**
+Output formats:
 
-- Tiene objetivo, estado global y progreso global.
+- `table`
+- `json` (stable interface for automation)
 
-1. **Fase**
+Fail policies:
 
-- Tiene estado propio y criterio de salida.
-- Agrupa tareas ejecutables.
+- `none`
+- `unverified`
+- `partial`
+- `blocked`
 
-1. **Tarea**
+## How New Plan Creation Works
 
-- Unidad mínima de ejecución.
-- Debe poder marcarse como hecha/no hecha y, cuando aplique, referenciar evidencia.
+`pacto new <state> <slug>`:
 
-1. **Artefacto**
+1. resolves/validates plan root
+2. creates `<state>/<slug>/`
+3. generates `README.md` + `PLAN_*.md`
+4. updates root `README.md` counts and section links
 
-- Elemento documental reusable del plan.
-- Se declara con una fila en inventario y puede vivir en el mismo `README` o en archivo aparte.
+With `--allow-minimal-root`, Pacto can bootstrap missing root files with minimal defaults.
 
-### Tipos de artefacto permitidos (v1 mínima)
+## Evidence Rules
 
-- `diagrama`
-- `checklist`
-- `documentacion`
-- `evidencia`
+- A plan claim is not considered reliable unless it can be verified in `repo-root`.
+- State/progress should match current evidence, not only narrative text.
+- Use absolute dates (`YYYY-MM-DD`) for state-relevant updates.
 
-Campos mínimos por artefacto:
+## Authoring Rules
 
-- `id` (slug corto, único dentro del plan)
-- `tipo` (uno de los 4 tipos)
-- `estado` (`draft` | `active` | `done` | `outdated`)
-- `ruta` (archivo o sección del plan)
-- `owner` (persona/equipo)
+- Keep plans concise and executable: scope, phases/tasks, blockers, next actions, evidence.
+- Prefer one source of truth per plan; link out only when needed.
+- Keep naming stable (`slug`, file names, section labels) so automation remains deterministic.
 
-Convención de naming:
+## Evolution
 
-- `id` y slugs en inglés, lowercase, separados por `-`.
-
-## Reglas de actualización de estado
-
-1. Fuente de verdad
-
-- Si hay conflicto entre tabla inicial y trazas posteriores, prevalece el **delta** más reciente con fecha explícita.
-
-1. Fechas
-
-- Todo cambio de estado debe incluir fecha absoluta (`YYYY-MM-DD`).
-
-1. Evidencia mínima para marcar fase completada
-
-- Validación técnica (tests/lint o equivalente).
-- Evidencia funcional (smoke/manual/API) cuando aplique.
-
-1. Consistencia del índice
-
-- Al crear/mover/eliminar planes, actualizar `pacto/README.md` (conteos + enlaces).
-
-1. Regla de simplicidad
-
-- Cada plan inicia con máximo 1 diagrama y 1 checklist.
-- Solo agregar más artefactos cuando exista una necesidad operativa explícita.
-
-## Modelo de Deltas (obligatorio)
-
-`Delta` es la unidad atómica de cambio en Pacto (similar a un commit/PR pequeño).
-
-Campos mínimos por delta:
-
-- `id` (ej: `D-2026-02-26-01`)
-- `fecha` (`YYYY-MM-DD HH:MM`)
-- `scope` (fase/módulo)
-- `tipo` (`feat` | `fix` | `refactor` | `docs` | `test`)
-- `estado` (`applied` | `partial` | `reverted`)
-- `cambios` (`+` agregado, `~` modificado, `-` removido)
-- `validación` (comando + resultado)
-- `siguiente_delta` (acción concreta)
-
-Reglas:
-
-1. Cada slice ejecutado en `pa-exec` debe registrar al menos 1 delta.
-2. `checkpoint` pasa a ser opcional, solo como snapshot de resumen.
-3. El estado/progreso del plan debe derivar del historial de deltas, no solo de texto narrativo.
-
-## Capa de verificación de estado (`pa-status`)
-
-`pa-status` debe verificar que la información del plan coincide con el código/evidencia disponible.
-
-Reglas:
-
-1. No asumir veracidad por texto
-- Una afirmación en el plan no cuenta como validada si no tiene evidencia contrastable.
-
-2. Validaciones mínimas por plan
-- Verificar existencia de rutas de archivos mencionadas.
-- Verificar presencia de símbolos/endpoints declarados mediante búsqueda dirigida.
-- Verificar coherencia entre estado/progreso declarado y último delta con fecha.
-- Si hay soporte en la herramienta, permitir uso de subagentes para paralelizar verificación por plan o dominio técnico.
-
-3. Clasificación obligatoria de verificación
-- `verified`: evidencia suficiente y consistente.
-- `partial`: evidencia incompleta o parcialmente consistente.
-- `unverified`: evidencia ausente, obsoleta o contradictoria.
-
-4. Reporte de salida
-- `pa-status` debe incluir, por plan: estado, bloqueadores, siguiente acción y clasificación de verificación.
-- Siempre incluir referencias concretas (ruta/claim) para sustentar la clasificación.
-
-## Estructura recomendada por plan (opcional)
-
-Dentro de `pacto/<estado>/<slug>/`:
-
-- `README.md` (fuente principal del plan)
-- `artefactos/diagramas/` (solo si hay archivos `.mmd` o exportes)
-- `artefactos/checklists/` (solo si un checklist crece demasiado para el README)
-
-Si el plan es pequeño, todo puede quedarse en `README.md` sin carpetas extra.
-
-## Plantilla oficial
-
-Para nuevos planes Pacto usar:
-
-- `pacto/PLANTILLA_PACTO_PLAN.md`
-
-## Evolución
-
-Este Pacto define la versión inicial formal. Puede evolucionar con nuevas secciones (por ejemplo, contratos machine-readable) manteniendo compatibilidad con esta base.
+This file defines the operational contract for the current CLI behavior.  
+If command behavior changes, update this file and `PLANTILLA_PACTO_PLAN.md` together.

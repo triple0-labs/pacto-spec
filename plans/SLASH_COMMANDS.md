@@ -1,87 +1,61 @@
-# Slash Commands de Pacto
+# Pacto Assistant Commands
 
-Este archivo define los comandos de Pacto de forma agnóstica de IDE.
+This file defines workflow command IDs used by Pacto-managed assistant integrations.
 
-## Formas soportadas
+## Command IDs
 
-Puedes usar cualquiera de estas variantes según soporte de tu editor:
+- `pacto-status`
+- `pacto-new`
+- `pacto-explore`
+- `pacto-init`
+- `pacto-install`
+- `pacto-update`
+- `pacto-exec` (planned)
 
-- `/pa-status` o `/pa:status`
-- `/pa-new` o `/pa:new`
-- `/pa-exec` o `/pa:exec`
+## Command Contract
 
-## Contrato de cada comando
+### `pacto-status`
 
-### 1) `pa-status`
+- Goal: report consolidated plan state and verification outcomes.
+- Uses detected or explicit plans root (`./.pacto/plans`, `./plans`, or direct state-folder root).
+- Verifies claims against `repo-root`.
+- Outputs `table` or `json` with `verified|partial|unverified` classification.
 
-Objetivo: ver estado consolidado de planes activos.
+### `pacto-new`
 
-Lee:
-- `pacto/README.md`
-- `pacto/current/*/README.md`
+- Goal: create a new plan slice under a target state.
+- Requires: `<current|to-implement|done|outdated> <slug>`.
+- Generates `README.md` + `PLAN_<TOPIC>_<YYYY-MM-DD>.md`.
+- Updates root index counts/links in `<plans-root>/README.md`.
 
-Entrega:
-- planes en ejecución
-- progreso por plan
-- bloqueadores
-- siguiente acción concreta
-- resultado de verificación por plan (`verified` | `partial` | `unverified`)
+### `pacto-explore`
 
-Regla: si hay conflicto de estado en un plan, prevalece el **delta** más reciente con fecha explícita.
+- Goal: capture and revisit ideas before formal planning.
+- Stores ideas in `.pacto/ideas/<slug>/README.md`.
+- Supports create, note append, list, and show flows.
 
-#### Capa de verificación (obligatoria)
+### `pacto-init`
 
-`pa-status` no confía ciegamente en el documento del plan. Debe contrastar claims contra código:
+- Goal: initialize canonical workspace in `.pacto/plans`.
+- Creates state folders and core templates (`README.md`, `PACTO.md`, `PLANTILLA_PACTO_PLAN.md`, `SLASH_COMMANDS.md`).
+- Optional `--with-agents` updates managed Pacto block in `AGENTS.md`.
 
-1. Extraer claims verificables del plan:
-- rutas de archivos
-- endpoints/rutas API
-- afirmaciones de tests/checks
-- porcentaje/estado declarado
-- deltas recientes (scope, cambios, validación)
+### `pacto-install`
 
-2. Verificar evidencia en repo:
-- existencia de archivos
-- presencia de símbolos/rutas por búsqueda dirigida
-- coherencia entre estado declarado y último delta fechado
-- cuando la plataforma lo permita, usar subagentes para dividir verificaciones por plan/área en paralelo
+- Goal: generate managed skill and command artifacts for supported AI tools.
+- Supports explicit tool selection (`--tools`) and overwrite control (`--force`).
 
-3. Clasificar por plan:
-- `verified`: evidencia suficiente y coherente.
-- `partial`: evidencia incompleta o parcialmente coherente.
-- `unverified`: no hay evidencia suficiente o hay contradicción.
+### `pacto-update`
 
-### 2) `pa-new`
+- Goal: refresh managed blocks in previously generated artifacts.
+- Preserves unmanaged files unless `--force` is used.
 
-Objetivo: crear un plan nuevo en `pacto/`.
+### `pacto-exec`
 
-Uso:
-- `/pa-new <current|to-implement> <slug>`
+- Status: planned, not implemented.
+- Expected current behavior: communicate limitation and route user to `pacto status`, `pacto new`, or `pacto explore`.
 
-Acciones mínimas:
-1. Crear carpeta `pacto/<estado>/<slug>/`.
-2. Crear `README.md`.
-3. Crear `PLAN_<TOPIC>_<YYYY-MM-DD>.md`.
-4. Usar `pacto/PLANTILLA_PACTO_PLAN.md`.
-5. Actualizar `pacto/README.md` (contador, enlace y fecha).
+## Conventions
 
-### 3) `pa-exec`
-
-Objetivo: ejecutar un plan existente por slices verificables.
-
-Uso:
-- `/pa-exec <ruta_plan_md>`
-
-Acciones mínimas:
-1. Extraer fases/tareas ejecutables.
-2. Ejecutar en pasos pequeños.
-3. Validar con tests/checks aplicables.
-4. Registrar evidencia (fecha absoluta + comando + resultado).
-5. Registrar un **delta** por cada slice ejecutado.
-6. Actualizar progreso/estado en el plan.
-7. (Opcional) crear checkpoint de snapshot al cerrar un bloque mayor.
-
-## Convenciones
-
-- Documentación en español.
-- Naming técnico (`id`, slugs) en inglés.
+- Product docs are canonical in `docs/`.
+- Workspace files under `.pacto/plans` (or `plans/`) are operational artifacts/templates.

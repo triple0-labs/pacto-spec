@@ -1,25 +1,40 @@
-# Slash Commands de Pacto
+# Pacto Assistant Commands
 
-Formas soportadas:
+Command IDs generated/managed by `pacto install` and `pacto update`:
 
-- `/pa-status` o `/pa:status`
-- `/pa-new` o `/pa:new`
-- `/pa-exec` o `/pa:exec`
+- `pacto-status`
+- `pacto-new`
+- `pacto-explore`
+- `pacto-init`
+- `pacto-install`
+- `pacto-update`
+- `pacto-exec` (planned)
 
-## Contrato mínimo
+## Minimal Contract
 
-### `pa-status`
+### `pacto-status`
 
-- Lee planes y reporta estado consolidado.
-- Incluye verificación por plan: `verified|partial|unverified`.
+- Consolidated state + blockers + next actions.
+- Verification outcome per plan: `verified|partial|unverified`.
 
-### `pa-new`
+### `pacto-new`
 
-- Crea carpeta de plan en estado objetivo.
-- Genera `README.md` y `PLAN_<TOPIC>_<YYYY-MM-DD>.md`.
-- Actualiza índice raíz.
+- Creates plan folder in target state.
+- Generates `README.md` and `PLAN_<TOPIC>_<YYYY-MM-DD>.md`.
+- Updates root index metadata.
 
-### `pa-exec`
+### `pacto-explore`
 
-- Ejecuta plan por slices verificables.
-- Registra evidencia y deltas.
+- Stores and updates idea notes in `.pacto/ideas/<slug>/README.md`.
+
+### `pacto-init`
+
+- Bootstraps `.pacto/plans` and template docs.
+
+### `pacto-install` / `pacto-update`
+
+- Manages generated skill/command artifacts for supported tools.
+
+### `pacto-exec`
+
+- Planned command, not implemented.

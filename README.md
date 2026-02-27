@@ -1,6 +1,6 @@
 <h1 align="center">Pacto</h1>
 
-<p align="center">Spec-first planning and verification for AI-assisted engineering.</p>
+<p align="center">Spec-driven development (SDD) planning and verification for AI-assisted engineering.</p>
 
 <p align="center">
   <a href="https://github.com/triple0-labs/pacto-spec/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/triple0-labs/pacto-spec/actions/workflows/ci.yml/badge.svg" /></a>
@@ -17,38 +17,32 @@ Our philosophy:
 -> practical for brownfield and greenfield
 ```
 
-## Why Pacto?
+## Why Pacto
 
-AI assistants move fast, but plans drift unless requirements, progress, and evidence stay structured.
-Pacto gives teams a small, durable workflow:
+Pacto keeps AI-assisted work anchored in executable specs:
 
-- Create plan slices with a repeatable folder structure.
-- Track state across `current`, `to-implement`, `done`, and `outdated`.
-- Verify implementation claims from plan documents against repository evidence.
-- Generate table or JSON reports for humans and automation.
+- Define plan slices before implementation.
+- Track progress through explicit states (`to-implement`, `current`, `done`, `outdated`).
+- Verify plan claims against repository evidence.
+- Emit table or JSON outputs for humans and CI automation.
 
-## See It In Action
+## Core Workflow
 
 ```text
-You: pacto init
-CLI: Initialized Pacto workspace: ./.pacto/plans
+pacto init  ->  pacto new  ->  pacto status
+```
 
-You: pacto new to-implement improve-auth-flow
-CLI: Created plan: to-implement/improve-auth-flow
-     - ./.pacto/plans/to-implement/improve-auth-flow/README.md
-     - ./.pacto/plans/to-implement/improve-auth-flow/PLAN_IMPROVE_AUTH_FLOW_2026-02-26.md
-     Updated index: ./.pacto/plans/README.md
+- `pacto init`: bootstrap `.pacto/plans` workspace.
+- `pacto new`: create a plan slice from template and update the index.
+- `pacto status`: parse plans, verify claims, and report readiness.
 
-You: pacto status --format table
-CLI: State summary + per-plan progress/blockers + verification outcomes
+Optional ideation flow:
 
-You: pacto status --format json --fail-on partial
-CLI: JSON report suitable for CI gates
+```text
+pacto explore
 ```
 
 ## Install
-
-Pacto supports curl install and native Go install.
 
 ### Option 1: curl (recommended)
 
@@ -56,48 +50,11 @@ Pacto supports curl install and native Go install.
 curl -fsSL https://raw.githubusercontent.com/triple0-labs/pacto-spec/main/install.sh | bash
 ```
 
-Optional overrides:
+### Option 2: Go
 
 ```bash
-# install a specific version
-curl -fsSL https://raw.githubusercontent.com/triple0-labs/pacto-spec/main/install.sh | PACTO_VERSION=0.1.1 bash
-
-# install into a custom directory
-curl -fsSL https://raw.githubusercontent.com/triple0-labs/pacto-spec/main/install.sh | INSTALL_DIR=$HOME/.local/bin bash
-```
-
-### Option 2: Go Native
-
-```bash
-# from this repository root
 go install ./cmd/pacto
 ```
-
-Or build binaries directly:
-
-```bash
-go build -o pacto ./cmd/pacto
-go build -o pacto-engine ./cmd/pacto-engine
-```
-
-> npm/npx wrapper publishing is currently disabled.
-
-<!--
-### Option 3: npm / npx Wrapper
-
-Requires Node.js 18+.
-
-```bash
-# one-off execution via npx
-npx -y @triple0-labs/pacto-spec --help
-
-# global shim
-npm install -g @triple0-labs/pacto-spec
-pacto --help
-```
-
-On first run, the wrapper downloads the matching `pacto` GitHub release binary for your OS/arch, verifies checksums, caches it locally, and then executes it.
--->
 
 ## Quick Start
 
@@ -105,154 +62,30 @@ On first run, the wrapper downloads the matching `pacto` GitHub release binary f
 pacto help
 pacto version
 
-# Bootstrap local workspace (default: ./.pacto/plans)
+# initialize project workspace
 pacto init
 
-# Auto-detects plans root from current dir and parents
-# Resolution order per directory: direct state dirs, ./.pacto/plans, ./plans
-pacto status
+# create a plan
+pacto new to-implement improve-auth-flow
 
-# Explicit split roots
-pacto status --plans-root ./.pacto/plans --repo-root . --format table
+# verify status and evidence
+pacto status --format table
 
-# Create a plan scaffold (also auto-detects plans root from current dir and parents)
-pacto new to-implement my-plan-slug
-
-# Install Pacto skills + command prompts for your AI tools
-pacto install
-
-# Refresh managed Pacto tool artifacts
-pacto update
+# CI-friendly output
+pacto status --format json --fail-on partial
 ```
 
-## Commands
+## Docs
 
-- `pacto status`
-  - Discovers plans and computes status/progress.
-  - Extracts blockers/next actions.
-  - Auto-detects plans root from current directory or parent directories.
-  - Verifies claims (`paths`, `symbols`, `endpoints`, `test_refs`) against `repo-root`.
-  - Supports `--plans-root`, `--repo-root`, `--mode`, `--format`, `--fail-on`, `--state`, `--include-archive`.
-- `pacto new`
-  - Creates plan folder scaffold (`README.md` + `PLAN_*.md`).
-  - Auto-detects plans root from current directory or parent directories when `--root` is omitted.
-  - Updates root index metadata.
-  - Supports explicit root override (`--root`) and minimal roots (`--allow-minimal-root`).
-- `pacto init`
-  - Bootstraps a project-local workspace at `./.pacto/plans`.
-  - Creates canonical docs/templates and state folders.
-  - Optional `--with-agents` adds a managed Pacto block in `AGENTS.md`.
-  - Supports `--force` to overwrite init-managed files.
-- `pacto install`
-  - Installs managed Pacto skills and command prompts for supported tools.
-  - Supports `--tools <all|none|csv>` and `--force`.
-  - Supported tools (v1): `codex`, `cursor`, `claude`, `opencode`.
-- `pacto update`
-  - Refreshes managed Pacto blocks in previously installed tool artifacts.
-  - Supports `--tools <all|none|csv>` and `--force`.
-- `pacto exec`
-  - Planned command, not implemented yet.
-
-## Explore Ideas
-
-Use `pacto explore` to think through ideas without implementing them yet.
-
-- Ideas are stored in `.pacto/ideas/<slug>/README.md`.
-- Each idea tracks:
-  - `Created At`
-  - `Updated At`
-- You can append timestamped notes to keep exploration history.
-
-Examples:
-
-```bash
-# create/open an idea workspace
-pacto explore auth-refresh --title "Auth refresh ideas"
-
-# append a note and update timestamp
-pacto explore auth-refresh --note "Compare token vs session model"
-
-# list saved ideas
-pacto explore --list
-
-# show one idea summary
-pacto explore --show auth-refresh
-```
-
-## Tool Integrations
-
-`pacto install` and `pacto update` generate both:
-- Skills: `.../skills/pacto-<workflow>/SKILL.md`
-- Commands/prompts: `pacto-<workflow>.md`
-
-Workflows generated in v1: `status`, `new`, `exec`, `init`.
-
-| Tool | Skills path | Command path |
-|------|-------------|--------------|
-| Codex (`codex`) | `.codex/skills/pacto-*/SKILL.md` | `$CODEX_HOME/prompts/pacto-*.md` (or `~/.codex/prompts/pacto-*.md`) |
-| Cursor (`cursor`) | `.cursor/skills/pacto-*/SKILL.md` | `.cursor/commands/pacto-*.md` |
-| Claude (`claude`) | `.claude/skills/pacto-*/SKILL.md` | `.claude/commands/pacto-*.md` |
-| OpenCode (`opencode`) | `.opencode/skills/pacto-*/SKILL.md` | `.opencode/commands/pacto-*.md` |
-
-Examples:
-
-```bash
-# auto-detect tool directories from current project
-pacto install
-
-# explicit tools
-pacto install --tools codex,cursor
-
-# install for all supported tools
-pacto install --tools all
-
-# refresh managed blocks only
-pacto update
-```
-
-## Workspace Layout
-
-```text
-.
-├── cmd/                 # CLI entrypoints: pacto, pacto-engine
-├── internal/            # parser, verify, analyze, report, discovery, config
-├── .pacto/
-│   └── plans/           # default workspace created by `pacto init`
-│       ├── current/
-│       ├── to-implement/
-│       ├── done/
-│       ├── outdated/
-│       ├── PACTO.md
-│       ├── PLANTILLA_PACTO_PLAN.md
-│       ├── SLASH_COMMANDS.md
-│       └── README.md
-├── plans/               # optional legacy workspace (still supported)
-└── samples/mock-pacto-repo/
-```
-
-## Tiny Smoke Test
-
-```bash
-make tiny-smoke
-```
-
-This target downloads the latest GitHub release artifact, verifies checksums, and runs a minimal end-to-end flow (`status -> new -> status`) in `/tmp/pacto-tiny-smoke/mock`.
-
-## Release Flow
-
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-CI runs tests on pushes/PRs. Tags matching `v*` publish Go release artifacts via GoReleaser.
-
-Detailed checklist: [RELEASING.md](./RELEASING.md)
+- [Getting Started](./docs/getting-started.md)
+- [Concepts](./docs/concepts.md)
+- [Commands](./docs/commands.md)
+- [Integrations](./docs/integrations.md)
+- [Contributing](./docs/contributing.md)
+- [Releasing](./RELEASING.md)
 
 ## Notes
 
 - CLI output is English-only (`--lang` is deprecated and ignored).
-- For `status`, `--root` is deprecated; use `--plans-root` and `--repo-root`.
-- `status` and `new` can be run from nested directories; root is auto-discovered.
-- Plan content can still be authored in any language.
-- JSON output is the stable interface for automation.
+- `pacto exec` is planned and not implemented yet.
+- `plans/` and `.pacto/plans/` files are workspace artifacts/templates; canonical product docs are in `docs/`.

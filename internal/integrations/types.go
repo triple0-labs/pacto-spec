@@ -9,11 +9,19 @@ type Adapter interface {
 }
 
 type WorkflowSpec struct {
-	WorkflowID string
-	CommandID  string
-	Title      string
-	Summary    string
-	Command    string
+	WorkflowID          string
+	CommandID           string
+	Title               string
+	Summary             string
+	Command             string
+	WhenToUse           string
+	RequiredInputs      []string
+	OptionalInputs      []string
+	OutputContract      []string
+	ValidationChecklist []string
+	FailureModes        []string
+	FallbackAction      string
+	Implemented         bool
 }
 
 type WriteOutcome string

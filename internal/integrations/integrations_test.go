@@ -3,6 +3,7 @@ package integrations
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -96,5 +97,69 @@ func TestGetAdapterPaths(t *testing.T) {
 	}
 	if want := filepath.Join(root, ".opencode", "commands", "pacto-status.md"); cmd != want {
 		t.Fatalf("command path mismatch: got %q want %q", cmd, want)
+	}
+}
+
+func TestRenderTemplatesIncludeContractSections(t *testing.T) {
+	for _, wf := range Workflows() {
+		skill := RenderSkill("codex", wf)
+		command := RenderCommand("codex", wf)
+
+		for _, section := range []string{
+			"## Input Contract",
+			"## Output Contract",
+			"## Validation Checklist",
+			"## Failure Modes and Handling",
+			"## Implementation Status",
+		} {
+			if !strings.Contains(skill, section) {
+				t.Fatalf("skill template for %s missing section %q", wf.WorkflowID, section)
+			}
+			if !strings.Contains(command, section) {
+				t.Fatalf("command template for %s missing section %q", wf.WorkflowID, section)
+			}
+		}
+	}
+}
+
+func TestGenerateForToolWritesContractAndExecPlanned(t *testing.T) {
+	root := t.TempDir()
+	results := GenerateForTool(root, "opencode", false)
+	if len(results) == 0 {
+		t.Fatal("expected generation results")
+	}
+	for _, r := range results {
+		if r.Err != nil {
+			t.Fatalf("unexpected generation error for %s/%s: %v", r.Kind, r.WorkflowID, r.Err)
+		}
+	}
+
+	statusSkill := filepath.Join(root, ".opencode", "skills", "pacto-status", "SKILL.md")
+	b, err := os.ReadFile(statusSkill)
+	if err != nil {
+		t.Fatalf("read status skill: %v", err)
+	}
+	statusContent := string(b)
+	for _, section := range []string{
+		"## Input Contract",
+		"## Output Contract",
+		"## Validation Checklist",
+	} {
+		if !strings.Contains(statusContent, section) {
+			t.Fatalf("status skill missing %q", section)
+		}
+	}
+
+	execCommand := filepath.Join(root, ".opencode", "commands", "pacto-exec.md")
+	b, err = os.ReadFile(execCommand)
+	if err != nil {
+		t.Fatalf("read exec command: %v", err)
+	}
+	execContent := string(b)
+	if !strings.Contains(execContent, "Planned (Not Implemented)") {
+		t.Fatalf("exec command should be marked planned, got: %q", execContent)
+	}
+	if !strings.Contains(execContent, "Use `pacto status` for verification") {
+		t.Fatalf("exec command should include fallback guidance, got: %q", execContent)
 	}
 }

@@ -12,8 +12,8 @@ permissions:
 
 jobs:
   publish:
+    if: false # disabled intentionally; keep workflow definition for future re-enable
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'v')
     steps:
       - name: Resolve tag
         id: tag

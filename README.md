@@ -48,7 +48,7 @@ CLI: JSON report suitable for CI gates
 
 ## Install
 
-Pacto supports curl install, native Go install, and npm/npx wrapper install.
+Pacto supports curl install and native Go install.
 
 ### Option 1: curl (recommended)
 
@@ -80,6 +80,9 @@ go build -o pacto ./cmd/pacto
 go build -o pacto-engine ./cmd/pacto-engine
 ```
 
+> npm/npx wrapper publishing is currently disabled.
+
+<!--
 ### Option 3: npm / npx Wrapper
 
 Requires Node.js 18+.
@@ -94,6 +97,7 @@ pacto --help
 ```
 
 On first run, the wrapper downloads the matching `pacto` GitHub release binary for your OS/arch, verifies checksums, caches it locally, and then executes it.
+-->
 
 ## Quick Start
 
@@ -171,7 +175,7 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-CI runs tests on pushes/PRs. Tags matching `v*` publish Go release artifacts via GoReleaser, and then publish the npm wrapper package automatically via npm Trusted Publishing (OIDC).
+CI runs tests on pushes/PRs. Tags matching `v*` publish Go release artifacts via GoReleaser.
 
 Detailed checklist: [RELEASING.md](./RELEASING.md)
 

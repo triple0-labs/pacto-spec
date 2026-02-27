@@ -18,6 +18,21 @@ func resolvePlanRoot(path string) (string, bool) {
 	return path, false
 }
 
+func resolvePlanRootFrom(path string) (string, string, bool) {
+	cur := cleanAbs(path)
+	for {
+		if resolved, ok := resolvePlanRoot(cur); ok {
+			return resolved, cur, true
+		}
+		parent := filepath.Dir(cur)
+		if parent == cur {
+			break
+		}
+		cur = parent
+	}
+	return "", "", false
+}
+
 func hasStateDirs(path string) bool {
 	for _, st := range []string{"current", "to-implement", "done", "outdated"} {
 		info, err := os.Stat(filepath.Join(path, st))

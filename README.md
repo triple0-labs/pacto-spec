@@ -104,13 +104,14 @@ pacto version
 # Bootstrap local workspace (default: ./.pacto/plans)
 pacto init
 
-# Auto-detects ./.pacto/plans first, then ./plans (legacy)
+# Auto-detects plans root from current dir and parents
+# Resolution order per directory: direct state dirs, ./.pacto/plans, ./plans
 pacto status
 
 # Explicit split roots
 pacto status --plans-root ./.pacto/plans --repo-root . --format table
 
-# Create a plan scaffold
+# Create a plan scaffold (also auto-detects plans root from current dir and parents)
 pacto new to-implement my-plan-slug
 ```
 
@@ -119,12 +120,14 @@ pacto new to-implement my-plan-slug
 - `pacto status`
   - Discovers plans and computes status/progress.
   - Extracts blockers/next actions.
+  - Auto-detects plans root from current directory or parent directories.
   - Verifies claims (`paths`, `symbols`, `endpoints`, `test_refs`) against `repo-root`.
   - Supports `--plans-root`, `--repo-root`, `--mode`, `--format`, `--fail-on`, `--state`, `--include-archive`.
 - `pacto new`
   - Creates plan folder scaffold (`README.md` + `PLAN_*.md`).
+  - Auto-detects plans root from current directory or parent directories when `--root` is omitted.
   - Updates root index metadata.
-  - Supports canonical and minimal roots (`--allow-minimal-root`).
+  - Supports explicit root override (`--root`) and minimal roots (`--allow-minimal-root`).
 - `pacto init`
   - Bootstraps a project-local workspace at `./.pacto/plans`.
   - Creates canonical docs/templates and state folders.
@@ -176,5 +179,6 @@ Detailed checklist: [RELEASING.md](./RELEASING.md)
 
 - CLI output is English-only (`--lang` is deprecated and ignored).
 - For `status`, `--root` is deprecated; use `--plans-root` and `--repo-root`.
+- `status` and `new` can be run from nested directories; root is auto-discovered.
 - Plan content can still be authored in any language.
 - JSON output is the stable interface for automation.

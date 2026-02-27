@@ -58,9 +58,10 @@ func commandCatalog() []CommandHelp {
 			Name:        "status",
 			Summary:     "Verify plan status, blockers, and evidence claims.",
 			Usage:       "pacto status [--plans-root <path>] [--repo-root <path>] [--mode compat|strict] [--format table|json] [--fail-on policy]",
-			Description: "Scans plans from plans root, extracts task/progress signals, verifies claims (paths/symbols/endpoints/test refs) against repo root, and emits a consolidated report.",
+			Description: "Scans plans from plans root, extracts task/progress signals, verifies claims (paths/symbols/endpoints/test refs) against repo root, and emits a consolidated report. If roots are omitted, auto-discovers from current directory and parents.",
 			Examples: []string{
 				"pacto status",
+				"pacto status # from nested directory",
 				"pacto status --plans-root ./.pacto/plans --repo-root .",
 				"pacto status --mode strict --format table",
 				"pacto status --format json --fail-on partial",
@@ -69,10 +70,11 @@ func commandCatalog() []CommandHelp {
 		{
 			Name:        "new",
 			Summary:     "Create a new plan scaffold and update root index.",
-			Usage:       "pacto new <current|to-implement|done|outdated> <slug> [--title ...] [--owner ...] [--root .] [--allow-minimal-root]",
-			Description: "Generates plan folder with README + PLAN file from template and updates root README counters, links, and last update date.",
+			Usage:       "pacto new <current|to-implement|done|outdated> <slug> [--title ...] [--owner ...] [--root <path>] [--allow-minimal-root]",
+			Description: "Generates plan folder with README + PLAN file from template and updates root README counters, links, and last update date. If --root is omitted, auto-discovers from current directory and parents.",
 			Examples: []string{
 				"pacto new to-implement polling-contactos-v2",
+				"pacto new to-implement polling-contactos-v2 # from nested directory",
 				"pacto new current api-contract-refresh --title \"API Contract Refresh\" --owner \"Backend Team\"",
 				"pacto new to-implement sandbox --root ./samples/mock-pacto-repo --allow-minimal-root",
 			},

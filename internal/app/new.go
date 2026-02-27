@@ -37,12 +37,12 @@ type newRequest struct {
 }
 
 func RunNew(args []string) int {
-	opts, state, slug, code, ok := parseAndValidateNewArgs(args)
+	opts, state, slug, rootProvided, code, ok := parseAndValidateNewArgs(args)
 	if !ok {
 		return code
 	}
 
-	req, code, ok := buildNewRequest(opts, state, slug)
+	req, code, ok := buildNewRequest(opts, state, slug, rootProvided)
 	if !ok {
 		return code
 	}
@@ -62,13 +62,13 @@ func RunNew(args []string) int {
 	return 0
 }
 
-func parseAndValidateNewArgs(args []string) (newOptions, string, string, int, bool) {
+func parseAndValidateNewArgs(args []string) (newOptions, string, string, bool, int, bool) {
 	opts := newOptions{}
 	fs := flag.NewFlagSet("new", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
 	fs.Usage = func() {
 		fmt.Fprintln(os.Stderr, "Usage:")
-		fmt.Fprintln(os.Stderr, "  pacto new <current|to-implement|done|outdated> <slug> [--title ...] [--owner ...] [--root .] [--allow-minimal-root]")
+		fmt.Fprintln(os.Stderr, "  pacto new <current|to-implement|done|outdated> <slug> [--title ...] [--owner ...] [--root <path>] [--allow-minimal-root]")
 		fmt.Fprintln(os.Stderr, "")
 		fmt.Fprintln(os.Stderr, "Options:")
 		fs.PrintDefaults()
@@ -82,46 +82,56 @@ func parseAndValidateNewArgs(args []string) (newOptions, string, string, int, bo
 	normalizedArgs, normErr := normalizeNewArgs(args)
 	if normErr != nil {
 		fmt.Fprintf(os.Stderr, "parse args: %v\n", normErr)
-		return newOptions{}, "", "", 2, false
+		return newOptions{}, "", "", false, 2, false
 	}
 	if err := fs.Parse(normalizedArgs); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			fs.Usage()
-			return newOptions{}, "", "", 0, false
+			return newOptions{}, "", "", false, 0, false
 		}
 		fmt.Fprintf(os.Stderr, "parse flags: %v\n", err)
-		return newOptions{}, "", "", 2, false
+		return newOptions{}, "", "", false, 2, false
 	}
 	if strings.TrimSpace(opts.lang) != "" || hasLangArg(args) {
 		fmt.Fprintln(os.Stderr, "warning: --lang is deprecated and ignored; CLI output is English-only")
 	}
+	rootProvided := false
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == "root" {
+			rootProvided = true
+		}
+	})
 
 	pos := fs.Args()
 	if len(pos) != 2 {
 		fs.Usage()
-		return newOptions{}, "", "", 2, false
+		return newOptions{}, "", "", rootProvided, 2, false
 	}
 
 	state := strings.ToLower(strings.TrimSpace(pos[0]))
 	slug := strings.TrimSpace(pos[1])
 	if !isValidState(state) {
 		fmt.Fprintf(os.Stderr, "invalid state %q (allowed: current|to-implement|done|outdated)\n", state)
-		return newOptions{}, "", "", 2, false
+		return newOptions{}, "", "", rootProvided, 2, false
 	}
 	if !slugRe.MatchString(slug) {
 		fmt.Fprintf(os.Stderr, "invalid slug %q (use lowercase letters, numbers, dashes)\n", slug)
-		return newOptions{}, "", "", 2, false
+		return newOptions{}, "", "", rootProvided, 2, false
 	}
-	return opts, state, slug, 0, true
+	return opts, state, slug, rootProvided, 0, true
 }
 
-func buildNewRequest(opts newOptions, state, slug string) (newRequest, int, bool) {
+func buildNewRequest(opts newOptions, state, slug string, rootProvided bool) (newRequest, int, bool) {
 	absRoot, err := filepath.Abs(opts.root)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve root: %v\n", err)
 		return newRequest{}, 2, false
 	}
-	if resolved, ok := resolvePlanRoot(absRoot); ok {
+	if rootProvided {
+		if resolved, ok := resolvePlanRoot(absRoot); ok {
+			absRoot = resolved
+		}
+	} else if resolved, _, ok := resolvePlanRootFrom(absRoot); ok {
 		absRoot = resolved
 	}
 

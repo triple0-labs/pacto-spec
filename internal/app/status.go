@@ -160,9 +160,35 @@ func resolveStatusRoots(cfg config.Config, provided map[string]bool, cwdAbs stri
 	}
 	projectRoot = cleanAbs(projectRoot)
 
+	plansRoot := strings.TrimSpace(cfg.PlansRoot)
+	detectedProjectRoot := ""
+	if plansRoot == "" {
+		if provided["root"] || (strings.TrimSpace(cfg.Root) != "" && !provided["plans-root"] && !provided["repo-root"]) {
+			if resolved, ok := resolvePlanRoot(projectRoot); ok {
+				plansRoot = resolved
+				detectedProjectRoot = projectRoot
+			} else {
+				return "", "", fmt.Errorf("could not resolve plans root from %s (expected .pacto/plans or plans)", projectRoot)
+			}
+		} else if resolved, foundProjectRoot, ok := resolvePlanRootFrom(projectRoot); ok {
+			plansRoot = resolved
+			detectedProjectRoot = foundProjectRoot
+		} else {
+			return "", "", fmt.Errorf("could not resolve plans root from %s or parents (expected .pacto/plans or plans)", projectRoot)
+		}
+	}
+	plansRoot = cleanAbs(plansRoot)
+	if !hasStateDirs(plansRoot) {
+		return "", "", fmt.Errorf("plans root missing state folders: %s", plansRoot)
+	}
+
 	repoRoot := strings.TrimSpace(cfg.RepoRoot)
 	if repoRoot == "" {
-		repoRoot = projectRoot
+		if detectedProjectRoot != "" {
+			repoRoot = detectedProjectRoot
+		} else {
+			repoRoot = projectRoot
+		}
 	}
 	repoRoot = cleanAbs(repoRoot)
 	info, err := os.Stat(repoRoot)
@@ -170,18 +196,6 @@ func resolveStatusRoots(cfg config.Config, provided map[string]bool, cwdAbs stri
 		return "", "", fmt.Errorf("repo root does not exist or is not a directory: %s", repoRoot)
 	}
 
-	plansRoot := strings.TrimSpace(cfg.PlansRoot)
-	if plansRoot == "" {
-		if resolved, ok := resolvePlanRoot(projectRoot); ok {
-			plansRoot = resolved
-		} else {
-			return "", "", fmt.Errorf("could not resolve plans root from %s (expected .pacto/plans or plans)", projectRoot)
-		}
-	}
-	plansRoot = cleanAbs(plansRoot)
-	if !hasStateDirs(plansRoot) {
-		return "", "", fmt.Errorf("plans root missing state folders: %s", plansRoot)
-	}
 	return plansRoot, repoRoot, nil
 }
 

@@ -26,11 +26,11 @@ type Config struct {
 	ClaimsTestRefs  bool
 }
 
-func Defaults(root string) Config {
+func Defaults(_ string) Config {
 	return Config{
 		Root:            "",
 		PlansRoot:       "",
-		RepoRoot:        root,
+		RepoRoot:        "",
 		Mode:            "compat",
 		Format:          "table",
 		FailOn:          "none",

@@ -117,6 +117,12 @@ pacto status --plans-root ./.pacto/plans --repo-root . --format table
 
 # Create a plan scaffold (also auto-detects plans root from current dir and parents)
 pacto new to-implement my-plan-slug
+
+# Install Pacto skills + command prompts for your AI tools
+pacto install
+
+# Refresh managed Pacto tool artifacts
+pacto update
 ```
 
 ## Commands
@@ -137,8 +143,72 @@ pacto new to-implement my-plan-slug
   - Creates canonical docs/templates and state folders.
   - Optional `--with-agents` adds a managed Pacto block in `AGENTS.md`.
   - Supports `--force` to overwrite init-managed files.
+- `pacto install`
+  - Installs managed Pacto skills and command prompts for supported tools.
+  - Supports `--tools <all|none|csv>` and `--force`.
+  - Supported tools (v1): `codex`, `cursor`, `claude`, `opencode`.
+- `pacto update`
+  - Refreshes managed Pacto blocks in previously installed tool artifacts.
+  - Supports `--tools <all|none|csv>` and `--force`.
 - `pacto exec`
   - Planned command, not implemented yet.
+
+## Explore Ideas
+
+Use `pacto explore` to think through ideas without implementing them yet.
+
+- Ideas are stored in `.pacto/ideas/<slug>/README.md`.
+- Each idea tracks:
+  - `Created At`
+  - `Updated At`
+- You can append timestamped notes to keep exploration history.
+
+Examples:
+
+```bash
+# create/open an idea workspace
+pacto explore auth-refresh --title "Auth refresh ideas"
+
+# append a note and update timestamp
+pacto explore auth-refresh --note "Compare token vs session model"
+
+# list saved ideas
+pacto explore --list
+
+# show one idea summary
+pacto explore --show auth-refresh
+```
+
+## Tool Integrations
+
+`pacto install` and `pacto update` generate both:
+- Skills: `.../skills/pacto-<workflow>/SKILL.md`
+- Commands/prompts: `pacto-<workflow>.md`
+
+Workflows generated in v1: `status`, `new`, `exec`, `init`.
+
+| Tool | Skills path | Command path |
+|------|-------------|--------------|
+| Codex (`codex`) | `.codex/skills/pacto-*/SKILL.md` | `$CODEX_HOME/prompts/pacto-*.md` (or `~/.codex/prompts/pacto-*.md`) |
+| Cursor (`cursor`) | `.cursor/skills/pacto-*/SKILL.md` | `.cursor/commands/pacto-*.md` |
+| Claude (`claude`) | `.claude/skills/pacto-*/SKILL.md` | `.claude/commands/pacto-*.md` |
+| OpenCode (`opencode`) | `.opencode/skills/pacto-*/SKILL.md` | `.opencode/commands/pacto-*.md` |
+
+Examples:
+
+```bash
+# auto-detect tool directories from current project
+pacto install
+
+# explicit tools
+pacto install --tools codex,cursor
+
+# install for all supported tools
+pacto install --tools all
+
+# refresh managed blocks only
+pacto update
+```
 
 ## Workspace Layout
 

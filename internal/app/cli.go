@@ -37,12 +37,30 @@ func Run(args []string) int {
 			return 0
 		}
 		return RunNew(rest)
+	case "explore":
+		if wantsHelp(rest) {
+			fmt.Print(HelpFor("explore"))
+			return 0
+		}
+		return RunExplore(rest)
 	case "init":
 		if wantsHelp(rest) {
 			fmt.Print(HelpFor("init"))
 			return 0
 		}
 		return RunInit(rest)
+	case "install":
+		if wantsHelp(rest) {
+			fmt.Print(HelpFor("install"))
+			return 0
+		}
+		return RunInstall(rest)
+	case "update":
+		if wantsHelp(rest) {
+			fmt.Print(HelpFor("update"))
+			return 0
+		}
+		return RunUpdate(rest)
 	case "exec":
 		if wantsHelp(rest) {
 			fmt.Print(HelpFor("exec"))

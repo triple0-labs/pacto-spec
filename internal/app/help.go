@@ -80,6 +80,18 @@ func commandCatalog() []CommandHelp {
 			},
 		},
 		{
+			Name:        "explore",
+			Summary:     "Capture and revisit ideas without implementation.",
+			Usage:       "pacto explore <slug> [--title ...] [--note ...] [--root <path>] | --list | --show <slug>",
+			Description: "Creates and manages idea workspaces in .pacto/ideas with Created At and Updated At timestamps.",
+			Examples: []string{
+				"pacto explore auth-refresh --title \"Auth refresh ideas\"",
+				"pacto explore auth-refresh --note \"Compare token vs session approach\"",
+				"pacto explore --list",
+				"pacto explore --show auth-refresh",
+			},
+		},
+		{
 			Name:        "init",
 			Summary:     "Initialize local Pacto workspace in .pacto/plans.",
 			Usage:       "pacto init [--root .] [--with-agents] [--force]",
@@ -88,6 +100,28 @@ func commandCatalog() []CommandHelp {
 				"pacto init",
 				"pacto init --root . --with-agents",
 				"pacto init --force",
+			},
+		},
+		{
+			Name:        "install",
+			Summary:     "Install Pacto skills and command prompts for AI tools.",
+			Usage:       "pacto install [--tools <all|none|csv>] [--force]",
+			Description: "Generates managed Pacto skills and command files for supported tools (codex,cursor,claude,opencode). If --tools is omitted, tools are auto-detected from project directories.",
+			Examples: []string{
+				"pacto install",
+				"pacto install --tools codex,cursor",
+				"pacto install --tools all",
+			},
+		},
+		{
+			Name:        "update",
+			Summary:     "Refresh previously installed Pacto tool artifacts.",
+			Usage:       "pacto update [--tools <all|none|csv>] [--force]",
+			Description: "Refreshes managed Pacto blocks in generated skills and command files for supported tools.",
+			Examples: []string{
+				"pacto update",
+				"pacto update --tools claude,opencode",
+				"pacto update --force",
 			},
 		},
 		{

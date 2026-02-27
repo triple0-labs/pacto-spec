@@ -14,7 +14,56 @@ import (
 
 var slugRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
 
+type newOptions struct {
+	root         string
+	title        string
+	owner        string
+	allowMinimal bool
+	lang         string
+}
+
+type newRequest struct {
+	root         string
+	state        string
+	slug         string
+	title        string
+	owner        string
+	allowMinimal bool
+	date         string
+	planDir      string
+	planFileName string
+	planPath     string
+	readmePath   string
+}
+
 func RunNew(args []string) int {
+	opts, state, slug, code, ok := parseAndValidateNewArgs(args)
+	if !ok {
+		return code
+	}
+
+	req, code, ok := buildNewRequest(opts, state, slug)
+	if !ok {
+		return code
+	}
+	if code = createPlanScaffold(req); code != 0 {
+		return code
+	}
+
+	if err := updateRootIndex(req.root, req.state, req.slug, req.title, req.date); err != nil {
+		fmt.Fprintf(os.Stderr, "update root README: %v\n", err)
+		return 3
+	}
+
+	fmt.Printf("Created plan: %s/%s\n", req.state, req.slug)
+	fmt.Printf("- %s\n", req.readmePath)
+	fmt.Printf("- %s\n", req.planPath)
+	fmt.Printf("Updated index: %s\n", filepath.Join(req.root, "README.md"))
+	return 0
+}
+
+func parseAndValidateNewArgs(args []string) (newOptions, string, string, int, bool) {
+	opts := newOptions{}
 	fs := flag.NewFlagSet("new", flag.ContinueOnError)
 	fs.SetOutput(os.Stderr)
 	fs.Usage = func() {
@@ -24,68 +73,71 @@ func RunNew(args []string) int {
 		fmt.Fprintln(os.Stderr, "Options:")
 		fs.PrintDefaults()
 	}
-	root := fs.String("root", ".", "Path to pacto root")
-	title := fs.String("title", "", "Optional plan title")
-	owner := fs.String("owner", "Platform Team", "Owner for generated plan")
-	allowMinimal := fs.Bool("allow-minimal-root", false, "Allow creating plans in lightweight/non-canonical roots")
-	lang := fs.String("lang", "", "Deprecated: ignored, CLI output is English-only")
+	fs.StringVar(&opts.root, "root", ".", "Path to pacto root")
+	fs.StringVar(&opts.title, "title", "", "Optional plan title")
+	fs.StringVar(&opts.owner, "owner", "Platform Team", "Owner for generated plan")
+	fs.BoolVar(&opts.allowMinimal, "allow-minimal-root", false, "Allow creating plans in lightweight/non-canonical roots")
+	fs.StringVar(&opts.lang, "lang", "", "Deprecated: ignored, CLI output is English-only")
 
 	normalizedArgs, normErr := normalizeNewArgs(args)
 	if normErr != nil {
 		fmt.Fprintf(os.Stderr, "parse args: %v\n", normErr)
-		return 2
+		return newOptions{}, "", "", 2, false
 	}
 	if err := fs.Parse(normalizedArgs); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			fs.Usage()
-			return 0
+			return newOptions{}, "", "", 0, false
 		}
 		fmt.Fprintf(os.Stderr, "parse flags: %v\n", err)
-		return 2
+		return newOptions{}, "", "", 2, false
 	}
-	if strings.TrimSpace(*lang) != "" || hasLangArg(args) {
+	if strings.TrimSpace(opts.lang) != "" || hasLangArg(args) {
 		fmt.Fprintln(os.Stderr, "warning: --lang is deprecated and ignored; CLI output is English-only")
 	}
 
 	pos := fs.Args()
 	if len(pos) != 2 {
 		fs.Usage()
-		return 2
+		return newOptions{}, "", "", 2, false
 	}
 
 	state := strings.ToLower(strings.TrimSpace(pos[0]))
 	slug := strings.TrimSpace(pos[1])
 	if !isValidState(state) {
 		fmt.Fprintf(os.Stderr, "invalid state %q (allowed: current|to-implement|done|outdated)\n", state)
-		return 2
+		return newOptions{}, "", "", 2, false
 	}
 	if !slugRe.MatchString(slug) {
 		fmt.Fprintf(os.Stderr, "invalid slug %q (use lowercase letters, numbers, dashes)\n", slug)
-		return 2
+		return newOptions{}, "", "", 2, false
 	}
+	return opts, state, slug, 0, true
+}
 
-	absRoot, err := filepath.Abs(*root)
+func buildNewRequest(opts newOptions, state, slug string) (newRequest, int, bool) {
+	absRoot, err := filepath.Abs(opts.root)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve root: %v\n", err)
-		return 2
+		return newRequest{}, 2, false
 	}
 	if resolved, ok := resolvePlanRoot(absRoot); ok {
 		absRoot = resolved
 	}
 
-	if *allowMinimal {
+	if opts.allowMinimal {
 		if err := ensureMinimalRoot(absRoot); err != nil {
 			fmt.Fprintf(os.Stderr, "prepare minimal root: %v\n", err)
-			return 2
+			return newRequest{}, 2, false
 		}
 	} else {
 		if err := validateRoot(absRoot); err != nil {
 			fmt.Fprintf(os.Stderr, "invalid pacto root: %v\n", err)
-			return 2
+			return newRequest{}, 2, false
 		}
 	}
 
-	planTitle := strings.TrimSpace(*title)
+	planTitle := strings.TrimSpace(opts.title)
 	if planTitle == "" {
 		planTitle = slugToTitle(slug)
 	}
@@ -95,40 +147,44 @@ func RunNew(args []string) int {
 	planDir := filepath.Join(absRoot, state, slug)
 	if _, err := os.Stat(planDir); err == nil {
 		fmt.Fprintf(os.Stderr, "plan already exists: %s\n", planDir)
-		return 2
+		return newRequest{}, 2, false
 	}
-	if err := os.MkdirAll(planDir, 0o775); err != nil {
+	planFileName := fmt.Sprintf("PLAN_%s_%s.md", slugToTopic(slug), date)
+	req := newRequest{
+		root:         absRoot,
+		state:        state,
+		slug:         slug,
+		title:        planTitle,
+		owner:        opts.owner,
+		allowMinimal: opts.allowMinimal,
+		date:         date,
+		planDir:      planDir,
+		planFileName: planFileName,
+		planPath:     filepath.Join(planDir, planFileName),
+		readmePath:   filepath.Join(planDir, "README.md"),
+	}
+	return req, 0, true
+}
+
+func createPlanScaffold(req newRequest) int {
+	if err := os.MkdirAll(req.planDir, 0o775); err != nil {
 		fmt.Fprintf(os.Stderr, "create plan dir: %v\n", err)
 		return 3
 	}
 
-	planFileName := fmt.Sprintf("PLAN_%s_%s.md", slugToTopic(slug), date)
-	planPath := filepath.Join(planDir, planFileName)
-	readmePath := filepath.Join(planDir, "README.md")
-
-	planText, err := buildPlanFromTemplate(absRoot, planTitle, date, *owner, *allowMinimal)
+	planText, err := buildPlanFromTemplate(req.root, req.title, req.date, req.owner, req.allowMinimal)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "build plan from template: %v\n", err)
 		return 3
 	}
-	if err := os.WriteFile(planPath, []byte(planText), 0o664); err != nil {
+	if err := os.WriteFile(req.planPath, []byte(planText), 0o664); err != nil {
 		fmt.Fprintf(os.Stderr, "write plan file: %v\n", err)
 		return 3
 	}
-	if err := os.WriteFile(readmePath, []byte(buildPlanReadme(planTitle, state, date, planFileName)), 0o664); err != nil {
+	if err := os.WriteFile(req.readmePath, []byte(buildPlanReadme(req.title, req.state, req.date, req.planFileName)), 0o664); err != nil {
 		fmt.Fprintf(os.Stderr, "write readme: %v\n", err)
 		return 3
 	}
-
-	if err := updateRootIndex(absRoot, state, slug, planTitle, date); err != nil {
-		fmt.Fprintf(os.Stderr, "update root README: %v\n", err)
-		return 3
-	}
-
-	fmt.Printf("Created plan: %s/%s\n", state, slug)
-	fmt.Printf("- %s\n", readmePath)
-	fmt.Printf("- %s\n", planPath)
-	fmt.Printf("Updated index: %s\n", filepath.Join(absRoot, "README.md"))
 	return 0
 }
 

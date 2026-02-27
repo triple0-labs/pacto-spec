@@ -107,8 +107,8 @@ pacto init
 # Auto-detects ./.pacto/plans first, then ./plans (legacy)
 pacto status
 
-# Explicit root
-pacto status --root ./.pacto/plans --format table
+# Explicit split roots
+pacto status --plans-root ./.pacto/plans --repo-root . --format table
 
 # Create a plan scaffold
 pacto new to-implement my-plan-slug
@@ -119,8 +119,8 @@ pacto new to-implement my-plan-slug
 - `pacto status`
   - Discovers plans and computes status/progress.
   - Extracts blockers/next actions.
-  - Verifies claims (`paths`, `symbols`, `endpoints`, `test_refs`).
-  - Supports `--mode`, `--format`, `--fail-on`, `--state`, `--include-archive`.
+  - Verifies claims (`paths`, `symbols`, `endpoints`, `test_refs`) against `repo-root`.
+  - Supports `--plans-root`, `--repo-root`, `--mode`, `--format`, `--fail-on`, `--state`, `--include-archive`.
 - `pacto new`
   - Creates plan folder scaffold (`README.md` + `PLAN_*.md`).
   - Updates root index metadata.
@@ -175,5 +175,6 @@ Detailed checklist: [RELEASING.md](./RELEASING.md)
 ## Notes
 
 - CLI output is English-only (`--lang` is deprecated and ignored).
+- For `status`, `--root` is deprecated; use `--plans-root` and `--repo-root`.
 - Plan content can still be authored in any language.
 - JSON output is the stable interface for automation.

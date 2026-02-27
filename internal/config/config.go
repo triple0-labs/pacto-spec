@@ -11,6 +11,8 @@ import (
 
 type Config struct {
 	Root            string
+	PlansRoot       string
+	RepoRoot        string
 	Mode            string
 	Format          string
 	FailOn          string
@@ -26,7 +28,9 @@ type Config struct {
 
 func Defaults(root string) Config {
 	return Config{
-		Root:            root,
+		Root:            "",
+		PlansRoot:       "",
+		RepoRoot:        root,
 		Mode:            "compat",
 		Format:          "table",
 		FailOn:          "none",
@@ -49,6 +53,10 @@ func Load(configPath, root string) (Config, []string, error) {
 	if strings.TrimSpace(path) == "" {
 		path = filepath.Join(root, ".pacto-engine.yaml")
 	}
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(root, path)
+	}
+	path = filepath.Clean(path)
 	st, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -68,7 +76,12 @@ func Load(configPath, root string) (Config, []string, error) {
 	for k, v := range vals {
 		switch k {
 		case "root":
-			cfg.Root = v
+			cfg.Root = resolveRootValue(v, filepath.Dir(path))
+			warnings = append(warnings, "config key 'root' is deprecated for status; use 'plans_root' and 'repo_root'")
+		case "plans_root":
+			cfg.PlansRoot = resolveRootValue(v, filepath.Dir(path))
+		case "repo_root":
+			cfg.RepoRoot = resolveRootValue(v, filepath.Dir(path))
 		case "mode":
 			cfg.Mode = v
 		case "format":
@@ -138,13 +151,13 @@ func parseSimpleYAML(path string) (map[string]string, []string, error) {
 		}
 		indent := countIndent(line)
 		trimmed := strings.TrimSpace(line)
-		parts := strings.SplitN(trimmed, ":", 2)
-		if len(parts) != 2 {
+		key, val, ok := splitKeyVal(trimmed)
+		if !ok {
 			warnings = append(warnings, fmt.Sprintf("could not parse line: %s", raw))
 			continue
 		}
-		key := strings.TrimSpace(parts[0])
-		val := strings.TrimSpace(parts[1])
+		key = strings.TrimSpace(key)
+		val = strings.TrimSpace(val)
 
 		level := indent / 2
 		if level < len(stack) {
@@ -165,10 +178,72 @@ func parseSimpleYAML(path string) (map[string]string, []string, error) {
 }
 
 func stripComment(line string) string {
-	if idx := strings.Index(line, "#"); idx >= 0 {
-		return line[:idx]
+	inSingle := false
+	inDouble := false
+	escaped := false
+	for i, ch := range line {
+		switch ch {
+		case '\\':
+			if inDouble {
+				escaped = !escaped
+			}
+			continue
+		case '\'':
+			if !inDouble {
+				inSingle = !inSingle
+			}
+		case '"':
+			if !inSingle && !escaped {
+				inDouble = !inDouble
+			}
+		case '#':
+			if !inSingle && !inDouble {
+				return line[:i]
+			}
+		}
+		escaped = false
 	}
 	return line
+}
+
+func splitKeyVal(line string) (key string, val string, ok bool) {
+	inSingle := false
+	inDouble := false
+	escaped := false
+	for i, ch := range line {
+		switch ch {
+		case '\\':
+			if inDouble {
+				escaped = !escaped
+			}
+			continue
+		case '\'':
+			if !inDouble {
+				inSingle = !inSingle
+			}
+		case '"':
+			if !inSingle && !escaped {
+				inDouble = !inDouble
+			}
+		case ':':
+			if !inSingle && !inDouble {
+				return line[:i], line[i+1:], true
+			}
+		}
+		escaped = false
+	}
+	return "", "", false
+}
+
+func resolveRootValue(v, baseDir string) string {
+	root := strings.TrimSpace(v)
+	if root == "" {
+		return root
+	}
+	if filepath.IsAbs(root) {
+		return filepath.Clean(root)
+	}
+	return filepath.Clean(filepath.Join(baseDir, root))
 }
 
 func countIndent(s string) int {

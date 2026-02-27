@@ -14,11 +14,15 @@ import (
 
 type Verifier struct {
 	Root          string
+	PlansRoot     string
 	ExcludedFiles map[string]struct{}
 }
 
-func New(root string) Verifier {
-	return Verifier{Root: root, ExcludedFiles: collectPlanDocs(root)}
+func New(repoRoot, plansRoot string) Verifier {
+	if strings.TrimSpace(plansRoot) == "" {
+		plansRoot = repoRoot
+	}
+	return Verifier{Root: repoRoot, PlansRoot: plansRoot, ExcludedFiles: collectPlanDocs(plansRoot)}
 }
 
 func (v Verifier) VerifyClaim(plan model.PlanRef, c model.ClaimResult) model.ClaimResult {

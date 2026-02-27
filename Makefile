@@ -1,7 +1,15 @@
 .SHELLFLAGS := -eu -o pipefail -c
 SHELL := /bin/bash
 
-.PHONY: tiny-smoke
+.PHONY: test test-go feature-matrix tiny-smoke
+
+test: test-go
+
+test-go:
+	@go test ./...
+
+feature-matrix:
+	@./bin/pacto-feature-matrix.sh
 
 tiny-smoke:
 	@\

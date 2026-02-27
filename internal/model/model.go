@@ -69,6 +69,8 @@ type Summary struct {
 type StatusReport struct {
 	GeneratedAt time.Time    `json:"generated_at"`
 	Root        string       `json:"root"`
+	PlansRoot   string       `json:"plans_root,omitempty"`
+	RepoRoot    string       `json:"repo_root,omitempty"`
 	Mode        string       `json:"mode"`
 	Summary     Summary      `json:"summary"`
 	Plans       []PlanStatus `json:"plans"`

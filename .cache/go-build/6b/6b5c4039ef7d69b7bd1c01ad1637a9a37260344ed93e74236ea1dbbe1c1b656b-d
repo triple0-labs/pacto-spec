@@ -1,0 +1,5 @@
+./help.go
+./new.go
+./root.go
+./status.go
+./version.go

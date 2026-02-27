@@ -57,10 +57,11 @@ func commandCatalog() []CommandHelp {
 		{
 			Name:        "status",
 			Summary:     "Verify plan status, blockers, and evidence claims.",
-			Usage:       "pacto status [--root .] [--mode compat|strict] [--format table|json] [--fail-on policy]",
-			Description: "Scans plans from pacto states, extracts task/progress signals, verifies claims (paths/symbols/endpoints/test refs), and emits a consolidated report.",
+			Usage:       "pacto status [--plans-root <path>] [--repo-root <path>] [--mode compat|strict] [--format table|json] [--fail-on policy]",
+			Description: "Scans plans from plans root, extracts task/progress signals, verifies claims (paths/symbols/endpoints/test refs) against repo root, and emits a consolidated report.",
 			Examples: []string{
 				"pacto status",
+				"pacto status --plans-root ./.pacto/plans --repo-root .",
 				"pacto status --mode strict --format table",
 				"pacto status --format json --fail-on partial",
 			},

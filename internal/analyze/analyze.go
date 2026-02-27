@@ -15,11 +15,13 @@ type Options struct {
 }
 
 type Input struct {
-	Root     string
-	Mode     string
-	Plans    []parser.ParsedPlan
-	Claims   map[string][]model.ClaimResult
-	Warnings map[string][]string
+	Root      string
+	PlansRoot string
+	RepoRoot  string
+	Mode      string
+	Plans     []parser.ParsedPlan
+	Claims    map[string][]model.ClaimResult
+	Warnings  map[string][]string
 }
 
 func Build(in Input, opts Options) model.StatusReport {
@@ -94,7 +96,23 @@ func Build(in Input, opts Options) model.StatusReport {
 	})
 
 	summary := summarize(plans)
-	return model.StatusReport{GeneratedAt: time.Now().UTC(), Root: in.Root, Mode: in.Mode, Summary: summary, Plans: plans}
+	plansRoot := in.PlansRoot
+	if plansRoot == "" {
+		plansRoot = in.Root
+	}
+	repoRoot := in.RepoRoot
+	if repoRoot == "" {
+		repoRoot = in.Root
+	}
+	return model.StatusReport{
+		GeneratedAt: time.Now().UTC(),
+		Root:        plansRoot,
+		PlansRoot:   plansRoot,
+		RepoRoot:    repoRoot,
+		Mode:        in.Mode,
+		Summary:     summary,
+		Plans:       plans,
+	}
 }
 
 func summarize(plans []model.PlanStatus) model.Summary {

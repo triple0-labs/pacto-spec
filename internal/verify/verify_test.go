@@ -12,7 +12,7 @@ func TestVerifyPathVerifiedInRoot(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, filepath.Join(root, "src", "main.go"), "package main\n")
 
-	v := New(root)
+	v := New(root, root)
 	c := model.ClaimResult{ClaimType: model.ClaimPath, SourceText: "src/main.go"}
 	got := v.VerifyClaim(model.PlanRef{}, c)
 
@@ -30,7 +30,7 @@ func TestVerifyPathRejectsTraversalOutsideRoot(t *testing.T) {
 	mustMkdirAll(t, root)
 	writeFile(t, filepath.Join(parent, "outside.txt"), "outside\n")
 
-	v := New(root)
+	v := New(root, root)
 	c := model.ClaimResult{ClaimType: model.ClaimPath, SourceText: "../outside.txt"}
 	got := v.VerifyClaim(model.PlanRef{}, c)
 
@@ -51,7 +51,7 @@ func TestVerifyPathRejectsAbsoluteOutsideRoot(t *testing.T) {
 	outsideFile := filepath.Join(outsideDir, "outside.txt")
 	writeFile(t, outsideFile, "outside\n")
 
-	v := New(root)
+	v := New(root, root)
 	c := model.ClaimResult{ClaimType: model.ClaimPath, SourceText: outsideFile}
 	got := v.VerifyClaim(model.PlanRef{}, c)
 
@@ -68,7 +68,7 @@ func TestVerifyPathPlanDocOnlyFromFallbackDocs(t *testing.T) {
 	writeFile(t, filepath.Join(root, "current", "plan-a", "README.md"), "# plan a\n")
 	writeFile(t, filepath.Join(root, "current", "plan-a", "DESIGN.md"), "details\n")
 
-	v := New(root)
+	v := New(root, root)
 	c := model.ClaimResult{ClaimType: model.ClaimPath, SourceText: "current/plan-a/DESIGN.md"}
 	got := v.VerifyClaim(model.PlanRef{}, c)
 
@@ -117,7 +117,7 @@ func TestVerifySearchTokenPlanDocOnlyInFallbackDocs(t *testing.T) {
 	writeFile(t, filepath.Join(root, "current", "plan-a", "README.md"), "# plan a\n")
 	writeFile(t, filepath.Join(root, "current", "plan-a", "DESIGN.md"), "UNIQUE_PLAN_TOKEN\n")
 
-	v := New(root)
+	v := New(root, root)
 	c := model.ClaimResult{ClaimType: model.ClaimSymbol, SourceText: "UNIQUE_PLAN_TOKEN"}
 	got := v.VerifyClaim(model.PlanRef{}, c)
 
@@ -133,7 +133,7 @@ func TestVerifySearchTokenVerifiedInRepoFile(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, filepath.Join(root, "src", "service.go"), "const UniqueRepoToken = 1\n")
 
-	v := New(root)
+	v := New(root, root)
 	c := model.ClaimResult{ClaimType: model.ClaimSymbol, SourceText: "UniqueRepoToken"}
 	got := v.VerifyClaim(model.PlanRef{}, c)
 

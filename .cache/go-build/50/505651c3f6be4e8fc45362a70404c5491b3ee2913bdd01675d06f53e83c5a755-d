@@ -1,0 +1,8 @@
+./help.go
+./init.go
+./new.go
+./root.go
+./status.go
+./version.go
+./init_test.go
+./root_test.go

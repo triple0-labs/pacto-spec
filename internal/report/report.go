@@ -15,12 +15,16 @@ func Render(r model.StatusReport, format string) (string, error) {
 		out := struct {
 			GeneratedAt string             `json:"generated_at"`
 			Root        string             `json:"root"`
+			PlansRoot   string             `json:"plans_root,omitempty"`
+			RepoRoot    string             `json:"repo_root,omitempty"`
 			Mode        string             `json:"mode"`
 			Summary     model.Summary      `json:"summary"`
 			Plans       []model.PlanStatus `json:"plans"`
 		}{
 			GeneratedAt: r.GeneratedAt.Format(time.RFC3339),
 			Root:        r.Root,
+			PlansRoot:   r.PlansRoot,
+			RepoRoot:    r.RepoRoot,
 			Mode:        r.Mode,
 			Summary:     r.Summary,
 			Plans:       r.Plans,
@@ -39,7 +43,15 @@ func Render(r model.StatusReport, format string) (string, error) {
 
 func renderTable(r model.StatusReport) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "ROOT: %s | MODE: %s | GENERATED: %s\n", r.Root, r.Mode, r.GeneratedAt.Format(time.RFC3339))
+	plansRoot := r.PlansRoot
+	if plansRoot == "" {
+		plansRoot = r.Root
+	}
+	repoRoot := r.RepoRoot
+	if repoRoot == "" {
+		repoRoot = r.Root
+	}
+	fmt.Fprintf(&b, "PLANS_ROOT: %s | REPO_ROOT: %s | MODE: %s | GENERATED: %s\n", plansRoot, repoRoot, r.Mode, r.GeneratedAt.Format(time.RFC3339))
 	fmt.Fprintf(&b, "SUMMARY: plans=%d pending=%d blocked=%d\n", r.Summary.TotalPlans, r.Summary.TotalPendingTasks, r.Summary.TotalBlockedTasks)
 	fmt.Fprintf(&b, "%s\n", strings.Repeat("-", 130))
 	fmt.Fprintf(&b, "%-14s %-36s %-11s %-8s %-8s %-10s %-12s\n", "STATE", "PLAN", "VERIF", "PENDING", "BLOCKED", "CONF", "DERIVED")

@@ -2,6 +2,9 @@
 
 `pacto install` and `pacto update` generate managed artifacts for supported AI tools.
 
+Primary guidance surface is Pacto workspace contracts (`<plans-root>/PACTO.md`).
+Tool artifacts and optional root `AGENTS.md` content are integration hand-offs.
+
 Generated outputs:
 
 - Skills: `.../skills/pacto-<workflow>/SKILL.md`
@@ -26,7 +29,8 @@ Generated skills and command prompts include:
 - `init`
 - `install`
 - `update`
-- `exec` (planned)
+- `move`
+- `exec`
 
 ## Supported Tools and Paths
 

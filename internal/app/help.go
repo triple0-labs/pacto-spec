@@ -57,12 +57,12 @@ func commandCatalog() []CommandHelp {
 		{
 			Name:        "status",
 			Summary:     "Verify plan status, blockers, and evidence claims.",
-			Usage:       "pacto status [--plans-root <path>] [--repo-root <path>] [--mode compat|strict] [--format table|json] [--fail-on policy]",
+			Usage:       "pacto status [--root <path>] [--repo-root <path>] [--mode compat|strict] [--format table|json] [--fail-on policy]",
 			Description: "Scans plans from plans root, extracts task/progress signals, verifies claims (paths/symbols/endpoints/test refs) against repo root, and emits a consolidated report. If roots are omitted, auto-discovers from current directory and parents.",
 			Examples: []string{
 				"pacto status",
 				"pacto status # from nested directory",
-				"pacto status --plans-root ./.pacto/plans --repo-root .",
+				"pacto status --root . --repo-root .",
 				"pacto status --mode strict --format table",
 				"pacto status --format json --fail-on partial",
 			},
@@ -95,7 +95,7 @@ func commandCatalog() []CommandHelp {
 			Name:        "init",
 			Summary:     "Initialize local Pacto workspace in .pacto/plans.",
 			Usage:       "pacto init [--root .] [--with-agents] [--force]",
-			Description: "Bootstraps a project-local planning workspace and optional AGENTS.md managed guidance block.",
+			Description: "Bootstraps a project-local planning workspace. `--with-agents` adds an optional AGENTS.md hand-off block; canonical guidance remains in PACTO.md.",
 			Examples: []string{
 				"pacto init",
 				"pacto init --root . --with-agents",
@@ -126,11 +126,23 @@ func commandCatalog() []CommandHelp {
 		},
 		{
 			Name:        "exec",
-			Summary:     "Execute plan slices and register deltas (planned).",
-			Usage:       "pacto exec <path-to-plan-md>",
-			Description: "Reserved command for guided phase/task execution with evidence and delta registration.",
+			Summary:     "Execute plan tasks and append execution evidence.",
+			Usage:       "pacto exec <current|to-implement|done|outdated> <slug> [--root <path>] [--step <task-id>] [--note <text>] [--blocker <text>] [--evidence <claim>] [--dry-run]",
+			Description: "Runs guided execution updates on plan markdown artifacts only (no source-code edits). Execution is allowed only for plans in `current` state.",
 			Examples: []string{
-				"pacto exec ./current/agentes-y-herramientas/README.md",
+				"pacto exec current improve-auth-flow",
+				"pacto exec current improve-auth-flow --step T3 --note \"Validated staging behavior\" --evidence src/auth/flow.go",
+				"pacto exec current improve-auth-flow --dry-run",
+			},
+		},
+		{
+			Name:        "move",
+			Summary:     "Move a plan slice between states.",
+			Usage:       "pacto move <from-state> <slug> <to-state> [--root <path>] [--reason <text>] [--force]",
+			Description: "Performs explicit state transitions (to-implement/current/done/outdated), updates plan README status, and refreshes plans index links/counts.",
+			Examples: []string{
+				"pacto move to-implement improve-auth-flow current",
+				"pacto move current improve-auth-flow done --reason \"Tasks complete and evidence verified\"",
 			},
 		},
 		{

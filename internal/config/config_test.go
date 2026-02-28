@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestLoadResolvesDeprecatedRootRelativeToConfigDir(t *testing.T) {
+func TestLoadResolvesRootRelativeToConfigDir(t *testing.T) {
 	root := t.TempDir()
 	path := filepath.Join(root, ".pacto-engine.yaml")
 	writeFile(t, path, "root: plans\n")
@@ -16,8 +16,8 @@ func TestLoadResolvesDeprecatedRootRelativeToConfigDir(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load returned error: %v", err)
 	}
-	if len(warnings) == 0 || !containsWarning(warnings, "deprecated") {
-		t.Fatalf("expected deprecation warning, got %v", warnings)
+	if len(warnings) != 0 {
+		t.Fatalf("unexpected warnings: %v", warnings)
 	}
 	want := filepath.Join(root, "plans")
 	if cfg.Root != want {
@@ -38,8 +38,8 @@ func TestLoadResolvesSplitRootsRelativeToConfigDir(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load returned error: %v", err)
 	}
-	if len(warnings) != 0 {
-		t.Fatalf("unexpected warnings: %v", warnings)
+	if len(warnings) == 0 || !containsWarning(warnings, "plans_root") || !containsWarning(warnings, "deprecated") {
+		t.Fatalf("expected plans_root deprecation warning, got %v", warnings)
 	}
 	if cfg.PlansRoot != filepath.Clean(filepath.Join(cfgDir, "../plans")) {
 		t.Fatalf("cfg.PlansRoot=%q", cfg.PlansRoot)
@@ -58,8 +58,8 @@ func TestLoadPreservesQuotedHashInValue(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load returned error: %v", err)
 	}
-	if len(warnings) != 0 {
-		t.Fatalf("unexpected warnings: %v", warnings)
+	if len(warnings) == 0 || !containsWarning(warnings, "plans_root") || !containsWarning(warnings, "deprecated") {
+		t.Fatalf("expected plans_root deprecation warning, got %v", warnings)
 	}
 	want := filepath.Join(root, "folder#name")
 	if cfg.PlansRoot != want {

@@ -8,7 +8,8 @@ Command IDs generated/managed by `pacto install` and `pacto update`:
 - `pacto-init`
 - `pacto-install`
 - `pacto-update`
-- `pacto-exec` (planned)
+- `pacto-move`
+- `pacto-exec`
 
 ## Minimal Contract
 
@@ -35,6 +36,12 @@ Command IDs generated/managed by `pacto install` and `pacto update`:
 
 - Manages generated skill/command artifacts for supported tools.
 
+### `pacto-move`
+
+- Performs explicit state transitions between canonical state folders.
+- Updates moved plan README status and root index metadata.
+
 ### `pacto-exec`
 
-- Planned command, not implemented.
+- Executes checklist progress on an existing plan (`<state> <slug>`).
+- Appends notes, blockers, and evidence references to plan docs.

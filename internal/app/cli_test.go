@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestRunExecPlanned(t *testing.T) {
+func TestRunExecRequiresArgs(t *testing.T) {
 	stdout, stderr := captureOutput(t, func() {
 		code := Run([]string{"exec"})
 		if code != 2 {
@@ -17,8 +17,8 @@ func TestRunExecPlanned(t *testing.T) {
 	if stdout != "" {
 		t.Fatalf("unexpected stdout: %q", stdout)
 	}
-	if !strings.Contains(stderr, "planned but not implemented") {
-		t.Fatalf("expected planned message, got %q", stderr)
+	if !strings.Contains(stderr, "exec requires <state> <slug>") {
+		t.Fatalf("expected missing args message, got %q", stderr)
 	}
 }
 

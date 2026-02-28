@@ -20,8 +20,7 @@ Canonical plans root:
 
 Also supported:
 
-- `./plans`
-- any directory that already contains the 4 state folders
+- any directory that already contains the 4 state folders (advanced/manual usage)
 
 Required state folders:
 
@@ -64,10 +63,13 @@ Canonical CLI commands:
 - `pacto explore`
 - `pacto install`
 - `pacto update`
+- `pacto exec`
+- `pacto move`
 
 Notes:
 
-- `pacto exec` is planned but not implemented.
+- `pacto exec` updates plan execution artifacts only (no source-code edits).
+- `pacto move` performs explicit state transitions between plan folders.
 - CLI output is English-only; `--lang` is deprecated/ignored.
 - `status` and `new` auto-discover plans root from current directory and parents.
 

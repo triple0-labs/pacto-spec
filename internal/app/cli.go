@@ -66,8 +66,13 @@ func Run(args []string) int {
 			fmt.Print(HelpFor("exec"))
 			return 0
 		}
-		fmt.Fprint(os.Stderr, CommandPlannedMessage(cmd))
-		return 2
+		return RunExec(rest)
+	case "move":
+		if wantsHelp(rest) {
+			fmt.Print(HelpFor("move"))
+			return 0
+		}
+		return RunMove(rest)
 	default:
 		fmt.Fprint(os.Stderr, UnknownCommandMessage(cmd))
 		fmt.Print(RootHelp())

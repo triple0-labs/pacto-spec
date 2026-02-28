@@ -44,6 +44,6 @@ Verification outcomes:
 ## Workspace vs Product Docs
 
 - `docs/`: canonical product/user documentation.
-- `.pacto/plans/*` and `plans/*`: workspace artifacts and templates generated/used by CLI.
+- `.pacto/plans/*`: workspace artifacts and templates generated/used by CLI.
 
 This separation keeps user docs stable while workspace templates remain operational.

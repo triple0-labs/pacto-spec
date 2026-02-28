@@ -77,9 +77,11 @@ func Load(configPath, root string) (Config, []string, error) {
 		switch k {
 		case "root":
 			cfg.Root = resolveRootValue(v, filepath.Dir(path))
-			warnings = append(warnings, "config key 'root' is deprecated for status; use 'plans_root' and 'repo_root'")
+		case "pacto_root":
+			cfg.Root = resolveRootValue(v, filepath.Dir(path))
 		case "plans_root":
 			cfg.PlansRoot = resolveRootValue(v, filepath.Dir(path))
+			warnings = append(warnings, "config key 'plans_root' is deprecated for status; use 'root' and 'repo_root'")
 		case "repo_root":
 			cfg.RepoRoot = resolveRootValue(v, filepath.Dir(path))
 		case "mode":

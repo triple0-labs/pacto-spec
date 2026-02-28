@@ -29,7 +29,7 @@ func RunInit(args []string) int {
 	}
 
 	root := fs.String("root", ".", "Project root path")
-	withAgents := fs.Bool("with-agents", false, "Create or update AGENTS.md managed Pacto block")
+	withAgents := fs.Bool("with-agents", false, "Create or update optional AGENTS.md hand-off block (canonical guidance remains in PACTO.md)")
 	force := fs.Bool("force", false, "Overwrite init-managed files when they already exist")
 	lang := fs.String("lang", "", "Deprecated: ignored, CLI output is English-only")
 

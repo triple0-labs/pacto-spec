@@ -1,6 +1,6 @@
 {
   "name": "@triple0-labs/pacto-spec",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "npm/npx wrapper for the Pacto CLI release binaries",
   "license": "MIT",
   "repository": {

@@ -22,27 +22,12 @@ func TestResolvePlanRootPrefersDirectStateDirs(t *testing.T) {
 func TestResolvePlanRootPrefersDotPactoPlans(t *testing.T) {
 	root := t.TempDir()
 	mustCreateStateDirs(t, filepath.Join(root, ".pacto", "plans"))
-	mustCreateStateDirs(t, filepath.Join(root, "plans"))
 
 	got, ok := resolvePlanRoot(root)
 	if !ok {
 		t.Fatalf("expected root to resolve")
 	}
 	want := filepath.Join(root, ".pacto", "plans")
-	if got != want {
-		t.Fatalf("expected %q, got %q", want, got)
-	}
-}
-
-func TestResolvePlanRootFallsBackToPlans(t *testing.T) {
-	root := t.TempDir()
-	mustCreateStateDirs(t, filepath.Join(root, "plans"))
-
-	got, ok := resolvePlanRoot(root)
-	if !ok {
-		t.Fatalf("expected root to resolve")
-	}
-	want := filepath.Join(root, "plans")
 	if got != want {
 		t.Fatalf("expected %q, got %q", want, got)
 	}

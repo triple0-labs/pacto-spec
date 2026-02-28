@@ -29,12 +29,17 @@ Pacto keeps AI-assisted work anchored in executable specs:
 ## Core Workflow
 
 ```text
-pacto init  ->  pacto new  ->  pacto status
+pacto init  ->  pacto status  ->  pacto new  ->  pacto exec  ->  pacto move  ->  pacto status
 ```
 
 - `pacto init`: bootstrap `.pacto/plans` workspace.
+- `pacto status`: inspect current plan/evidence state before acting.
 - `pacto new`: create a plan slice from template and update the index.
-- `pacto status`: parse plans, verify claims, and report readiness.
+- `pacto exec`: update execution progress/evidence in plan docs.
+- `pacto move`: perform explicit state transitions (`to-implement -> current -> done`).
+
+Primary source of truth is `<plans-root>/PACTO.md` and plan artifacts.
+`AGENTS.md` (when generated via `pacto init --with-agents`) is only a hand-off layer for compatible assistants.
 
 Optional ideation flow:
 
@@ -87,5 +92,5 @@ pacto status --format json --fail-on partial
 ## Notes
 
 - CLI output is English-only (`--lang` is deprecated and ignored).
-- `pacto exec` is planned and not implemented yet.
-- `plans/` and `.pacto/plans/` files are workspace artifacts/templates; canonical product docs are in `docs/`.
+- `pacto exec` updates execution artifacts in plan docs (no source-code edits).
+- `.pacto/plans/` files are workspace artifacts/templates; canonical product docs are in `docs/`.

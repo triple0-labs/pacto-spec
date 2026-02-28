@@ -20,7 +20,7 @@ Use the mock project for testing Pacto commands:
 Example:
 
 ```bash
-pacto status --plans-root ./samples/mock-pacto-repo --repo-root .
+pacto status --root ./samples/mock-pacto-repo --repo-root .
 pacto new to-implement demo --root ./samples/mock-pacto-repo
 ```
 

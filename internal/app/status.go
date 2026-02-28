@@ -62,7 +62,7 @@ func RunStatus(args []string) int {
 	fmt.Println(out)
 
 	if values.verbose {
-		fmt.Fprintf(os.Stderr, "config: mode=%s format=%s fail-on=%s state=%s include-archive=%t plans-root=%s repo-root=%s\n", cfg.Mode, cfg.Format, cfg.FailOn, cfg.State, cfg.IncludeArchive, cfg.PlansRoot, cfg.RepoRoot)
+		fmt.Fprintf(os.Stderr, "config: mode=%s format=%s fail-on=%s state=%s include-archive=%t root=%s plans-root=%s repo-root=%s\n", cfg.Mode, cfg.Format, cfg.FailOn, cfg.State, cfg.IncludeArchive, cfg.Root, cfg.PlansRoot, cfg.RepoRoot)
 	}
 	return exitcode.Evaluate(cfg.FailOn, rep)
 }
@@ -79,8 +79,8 @@ func parseStatusFlags(args []string) (statusFlagValues, map[string]bool, int, bo
 		fs.PrintDefaults()
 	}
 
-	fs.StringVar(&values.root, "root", "", "Deprecated: project root (use --plans-root and --repo-root)")
-	fs.StringVar(&values.plansRoot, "plans-root", "", "Path to plans root (contains current/to-implement/done/outdated)")
+	fs.StringVar(&values.root, "root", "", "Project root (auto-resolves .pacto/plans)")
+	fs.StringVar(&values.plansRoot, "plans-root", "", "Deprecated: path to plans root (use --root)")
 	fs.StringVar(&values.repoRoot, "repo-root", "", "Path to repository root for evidence verification")
 	fs.StringVar(&values.mode, "mode", "compat", "Parsing mode: compat|strict")
 	fs.StringVar(&values.lang, "lang", "", "Deprecated: ignored, CLI output is English-only")
@@ -126,11 +126,11 @@ func buildStatusConfig(values statusFlagValues, provided map[string]bool) (confi
 	cfg = normalizeConfig(cfg)
 
 	runtimeWarnings := make([]string, 0, 2)
-	if provided["root"] {
-		runtimeWarnings = append(runtimeWarnings, "flag --root is deprecated for status; use --plans-root and --repo-root")
+	if provided["plans-root"] {
+		runtimeWarnings = append(runtimeWarnings, "flag --plans-root is deprecated for status; use --root")
 	}
-	if provided["root"] && (provided["plans-root"] || provided["repo-root"]) {
-		runtimeWarnings = append(runtimeWarnings, "flag --root is ignored when --plans-root or --repo-root is provided")
+	if provided["plans-root"] && provided["root"] {
+		runtimeWarnings = append(runtimeWarnings, "flag --plans-root takes precedence over --root")
 	}
 
 	plansRoot, repoRoot, err := resolveStatusRoots(cfg, provided, cwdAbs)
@@ -150,9 +150,9 @@ func buildStatusConfig(values statusFlagValues, provided map[string]bool) (confi
 
 func resolveStatusRoots(cfg config.Config, provided map[string]bool, cwdAbs string) (string, string, error) {
 	projectRoot := ""
-	if provided["root"] && !provided["plans-root"] && !provided["repo-root"] {
+	if provided["root"] && !provided["plans-root"] {
 		projectRoot = cfg.Root
-	} else if strings.TrimSpace(cfg.Root) != "" && !provided["plans-root"] && !provided["repo-root"] {
+	} else if strings.TrimSpace(cfg.Root) != "" && !provided["plans-root"] {
 		projectRoot = cfg.Root
 	}
 	if projectRoot == "" {
@@ -163,18 +163,18 @@ func resolveStatusRoots(cfg config.Config, provided map[string]bool, cwdAbs stri
 	plansRoot := strings.TrimSpace(cfg.PlansRoot)
 	detectedProjectRoot := ""
 	if plansRoot == "" {
-		if provided["root"] || (strings.TrimSpace(cfg.Root) != "" && !provided["plans-root"] && !provided["repo-root"]) {
+		if provided["root"] || strings.TrimSpace(cfg.Root) != "" {
 			if resolved, ok := resolvePlanRoot(projectRoot); ok {
 				plansRoot = resolved
 				detectedProjectRoot = projectRoot
 			} else {
-				return "", "", fmt.Errorf("could not resolve plans root from %s (expected .pacto/plans or plans)", projectRoot)
+				return "", "", fmt.Errorf("could not resolve plans root from %s (expected .pacto/plans)", projectRoot)
 			}
 		} else if resolved, foundProjectRoot, ok := resolvePlanRootFrom(projectRoot); ok {
 			plansRoot = resolved
 			detectedProjectRoot = foundProjectRoot
 		} else {
-			return "", "", fmt.Errorf("could not resolve plans root from %s or parents (expected .pacto/plans or plans)", projectRoot)
+			return "", "", fmt.Errorf("could not resolve plans root from %s or parents (expected .pacto/plans)", projectRoot)
 		}
 	}
 	plansRoot = cleanAbs(plansRoot)

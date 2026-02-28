@@ -10,14 +10,15 @@ This file defines workflow command IDs used by Pacto-managed assistant integrati
 - `pacto-init`
 - `pacto-install`
 - `pacto-update`
-- `pacto-exec` (planned)
+- `pacto-move`
+- `pacto-exec`
 
 ## Command Contract
 
 ### `pacto-status`
 
 - Goal: report consolidated plan state and verification outcomes.
-- Uses detected or explicit plans root (`./.pacto/plans`, `./plans`, or direct state-folder root).
+- Uses detected or explicit plans root (`./.pacto/plans` or direct state-folder root).
 - Verifies claims against `repo-root`.
 - Outputs `table` or `json` with `verified|partial|unverified` classification.
 
@@ -50,12 +51,19 @@ This file defines workflow command IDs used by Pacto-managed assistant integrati
 - Goal: refresh managed blocks in previously generated artifacts.
 - Preserves unmanaged files unless `--force` is used.
 
+### `pacto-move`
+
+- Goal: perform explicit state transitions for a plan slice.
+- Usage: `pacto move <from-state> <slug> <to-state>`.
+- Updates slice README status and root index counts/links.
+
 ### `pacto-exec`
 
-- Status: planned, not implemented.
-- Expected current behavior: communicate limitation and route user to `pacto status`, `pacto new`, or `pacto explore`.
+- Goal: execute plan checklist progress without source-code edits.
+- Usage: `pacto exec current <slug> [--step ...] [--note ...] [--blocker ...] [--evidence ...]`.
+- Marks tasks complete and appends execution evidence in plan docs.
 
 ## Conventions
 
 - Product docs are canonical in `docs/`.
-- Workspace files under `.pacto/plans` (or `plans/`) are operational artifacts/templates.
+- Workspace files under `.pacto/plans` are operational artifacts/templates.

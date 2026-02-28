@@ -33,7 +33,7 @@ func TestRunStatusSplitRootsVerifiesRepoArtifact(t *testing.T) {
 	}
 
 	stdout, _ := captureOutput(t, func() {
-		code := RunStatus([]string{"--plans-root", plansRoot, "--repo-root", workspace, "--format", "json"})
+		code := RunStatus([]string{"--root", workspace, "--repo-root", workspace, "--format", "json"})
 		if code != 0 {
 			t.Fatalf("RunStatus returned %d, want 0", code)
 		}
@@ -46,7 +46,7 @@ func TestRunStatusSplitRootsVerifiesRepoArtifact(t *testing.T) {
 	}
 }
 
-func TestRunStatusDeprecatedRootWarns(t *testing.T) {
+func TestRunStatusDeprecatedPlansRootWarns(t *testing.T) {
 	workspace := t.TempDir()
 	plansRoot := filepath.Join(workspace, ".pacto", "plans")
 	planDir := filepath.Join(plansRoot, "current", "sample")
@@ -66,7 +66,7 @@ func TestRunStatusDeprecatedRootWarns(t *testing.T) {
 	}
 
 	_, stderr := captureOutput(t, func() {
-		code := RunStatus([]string{"--root", workspace, "--format", "json"})
+		code := RunStatus([]string{"--plans-root", plansRoot, "--repo-root", workspace, "--format", "json"})
 		if code != 0 {
 			t.Fatalf("RunStatus returned %d, want 0", code)
 		}

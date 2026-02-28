@@ -122,7 +122,7 @@ func TestRenderTemplatesIncludeContractSections(t *testing.T) {
 	}
 }
 
-func TestGenerateForToolWritesContractAndExecPlanned(t *testing.T) {
+func TestGenerateForToolWritesContractAndExecCommand(t *testing.T) {
 	root := t.TempDir()
 	results := GenerateForTool(root, "opencode", false)
 	if len(results) == 0 {
@@ -156,10 +156,10 @@ func TestGenerateForToolWritesContractAndExecPlanned(t *testing.T) {
 		t.Fatalf("read exec command: %v", err)
 	}
 	execContent := string(b)
-	if !strings.Contains(execContent, "Planned (Not Implemented)") {
-		t.Fatalf("exec command should be marked planned, got: %q", execContent)
+	if !strings.Contains(execContent, "## Implementation Status") {
+		t.Fatalf("exec command should include implementation status section, got: %q", execContent)
 	}
-	if !strings.Contains(execContent, "Use `pacto status` for verification") {
-		t.Fatalf("exec command should include fallback guidance, got: %q", execContent)
+	if !strings.Contains(execContent, "Status: **Implemented**") {
+		t.Fatalf("exec command should be marked implemented, got: %q", execContent)
 	}
 }

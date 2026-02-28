@@ -33,6 +33,16 @@ Generated structure:
 └── SLASH_COMMANDS.md
 ```
 
+Canonical workflow contract is:
+
+- `.pacto/plans/PACTO.md`
+
+Optional hand-off for AGENTS-compatible tools:
+
+```bash
+pacto init --with-agents
+```
+
 ## 2. Create a Plan Slice
 
 ```bash
@@ -58,7 +68,26 @@ For CI automation:
 pacto status --format json --fail-on partial
 ```
 
-## 4. Explore Ideas (Optional)
+## 4. Execute Planned Work
+
+Use `pacto exec` to advance execution tasks and append execution evidence in plan docs.
+(`exec` only runs for plans in `current` state.)
+
+```bash
+pacto exec current improve-auth-flow --note "Started implementation"
+pacto exec current improve-auth-flow --step T1 --evidence src/auth/flow.go
+```
+
+## 5. Move Plan State Explicitly
+
+Use `pacto move` for explicit workflow transitions.
+
+```bash
+pacto move to-implement improve-auth-flow current
+pacto move current improve-auth-flow done --reason "All tasks complete and verified"
+```
+
+## 6. Explore Ideas (Optional)
 
 Use `pacto explore` for ideation before creating formal plan slices.
 
@@ -76,11 +105,10 @@ Resolution pattern:
 
 - direct state-folder root (`current`, `to-implement`, `done`, `outdated`)
 - `./.pacto/plans`
-- `./plans`
 
 Use explicit roots when needed:
 
 ```bash
-pacto status --plans-root ./.pacto/plans --repo-root .
-pacto new to-implement my-plan --root ./.pacto/plans
+pacto status --root . --repo-root .
+pacto new to-implement my-plan --root .
 ```

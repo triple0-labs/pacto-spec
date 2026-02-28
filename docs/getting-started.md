@@ -22,15 +22,17 @@ Default output location:
 Generated structure:
 
 ```text
+.pacto/
+├── config.yaml
 .pacto/plans/
-├── current/
-├── to-implement/
-├── done/
-├── outdated/
-├── README.md
-├── PACTO.md
-├── PLANTILLA_PACTO_PLAN.md
-└── SLASH_COMMANDS.md
+  ├── current/
+  ├── to-implement/
+  ├── done/
+  ├── outdated/
+  ├── README.md
+  ├── PACTO.md
+  ├── PLANTILLA_PACTO_PLAN.md
+  └── SLASH_COMMANDS.md
 ```
 
 Canonical workflow contract is:
@@ -41,6 +43,12 @@ Optional hand-off for AGENTS-compatible tools:
 
 ```bash
 pacto init --with-agents
+```
+
+Non-interactive/agent-friendly init:
+
+```bash
+pacto init --no-interactive --tools codex,cursor --yes
 ```
 
 ## 2. Create a Plan Slice
@@ -59,7 +67,7 @@ Also updates `<plans-root>/README.md` counts and links.
 ## 3. Verify State and Evidence
 
 ```bash
-pacto status --format table
+pacto status
 ```
 
 For CI automation:
@@ -75,7 +83,7 @@ Use `pacto exec` to advance execution tasks and append execution evidence in pla
 
 ```bash
 pacto exec current improve-auth-flow --note "Started implementation"
-pacto exec current improve-auth-flow --step T1 --evidence src/auth/flow.go
+pacto exec current improve-auth-flow --step 1.1 --evidence src/auth/flow.go
 ```
 
 ## 5. Move Plan State Explicitly

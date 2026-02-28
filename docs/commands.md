@@ -8,6 +8,12 @@ Verify plan status, blockers, and evidence claims.
 pacto status [--root <path>] [--repo-root <path>] [--mode compat|strict] [--format table|json]
 ```
 
+Behavior:
+
+- TTY: launches interactive status UI.
+- Non-TTY: renders `table|json` output.
+- In TTY, `--format` is rejected; use non-TTY (pipe/redirection) for structured output.
+
 Key options:
 
 - `--root`, `--repo-root`
@@ -21,6 +27,7 @@ Examples:
 
 ```bash
 pacto status
+pacto status | cat
 pacto status --format json --fail-on partial
 pacto status --root . --repo-root .
 ```
@@ -50,13 +57,15 @@ pacto new current api-contract-refresh --title "API Contract Refresh" --owner "B
 Initialize local workspace in `.pacto/plans`.
 
 ```bash
-pacto init [--root .] [--with-agents] [--force]
+pacto init [--root .] [--with-agents] [--force] [--tools <all|none|csv>] [--no-interactive] [--yes] [--no-install] [--dry-run]
 ```
 
 Notes:
 
 - Canonical workflow contract is `<plans-root>/PACTO.md`.
 - `--with-agents` only adds/updates an optional managed hand-off block in root `AGENTS.md`.
+- In agent-driven `pacto-init` workflows, run a short interview (problem, technologies, install targets) and create/update a basic project `prd.md`.
+- `pacto init` writes `.pacto/config.yaml` with detected/selected technologies, tools, and problem statement.
 
 ## `pacto explore`
 
@@ -89,8 +98,10 @@ pacto update [--tools <all|none|csv>] [--force]
 Execute plan tasks and append execution evidence in plan docs.
 
 ```bash
-pacto exec <current|to-implement|done|outdated> <slug> [--root <path>] [--step <task-id>] [--note <text>] [--blocker <text>] [--evidence <claim>] [--dry-run]
+pacto exec <current|to-implement|done|outdated> <slug> [--root <path>] [--step <phase.task>] [--note <text>] [--blocker <text>] [--evidence <claim>] [--dry-run]
 ```
+
+`--step` uses phase task refs (`<phase>.<task>`), for example `1.2`.
 
 ## `pacto move`
 

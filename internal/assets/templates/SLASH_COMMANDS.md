@@ -31,6 +31,7 @@ Command IDs generated/managed by `pacto install` and `pacto update`:
 ### `pacto-init`
 
 - Bootstraps `.pacto/plans` and template docs.
+- Agent should run a short intent interview with the user and draft/update a basic project `prd.md`.
 
 ### `pacto-install` / `pacto-update`
 
@@ -44,4 +45,5 @@ Command IDs generated/managed by `pacto install` and `pacto update`:
 ### `pacto-exec`
 
 - Executes checklist progress on an existing plan (`<state> <slug>`).
+- Step ref format: `<phase>.<task>` (for example, `1.2`).
 - Appends notes, blockers, and evidence references to plan docs.

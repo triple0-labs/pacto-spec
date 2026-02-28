@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"pacto/internal/ui"
 )
 
 type moveOptions struct {
@@ -105,9 +107,9 @@ func RunMove(args []string) int {
 		return 3
 	}
 
-	fmt.Printf("Moved plan: %s/%s -> %s/%s\n", fromState, slug, toState, slug)
-	fmt.Printf("~ %s\n", readmePath)
-	fmt.Printf("~ %s\n", rootReadme)
+	fmt.Println(ui.ActionHeader("Moved Plan", fmt.Sprintf("%s/%s -> %s/%s", fromState, slug, toState, slug)))
+	fmt.Println(ui.PathLine("updated", readmePath))
+	fmt.Println(ui.PathLine("updated", rootReadme))
 	return 0
 }
 

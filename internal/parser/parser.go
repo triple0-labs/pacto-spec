@@ -30,7 +30,9 @@ var (
 	reDeclaredStatus = regexp.MustCompile(`(?i)^[-*]?\s*(?:\*\*)?(estado|status)(?::)?(?:\*\*)?:\s*(.+)$`)
 	reCheckbox       = regexp.MustCompile(`^\s*[-*]\s*\[( |x|X)\]\s*(.+)$`)
 	reTaskNumbered   = regexp.MustCompile(`^\s*\d+\.\s+(.+)$`)
-	rePhaseRow       = regexp.MustCompile(`(?i)^\|\s*(fase\s*[^|]+)\|([^|]+)\|([^|]+)\|\s*([0-9]{1,3})%\s*\|`)
+	rePhaseRow       = regexp.MustCompile(`(?i)^\|\s*(phase\s*[^|]+)\|([^|]+)\|([^|]+)\|\s*([0-9]{1,3})%\s*\|`)
+	rePhaseHeading   = regexp.MustCompile(`(?i)^##\s*phase\s+([1-9][0-9]*)(?::\s*(.*))?$`)
+	reStepRef        = regexp.MustCompile(`^([1-9][0-9]*)\.([1-9][0-9]*)\b`)
 	reAnyPercent     = regexp.MustCompile(`(?i)(progreso total|progress)[:\s*]*([0-9]{1,3})%`)
 	reDateTime       = regexp.MustCompile(`(20[0-9]{2}-[0-9]{2}-[0-9]{2})(?:[ T]([0-9]{2}:[0-9]{2}))?`)
 )
@@ -44,10 +46,14 @@ func ParsePlan(ref model.PlanRef, mode string) (ParsedPlan, error) {
 	p.RawText = text
 	lines := strings.Split(text, "\n")
 
+	currentPhase := 0
 	for _, line := range lines {
 		t := strings.TrimSpace(line)
 		if t == "" {
 			continue
+		}
+		if m := rePhaseHeading.FindStringSubmatch(t); len(m) >= 2 {
+			currentPhase, _ = strconv.Atoi(strings.TrimSpace(m[1]))
 		}
 
 		if m := reDeclaredStatus.FindStringSubmatch(t); len(m) == 3 && p.DeclaredStatus == "" {
@@ -70,7 +76,15 @@ func ParsePlan(ref model.PlanRef, mode string) (ParsedPlan, error) {
 		if m := reCheckbox.FindStringSubmatch(line); len(m) == 3 {
 			done := strings.EqualFold(strings.TrimSpace(m[1]), "x")
 			text := strings.TrimSpace(m[2])
-			p.Tasks = append(p.Tasks, model.Task{Text: text, Completed: done, LikelyBlk: looksBlocked(text)})
+			task := model.Task{Text: text, Completed: done, LikelyBlk: looksBlocked(text)}
+			if currentPhase > 0 {
+				if phase, number, ok := extractStepRef(text); ok && phase == currentPhase {
+					task.StepRef = fmt.Sprintf("%d.%d", phase, number)
+					task.Phase = phase
+					task.Number = number
+				}
+			}
+			p.Tasks = append(p.Tasks, task)
 		}
 
 		lt := strings.ToLower(t)
@@ -107,6 +121,22 @@ func ParsePlan(ref model.PlanRef, mode string) (ParsedPlan, error) {
 		p.ParseWarnings = append(p.ParseWarnings, "missing structured progress source")
 	}
 	return p, nil
+}
+
+func extractStepRef(text string) (int, int, bool) {
+	m := reStepRef.FindStringSubmatch(strings.TrimSpace(text))
+	if len(m) != 3 {
+		return 0, 0, false
+	}
+	phase, err := strconv.Atoi(strings.TrimSpace(m[1]))
+	if err != nil || phase < 1 {
+		return 0, 0, false
+	}
+	number, err := strconv.Atoi(strings.TrimSpace(m[2]))
+	if err != nil || number < 1 {
+		return 0, 0, false
+	}
+	return phase, number, true
 }
 
 func readPlanText(ref model.PlanRef) (string, error) {

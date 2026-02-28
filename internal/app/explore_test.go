@@ -72,7 +72,7 @@ func TestRunExploreListAndShow(t *testing.T) {
 			t.Fatalf("RunExplore show returned %d", code)
 		}
 	})
-	if !strings.Contains(stdout, "Idea: idea-a") {
+	if !strings.Contains(stdout, "Idea idea-a") {
 		t.Fatalf("expected show output, got %q", stdout)
 	}
 }

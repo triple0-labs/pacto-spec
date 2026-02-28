@@ -11,6 +11,10 @@ func Run(args []string) int {
 	if langUsed {
 		fmt.Fprintln(os.Stderr, "warning: --lang is deprecated and ignored; CLI output is English-only")
 	}
+	args, noColorUsed := stripNoColorArg(args)
+	if noColorUsed {
+		_ = os.Setenv("NO_COLOR", "1")
+	}
 	if len(args) == 0 {
 		fmt.Print(RootHelp())
 		return 0
@@ -119,6 +123,19 @@ func stripDeprecatedLangArg(args []string) ([]string, bool) {
 			if i+1 < len(args) {
 				i++
 			}
+			continue
+		}
+		out = append(out, a)
+	}
+	return out, used
+}
+
+func stripNoColorArg(args []string) ([]string, bool) {
+	used := false
+	out := make([]string, 0, len(args))
+	for _, a := range args {
+		if a == "--no-color" {
+			used = true
 			continue
 		}
 		out = append(out, a)

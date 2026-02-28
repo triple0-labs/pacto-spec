@@ -28,10 +28,10 @@
 
 ## Progreso general
 
-| Fase | Descripción | Estado | Progreso | Duración est. | Duración real |
+| Phase | Description | State | Progress | Est. duration | Actual duration |
 |------|-------------|--------|----------|---------------|---------------|
-| Fase 1 | <desc> | ⬜ Pendiente | 0% | <x> | — |
-| Fase 2 | <desc> | ⬜ Pendiente | 0% | <x> | — |
+| Phase 1 | <desc> | ⬜ Pending | 0% | <x> | — |
+| Phase 2 | <desc> | ⬜ Pending | 0% | <x> | — |
 
 **Progreso total:** <x>%  
 **Tiempo restante estimado:** <x>
@@ -53,17 +53,17 @@
    **Rationale:** <texto>  
    **Fecha:** <YYYY-MM-DD>
 
-## Plan de implementación por fases
+## Implementation Plan by Phases
 
-## Fase 1: <nombre>
+## Phase 1: <optional title>
 
 **Objetivo:** <texto>  
 **Estado actual:** <texto>
 
-**Tareas**
+**Tasks**
 
-- [ ] T1. <tarea>
-- [ ] T2. <tarea>
+- [ ] 1.1 <task>
+- [ ] 1.2 <task>
 
 **Entregables**
 
@@ -75,15 +75,15 @@
 1. <criterio>
 2. <criterio>
 
-## Fase 2: <nombre>
+## Phase 2: <optional title>
 
 **Objetivo:** <texto>  
 **Estado actual:** <texto>
 
-**Tareas**
+**Tasks**
 
-- [ ] T1. <tarea>
-- [ ] T2. <tarea>
+- [ ] 2.1 <task>
+- [ ] 2.2 <task>
 
 **Entregables**
 
@@ -113,7 +113,7 @@
 flowchart TD
     A[Inicio fase] --> B[Tarea]
     B --> C{Checklist OK}
-    C -- Si --> D[Fase completada]
+    C -- Yes --> D[Phase completed]
     C -- No --> E[Ajustes]
     E --> B
 ```
@@ -124,7 +124,7 @@ flowchart TD
 
 - **Fecha:** <YYYY-MM-DD HH:MM>
 - **Autor:** <owner>
-- **Scope:** <Fase/área>
+- **Scope:** <Phase/area>
 - **Tipo:** <feat|fix|refactor|docs|test>
 - **Estado:** <applied|partial|reverted>
 - **Cambios:**

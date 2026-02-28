@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"pacto/internal/integrations"
+	"pacto/internal/ui"
 )
 
 func RunInstall(args []string) int {
@@ -74,11 +75,11 @@ func runInstallLike(cmd string, args []string) int {
 	}
 
 	if len(tools) == 0 {
-		fmt.Println("No tools selected; nothing to do.")
+		fmt.Println(ui.Dim("No tools selected; nothing to do."))
 		return 0
 	}
 
-	fmt.Printf("pacto %s: %s\n", cmd, strings.Join(tools, ", "))
+	fmt.Println(ui.ActionHeader("Running "+cmd, strings.Join(tools, ", ")))
 	created := 0
 	updated := 0
 	skipped := 0
@@ -95,16 +96,16 @@ func runInstallLike(cmd string, args []string) int {
 			switch r.Outcome {
 			case integrations.OutcomeCreated:
 				created++
-				fmt.Printf("+ %s\n", r.Path)
+				fmt.Println(ui.PathLine("created", r.Path))
 			case integrations.OutcomeUpdated:
 				updated++
-				fmt.Printf("~ %s\n", r.Path)
+				fmt.Println(ui.PathLine("updated", r.Path))
 			case integrations.OutcomeSkipped:
 				skipped++
 				if r.Reason == "unmanaged_exists" {
 					fmt.Fprintf(os.Stderr, "warning: skipped unmanaged file (use --force): %s\n", r.Path)
 				} else {
-					fmt.Printf("= %s\n", r.Path)
+					fmt.Println(ui.PathLine("skipped", r.Path))
 				}
 			}
 		}

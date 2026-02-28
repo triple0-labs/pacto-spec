@@ -28,25 +28,25 @@
 
 ## Progreso general
 
-| Fase | Descripción | Estado | Progreso | Duración est. | Duración real |
+| Phase | Description | State | Progress | Est. duration | Actual duration |
 |------|-------------|--------|----------|---------------|---------------|
-| Fase 1 | <desc> | ⬜ Pendiente | 0% | <x> | — |
-| Fase 2 | <desc> | ⬜ Pendiente | 0% | <x> | — |
+| Phase 1 | <desc> | ⬜ Pending | 0% | <x> | — |
+| Phase 2 | <desc> | ⬜ Pending | 0% | <x> | — |
 
 **Progreso total:** <x>%  
 **Tiempo restante estimado:** <x>
 
-## Plan de implementación por fases
+## Implementation Plan by Phases
 
-## Fase 1: <nombre>
+## Phase 1: <optional title>
 
 **Objetivo:** <texto>  
 **Estado actual:** <texto>
 
-**Tareas**
+**Tasks**
 
-- [ ] T1. <tarea>
-- [ ] T2. <tarea>
+- [ ] 1.1 <task>
+- [ ] 1.2 <task>
 
 ## Plan de pruebas
 

@@ -10,6 +10,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"pacto/internal/ui"
 )
 
 var (
@@ -169,8 +171,8 @@ func runExploreCreateOrUpdate(root, slug, title, note string) int {
 			fmt.Fprintf(os.Stderr, "write idea readme: %v\n", err)
 			return 3
 		}
-		fmt.Printf("Created idea: %s\n", slug)
-		fmt.Printf("- %s\n", readmePath)
+		fmt.Println(ui.ActionHeader("Created Idea", slug))
+		fmt.Println(ui.PathLine("created", readmePath))
 		return 0
 	} else if err != nil {
 		fmt.Fprintf(os.Stderr, "stat idea readme: %v\n", err)
@@ -178,8 +180,8 @@ func runExploreCreateOrUpdate(root, slug, title, note string) int {
 	}
 
 	if strings.TrimSpace(note) == "" {
-		fmt.Printf("Idea already exists: %s\n", slug)
-		fmt.Printf("- %s\n", readmePath)
+		fmt.Println(ui.ActionHeader("Idea Exists", slug))
+		fmt.Println(ui.PathLine("skipped", readmePath))
 		return 0
 	}
 
@@ -194,8 +196,8 @@ func runExploreCreateOrUpdate(root, slug, title, note string) int {
 		fmt.Fprintf(os.Stderr, "update idea readme: %v\n", err)
 		return 3
 	}
-	fmt.Printf("Updated idea: %s\n", slug)
-	fmt.Printf("- %s\n", readmePath)
+	fmt.Println(ui.ActionHeader("Updated Idea", slug))
+	fmt.Println(ui.PathLine("updated", readmePath))
 	return 0
 }
 
@@ -204,7 +206,7 @@ func runExploreList(root string) int {
 	ents, err := os.ReadDir(ideasRoot)
 	if err != nil {
 		if os.IsNotExist(err) {
-			fmt.Println("No ideas found.")
+			fmt.Println(ui.Dim("No ideas found."))
 			return 0
 		}
 		fmt.Fprintf(os.Stderr, "read ideas: %v\n", err)
@@ -237,15 +239,15 @@ func runExploreList(root string) int {
 	}
 
 	if len(rows) == 0 {
-		fmt.Println("No ideas found.")
+		fmt.Println(ui.Dim("No ideas found."))
 		return 0
 	}
 
 	sort.Slice(rows, func(i, j int) bool { return rows[i].slug < rows[j].slug })
-	fmt.Println("Ideas")
+	fmt.Println(ui.Title("Ideas"))
 	fmt.Println("")
 	for _, r := range rows {
-		fmt.Printf("- %s\n", r.slug)
+		fmt.Printf("%s\n", ui.Bullet(r.slug))
 		fmt.Printf("  title: %s\n", r.title)
 		fmt.Printf("  created: %s\n", r.createdAt)
 		fmt.Printf("  updated: %s\n", r.updatedAt)
@@ -270,7 +272,7 @@ func runExploreShow(root, slug string) int {
 		return 3
 	}
 	content := string(b)
-	fmt.Printf("Idea: %s\n", slug)
+	fmt.Printf("%s %s\n", ui.Title("Idea"), slug)
 	fmt.Printf("Path: %s\n", readmePath)
 	fmt.Printf("Title: %s\n", extractTitle(content))
 	fmt.Printf("Created At: %s\n", extractStamp(reCreatedAt, content))

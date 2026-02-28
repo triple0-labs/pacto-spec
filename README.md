@@ -24,7 +24,7 @@ Pacto keeps AI-assisted work anchored in executable specs:
 - Define plan slices before implementation.
 - Track progress through explicit states (`to-implement`, `current`, `done`, `outdated`).
 - Verify plan claims against repository evidence.
-- Emit table or JSON outputs for humans and CI automation.
+- Render interactive status in TTY and emit table/JSON in non-TTY for automation.
 
 ## Core Workflow
 
@@ -70,11 +70,14 @@ pacto version
 # initialize project workspace
 pacto init
 
+# non-interactive setup with explicit profile
+pacto init --no-interactive --tools codex,cursor --yes
+
 # create a plan
 pacto new to-implement improve-auth-flow
 
 # verify status and evidence
-pacto status --format table
+pacto status
 
 # CI-friendly output
 pacto status --format json --fail-on partial

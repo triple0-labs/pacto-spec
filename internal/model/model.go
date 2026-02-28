@@ -17,6 +17,9 @@ type Phase struct {
 }
 
 type Task struct {
+	StepRef   string
+	Phase     int
+	Number    int
 	Text      string
 	Completed bool
 	LikelyBlk bool

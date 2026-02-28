@@ -18,6 +18,8 @@ func RootHelp() string {
 	b.WriteString("Pacto CLI\n\n")
 	b.WriteString("Usage:\n")
 	b.WriteString("  pacto <command> [options]\n\n")
+	b.WriteString("Global options:\n")
+	b.WriteString("  --no-color  Disable colored terminal output\n\n")
 	b.WriteString("Commands:\n")
 	for _, c := range commandCatalog() {
 		b.WriteString("  " + padRight(c.Name, 8) + c.Summary + "\n")
@@ -58,7 +60,7 @@ func commandCatalog() []CommandHelp {
 			Name:        "status",
 			Summary:     "Verify plan status, blockers, and evidence claims.",
 			Usage:       "pacto status [--root <path>] [--repo-root <path>] [--mode compat|strict] [--format table|json] [--fail-on policy]",
-			Description: "Scans plans from plans root, extracts task/progress signals, verifies claims (paths/symbols/endpoints/test refs) against repo root, and emits a consolidated report. If roots are omitted, auto-discovers from current directory and parents.",
+			Description: "Scans plans from plans root, verifies claims against repo root, and renders interactive TUI in terminals. In non-TTY mode, emits table/json report for automation.",
 			Examples: []string{
 				"pacto status",
 				"pacto status # from nested directory",
@@ -94,11 +96,13 @@ func commandCatalog() []CommandHelp {
 		{
 			Name:        "init",
 			Summary:     "Initialize local Pacto workspace in .pacto/plans.",
-			Usage:       "pacto init [--root .] [--with-agents] [--force]",
-			Description: "Bootstraps a project-local planning workspace. `--with-agents` adds an optional AGENTS.md hand-off block; canonical guidance remains in PACTO.md.",
+			Usage:       "pacto init [--root .] [--with-agents] [--force] [--tools <all|none|csv>] [--no-interactive] [--yes] [--no-install] [--dry-run]",
+			Description: "Bootstraps `.pacto/plans`, captures project profile (`.pacto/config.yaml`), updates managed `prd.md` section, and optionally installs tool artifacts. In TTY mode it launches interactive Bubble Tea onboarding unless `--no-interactive` is set.",
 			Examples: []string{
 				"pacto init",
 				"pacto init --root . --with-agents",
+				"pacto init --tools codex,cursor --yes",
+				"pacto init --no-interactive --no-install",
 				"pacto init --force",
 			},
 		},
@@ -127,11 +131,11 @@ func commandCatalog() []CommandHelp {
 		{
 			Name:        "exec",
 			Summary:     "Execute plan tasks and append execution evidence.",
-			Usage:       "pacto exec <current|to-implement|done|outdated> <slug> [--root <path>] [--step <task-id>] [--note <text>] [--blocker <text>] [--evidence <claim>] [--dry-run]",
-			Description: "Runs guided execution updates on plan markdown artifacts only (no source-code edits). Execution is allowed only for plans in `current` state.",
+			Usage:       "pacto exec <current|to-implement|done|outdated> <slug> [--root <path>] [--step <phase.task>] [--note <text>] [--blocker <text>] [--evidence <claim>] [--dry-run]",
+			Description: "Runs guided execution updates on plan markdown artifacts only (no source-code edits). Execution is allowed only for plans in `current` state. Task refs use phase format `<phase>.<task>` (for example, `1.2`).",
 			Examples: []string{
 				"pacto exec current improve-auth-flow",
-				"pacto exec current improve-auth-flow --step T3 --note \"Validated staging behavior\" --evidence src/auth/flow.go",
+				"pacto exec current improve-auth-flow --step 1.2 --note \"Validated staging behavior\" --evidence src/auth/flow.go",
 				"pacto exec current improve-auth-flow --dry-run",
 			},
 		},

@@ -40,6 +40,7 @@ This file defines workflow command IDs used by Pacto-managed assistant integrati
 - Goal: initialize canonical workspace in `.pacto/plans`.
 - Creates state folders and core templates (`README.md`, `PACTO.md`, `PLANTILLA_PACTO_PLAN.md`, `SLASH_COMMANDS.md`).
 - Optional `--with-agents` updates managed Pacto block in `AGENTS.md`.
+- Agent should ask user intent questions and draft/update a basic `prd.md` in project root.
 
 ### `pacto-install`
 
@@ -61,6 +62,7 @@ This file defines workflow command IDs used by Pacto-managed assistant integrati
 
 - Goal: execute plan checklist progress without source-code edits.
 - Usage: `pacto exec current <slug> [--step ...] [--note ...] [--blocker ...] [--evidence ...]`.
+- Step ref format: `<phase>.<task>` (for example, `1.2`).
 - Marks tasks complete and appends execution evidence in plan docs.
 
 ## Conventions

@@ -8,8 +8,11 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
+
+	"pacto/internal/ui"
 )
 
 type execOptions struct {
@@ -23,8 +26,9 @@ type execOptions struct {
 
 var (
 	reExecCheckbox = regexp.MustCompile(`^\s*[-*]\s*\[( |x|X)\]\s*(.+)$`)
-	reTaskID       = regexp.MustCompile(`(?i)\bT([0-9]+)\b`)
-	reStrictStepID = regexp.MustCompile(`^T[0-9]+$`)
+	rePhaseHeading = regexp.MustCompile(`(?i)^##\s*phase\s+([1-9][0-9]*)(?::\s*.*)?$`)
+	reStepRef      = regexp.MustCompile(`^([1-9][0-9]*)\.([1-9][0-9]*)\b`)
+	reStrictStepID = regexp.MustCompile(`^[1-9][0-9]*\.[1-9][0-9]*$`)
 )
 
 func RunExec(args []string) int {
@@ -103,14 +107,15 @@ func RunExec(args []string) int {
 	}
 
 	if updated == content {
-		fmt.Println("No execution changes to apply.")
+		fmt.Println(ui.Dim("No execution changes to apply."))
 		return 0
 	}
 
 	if opts.dryRun {
-		fmt.Printf("[dry-run] would update: %s\n", planPath)
+		fmt.Println(ui.ActionHeader("Dry Run", "execution update"))
+		fmt.Println(ui.PathLine("updated", planPath))
 		for _, a := range actions {
-			fmt.Printf("- %s\n", a)
+			fmt.Println(ui.Bullet(a))
 		}
 		return 0
 	}
@@ -120,10 +125,10 @@ func RunExec(args []string) int {
 		return 3
 	}
 
-	fmt.Printf("Executed plan: %s/%s\n", state, slug)
-	fmt.Printf("~ %s\n", planPath)
+	fmt.Println(ui.ActionHeader("Executed Plan", state+"/"+slug))
+	fmt.Println(ui.PathLine("updated", planPath))
 	for _, a := range actions {
-		fmt.Printf("- %s\n", a)
+		fmt.Println(ui.Bullet(a))
 	}
 	return 0
 }
@@ -134,14 +139,14 @@ func parseExecArgs(args []string) (execOptions, []string, int, bool) {
 	fs.SetOutput(os.Stderr)
 	fs.Usage = func() {
 		fmt.Fprintln(os.Stderr, "Usage:")
-		fmt.Fprintln(os.Stderr, "  pacto exec <current|to-implement|done|outdated> <slug> [--root <path>] [--step <task-id>] [--note <text>] [--blocker <text>] [--evidence <claim>] [--dry-run]")
+		fmt.Fprintln(os.Stderr, "  pacto exec <current|to-implement|done|outdated> <slug> [--root <path>] [--step <phase.task>] [--note <text>] [--blocker <text>] [--evidence <claim>] [--dry-run]")
 		fmt.Fprintln(os.Stderr, "")
 		fmt.Fprintln(os.Stderr, "Options:")
 		fs.PrintDefaults()
 	}
 
 	fs.StringVar(&opts.root, "root", "", "Project root path (auto-discovers when omitted)")
-	fs.StringVar(&opts.step, "step", "", "Target task id (e.g. T1)")
+	fs.StringVar(&opts.step, "step", "", "Target task id (e.g. 1.2)")
 	fs.StringVar(&opts.note, "note", "", "Append execution note")
 	fs.StringVar(&opts.blocker, "blocker", "", "Append blocker")
 	fs.StringVar(&opts.evidence, "evidence", "", "Append evidence reference")
@@ -249,41 +254,84 @@ func resolvePlanRef(plansRoot, state, slug string) (planRef struct {
 }
 
 func applyExecTaskUpdate(content, requestedStep string) (string, string, error) {
-	step := normalizeTaskID(requestedStep)
+	step := strings.TrimSpace(requestedStep)
+	if strings.HasPrefix(strings.ToUpper(step), "T") {
+		return content, "", fmt.Errorf("legacy --step %q is no longer supported (use <phase>.<task>, e.g. 1.2)", requestedStep)
+	}
 	if requestedStep != "" && !reStrictStepID.MatchString(step) {
-		return content, "", fmt.Errorf("invalid --step %q (use T<number>, e.g. T3)", requestedStep)
+		return content, "", fmt.Errorf("invalid --step %q (use <phase>.<task>, e.g. 1.2)", requestedStep)
 	}
 	lines := strings.Split(content, "\n")
-	target := -1
-	targetID := ""
-
+	type candidate struct {
+		line  int
+		ref   string
+		phase int
+		task  int
+		done  bool
+	}
+	candidates := make([]candidate, 0, 16)
+	currentPhase := 0
 	for i, line := range lines {
+		t := strings.TrimSpace(line)
+		if m := rePhaseHeading.FindStringSubmatch(t); len(m) == 2 {
+			currentPhase = parsePosInt(m[1])
+			continue
+		}
 		m := reExecCheckbox.FindStringSubmatch(line)
-		if len(m) != 3 {
+		if len(m) != 3 || currentPhase == 0 {
 			continue
 		}
 		done := strings.EqualFold(strings.TrimSpace(m[1]), "x")
-		text := strings.TrimSpace(m[2])
-		tid := extractTaskID(text)
+		taskText := strings.TrimSpace(m[2])
+		phase, task, ok := extractStepRef(taskText)
+		if !ok || phase != currentPhase {
+			continue
+		}
+		candidates = append(candidates, candidate{
+			line:  i,
+			ref:   fmt.Sprintf("%d.%d", phase, task),
+			phase: phase,
+			task:  task,
+			done:  done,
+		})
+	}
 
-		if step == "" {
-			if !done {
-				target = i
-				targetID = tid
+	if len(candidates) == 0 {
+		return content, "", fmt.Errorf("no phase tasks found (expected '- [ ] 1.1 ...' under '## Phase N' headings)")
+	}
+
+	sort.Slice(candidates, func(i, j int) bool {
+		if candidates[i].phase == candidates[j].phase {
+			if candidates[i].task == candidates[j].task {
+				return candidates[i].line < candidates[j].line
+			}
+			return candidates[i].task < candidates[j].task
+		}
+		return candidates[i].phase < candidates[j].phase
+	})
+
+	target := -1
+	targetID := ""
+	if step != "" {
+		for _, c := range candidates {
+			if c.ref != step {
+				continue
+			}
+			if c.done {
+				return content, "", nil
+			}
+			target = c.line
+			targetID = c.ref
+			break
+		}
+	} else {
+		for _, c := range candidates {
+			if !c.done {
+				target = c.line
+				targetID = c.ref
 				break
 			}
-			continue
 		}
-
-		if normalizeTaskID(tid) != step {
-			continue
-		}
-		if done {
-			return content, "", nil
-		}
-		target = i
-		targetID = tid
-		break
 	}
 
 	if target < 0 {
@@ -306,20 +354,25 @@ func applyExecTaskUpdate(content, requestedStep string) (string, string, error) 
 	return strings.Join(lines, "\n"), fmt.Sprintf("completed %s", targetID), nil
 }
 
-func extractTaskID(text string) string {
-	m := reTaskID.FindStringSubmatch(text)
-	if len(m) != 2 {
-		return ""
+func extractStepRef(text string) (int, int, bool) {
+	m := reStepRef.FindStringSubmatch(strings.TrimSpace(text))
+	if len(m) != 3 {
+		return 0, 0, false
 	}
-	return "T" + m[1]
+	phase := parsePosInt(m[1])
+	task := parsePosInt(m[2])
+	if phase <= 0 || task <= 0 {
+		return 0, 0, false
+	}
+	return phase, task, true
 }
 
-func normalizeTaskID(s string) string {
-	s = strings.TrimSpace(strings.ToUpper(s))
-	if s == "" {
-		return ""
+func parsePosInt(s string) int {
+	n, err := strconv.Atoi(strings.TrimSpace(s))
+	if err != nil || n < 1 {
+		return 0
 	}
-	return s
+	return n
 }
 
 func appendSectionBullet(content, heading, bullet string) string {

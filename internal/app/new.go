@@ -10,6 +10,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"pacto/internal/ui"
 )
 
 var slugRe = regexp.MustCompile(`^[a-z0-9][a-z0-9-]*$`)
@@ -55,10 +57,10 @@ func RunNew(args []string) int {
 		return 3
 	}
 
-	fmt.Printf("Created plan: %s/%s\n", req.state, req.slug)
-	fmt.Printf("- %s\n", req.readmePath)
-	fmt.Printf("- %s\n", req.planPath)
-	fmt.Printf("Updated index: %s\n", filepath.Join(req.root, "README.md"))
+	fmt.Println(ui.ActionHeader("Created Plan", req.state+"/"+req.slug))
+	fmt.Println(ui.PathLine("created", req.readmePath))
+	fmt.Println(ui.PathLine("created", req.planPath))
+	fmt.Println(ui.PathLine("updated", filepath.Join(req.root, "README.md")))
 	return 0
 }
 

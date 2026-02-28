@@ -9,7 +9,7 @@ import (
 )
 
 func TestParsePlanStrictRequiresStatus(t *testing.T) {
-	ref := writePlan(t, "# Plan\n\n## Fases\n| Fase | Desc | Estado | 10% |\n")
+	ref := writePlan(t, "# Plan\n\n## Phases\n| Phase | Desc | State | 10% |\n")
 	_, err := ParsePlan(ref, "strict")
 	if err == nil {
 		t.Fatal("expected strict mode error for missing status")
@@ -38,6 +38,23 @@ func TestParsePlanExtractsNextActions(t *testing.T) {
 	}
 	if len(p.NextActions) != 2 {
 		t.Fatalf("expected 2 next actions, got %d", len(p.NextActions))
+	}
+}
+
+func TestParsePlanExtractsPhaseTaskRefs(t *testing.T) {
+	ref := writePlan(t, "Status: In Progress\n\n## Phase 1: Setup\n- [ ] 1.1 Define interfaces\n- [ ] 1.2 Add wiring\n")
+	p, err := ParsePlan(ref, "compat")
+	if err != nil {
+		t.Fatalf("ParsePlan returned error: %v", err)
+	}
+	if len(p.Tasks) != 2 {
+		t.Fatalf("expected 2 tasks, got %d", len(p.Tasks))
+	}
+	if p.Tasks[0].StepRef != "1.1" || p.Tasks[0].Phase != 1 || p.Tasks[0].Number != 1 {
+		t.Fatalf("unexpected first task metadata: %+v", p.Tasks[0])
+	}
+	if p.Tasks[1].StepRef != "1.2" || p.Tasks[1].Phase != 1 || p.Tasks[1].Number != 2 {
+		t.Fatalf("unexpected second task metadata: %+v", p.Tasks[1])
 	}
 }
 

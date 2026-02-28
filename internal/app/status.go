@@ -16,6 +16,7 @@ import (
 	"pacto/internal/model"
 	"pacto/internal/parser"
 	"pacto/internal/report"
+	statusui "pacto/internal/tui/status"
 	"pacto/internal/verify"
 )
 
@@ -52,6 +53,19 @@ func RunStatus(args []string) int {
 	rep, code, ok := buildStatusReport(cfg, append(cfgWarnings, runtimeWarnings...))
 	if !ok {
 		return code
+	}
+
+	if isTerminal(os.Stdout) {
+		if provided["format"] {
+			fmt.Fprintln(os.Stderr, "flag --format is only supported in non-TTY mode for pacto status")
+			fmt.Fprintln(os.Stderr, "hint: run without --format for interactive status, or pipe output for table/json")
+			return 2
+		}
+		if err := statusui.Run(rep); err != nil {
+			fmt.Fprintf(os.Stderr, "run status tui: %v\n", err)
+			return 3
+		}
+		return 0
 	}
 
 	out, err := report.Render(rep, cfg.Format)

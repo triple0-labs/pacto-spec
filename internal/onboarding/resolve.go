@@ -3,6 +3,8 @@ package onboarding
 import (
 	"sort"
 	"strings"
+
+	"pacto/internal/i18n"
 )
 
 type Overrides struct {
@@ -39,6 +41,10 @@ func ResolveProfile(base, answered Profile, o Overrides) (Profile, error) {
 	if strings.TrimSpace(answered.Intents.Problem) != "" {
 		out.Intents.Problem = strings.TrimSpace(answered.Intents.Problem)
 	}
+	if strings.TrimSpace(answered.UILanguage) != "" {
+		out.UILanguage = string(i18n.NormalizeLanguage(answered.UILanguage))
+		out.Sources.UI = "user"
+	}
 
 	if strings.TrimSpace(o.ToolsCSV) != "" {
 		if strings.EqualFold(strings.TrimSpace(o.ToolsCSV), "all") {
@@ -59,6 +65,10 @@ func ResolveProfile(base, answered Profile, o Overrides) (Profile, error) {
 	out.CustomLanguages = normalizeList(out.CustomLanguages)
 	out.Tools = normalizeList(out.Tools)
 	out.CustomTools = normalizeList(out.CustomTools)
+	out.UILanguage = string(i18n.NormalizeLanguage(out.UILanguage))
+	if strings.TrimSpace(out.Sources.UI) == "" {
+		out.Sources.UI = "default"
+	}
 	return out, nil
 }
 

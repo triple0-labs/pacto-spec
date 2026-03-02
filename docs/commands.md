@@ -1,5 +1,9 @@
 # Commands
 
+Global option:
+
+- `--lang <en|es>`: override output language for current command. Workspace default is persisted by `pacto init`.
+
 ## `pacto status`
 
 Verify plan status, blockers, and evidence claims.
@@ -87,10 +91,11 @@ pacto install [--tools <all|none|csv>] [--force]
 
 ## `pacto update`
 
-Refresh managed Pacto artifacts already installed.
+Update pacto binary by default. Use legacy artifact refresh with `--artifacts`.
 
 ```bash
-pacto update [--tools <all|none|csv>] [--force]
+pacto update [--check] [--yes] [--version <vX.Y.Z>] [--repo <owner/repo>]
+pacto update --artifacts [--tools <all|none|csv>] [--force]
 ```
 
 ## `pacto exec`
@@ -110,3 +115,25 @@ Move plan slice between states explicitly.
 ```bash
 pacto move <from-state> <slug> <to-state> [--root <path>] [--reason <text>] [--force]
 ```
+
+## `pacto plugin`
+
+Manage local plugins under `.pacto/plugins`.
+
+```bash
+pacto plugin list-available [--format table|json]
+pacto plugin install <id> [--root <path>] [--force] [--no-enable]
+pacto plugin list [--root <path>] [--format table|json]
+pacto plugin validate [--root <path>] [--plugin <id>]
+pacto plugin enable <id> [--root <path>]
+pacto plugin disable <id> [--root <path>]
+```
+
+Notes:
+
+- `list-available` shows built-in plugins shipped by pacto.
+- `install` copies a built-in plugin into `.pacto/plugins/<id>` and auto-enables it by default.
+- Plugins are loaded from `.pacto/plugins/*/plugin.yaml`.
+- Only plugins listed in `.pacto/config.yaml` under `plugins.enabled` are active.
+- Supported commands enforce active plugin CLI guardrails by default (`status`, `new`, `move`, `exec`, `install`, `update`, `init`, and `explore` create/update paths).
+- Use `--allow-guardrail <id[,id...]>` to bypass specific guardrails for a single run.

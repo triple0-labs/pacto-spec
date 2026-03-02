@@ -70,7 +70,7 @@ Notes:
 
 - `pacto exec` updates plan execution artifacts only (no source-code edits).
 - `pacto move` performs explicit state transitions between plan folders.
-- CLI output is English-only; `--lang` is deprecated/ignored.
+- CLI supports `--lang en|es`; language defaults to workspace config when available.
 - `status` and `new` auto-discover plans root from current directory and parents.
 
 ## How Status Works

@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"pacto/internal/i18n"
 	"pacto/internal/onboarding"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -13,7 +14,8 @@ import (
 )
 
 const (
-	stepProblem = iota
+	stepLanguage = iota
+	stepProblem
 	stepTechnologies
 	stepTargets
 	stepOtherTargets
@@ -23,6 +25,9 @@ type model struct {
 	problemInput      textinput.Model
 	technologiesInput textinput.Model
 	otherTargetsInput textinput.Model
+	langOptions       []i18n.Language
+	langCursor        int
+	selectedLang      i18n.Language
 	targetOptions     []string
 	targetCursor      int
 	targetSelected    map[string]bool
@@ -32,6 +37,12 @@ type model struct {
 }
 
 func New(p onboarding.Profile) model {
+	selectedLang := i18n.NormalizeLanguage(p.UILanguage)
+	langCursor := 0
+	if selectedLang == i18n.Spanish {
+		langCursor = 1
+	}
+
 	problem := textinput.New()
 	problem.Prompt = "> "
 	problem.Placeholder = "Describe the core problem"
@@ -41,14 +52,14 @@ func New(p onboarding.Profile) model {
 
 	technologies := textinput.New()
 	technologies.Prompt = "> "
-	technologies.Placeholder = "go,typescript,postgresql"
-	technologies.SetValue(strings.Join(combinedTechnologies(p), ","))
+	technologies.Placeholder = "Go, TypeScript, PostgreSQL"
+	technologies.SetValue(strings.Join(combinedTechnologies(p), " "))
 	technologies.CharLimit = 512
 
 	otherTargets := textinput.New()
 	otherTargets.Prompt = "> "
-	otherTargets.Placeholder = "Only if you selected Other (csv)"
-	otherTargets.SetValue(strings.Join(p.CustomTools, ","))
+	otherTargets.Placeholder = "Only if you selected Other"
+	otherTargets.SetValue(strings.Join(p.CustomTools, " "))
 	otherTargets.CharLimit = 512
 
 	selected := map[string]bool{}
@@ -65,6 +76,9 @@ func New(p onboarding.Profile) model {
 		problemInput:      problem,
 		technologiesInput: technologies,
 		otherTargetsInput: otherTargets,
+		langOptions:       []i18n.Language{i18n.English, i18n.Spanish},
+		langCursor:        langCursor,
+		selectedLang:      selectedLang,
 		targetOptions:     []string{"codex", "cursor", "claude", "opencode", "other"},
 		targetSelected:    selected,
 	}
@@ -86,6 +100,26 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "esc":
 			m.cancel = true
 			return m, tea.Quit
+		}
+
+		if m.index == stepLanguage {
+			switch v.String() {
+			case "up", "k", "ctrl+p":
+				if m.langCursor > 0 {
+					m.langCursor--
+				}
+				return m, nil
+			case "down", "j", "ctrl+n":
+				if m.langCursor < len(m.langOptions)-1 {
+					m.langCursor++
+				}
+				return m, nil
+			case "enter", "tab":
+				m.selectedLang = m.langOptions[m.langCursor]
+				m.index = stepProblem
+				m.problemInput.Focus()
+				return m, nil
+			}
 		}
 
 		if m.index == stepTargets {
@@ -150,6 +184,8 @@ func (m model) updateTargets(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 func (m model) canAdvance() bool {
 	switch m.index {
+	case stepLanguage:
+		return true
 	case stepProblem:
 		return strings.TrimSpace(m.problemInput.Value()) != ""
 	case stepTechnologies:
@@ -161,6 +197,10 @@ func (m model) canAdvance() bool {
 
 func (m model) advance() (tea.Model, tea.Cmd) {
 	switch m.index {
+	case stepLanguage:
+		m.selectedLang = m.langOptions[m.langCursor]
+		m.problemInput.Focus()
+		m.index = stepProblem
 	case stepProblem:
 		m.problemInput.Blur()
 		m.technologiesInput.Focus()
@@ -181,6 +221,9 @@ func (m model) back() (tea.Model, tea.Cmd) {
 		m.technologiesInput.Blur()
 		m.problemInput.Focus()
 		m.index = stepProblem
+	case stepProblem:
+		m.problemInput.Blur()
+		m.index = stepLanguage
 	case stepTargets:
 		m.technologiesInput.Focus()
 		m.index = stepTechnologies
@@ -192,7 +235,11 @@ func (m model) back() (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	title := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("12")).Render("Pacto Init Onboarding")
+	m.problemInput.Placeholder = tr("Describe the core problem", "Describe el problema principal", m.selectedLang)
+	m.technologiesInput.Placeholder = tr("Go, TypeScript, PostgreSQL", "Go, TypeScript, PostgreSQL", m.selectedLang)
+	m.otherTargetsInput.Placeholder = tr("Only if you selected Other", "Solo si seleccionaste otro", m.selectedLang)
+
+	title := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("12")).Render(tr("Pacto Init Onboarding", "Onboarding de Pacto Init", m.selectedLang))
 	faint := lipgloss.NewStyle().Faint(true)
 	accent := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("10"))
 
@@ -201,19 +248,37 @@ func (m model) View() string {
 	b.WriteString("\n\n")
 
 	switch m.index {
+	case stepLanguage:
+		b.WriteString(accent.Render(tr("Step 0/3 - Language", "Paso 0/3 - Idioma", m.selectedLang)))
+		b.WriteString("\n" + tr("Choose your preferred language for UI and generated docs.", "Elige el idioma para la interfaz y los documentos generados.", m.selectedLang) + "\n\n")
+		for i, lang := range m.langOptions {
+			cursor := " "
+			if i == m.langCursor {
+				cursor = ">"
+			}
+			label := "English"
+			if lang == i18n.Spanish {
+				label = "Español"
+			}
+			b.WriteString(fmt.Sprintf("%s %s\n", cursor, label))
+		}
 	case stepProblem:
-		b.WriteString(accent.Render("Step 1/3 - Problem"))
-		b.WriteString("\nDescribe what you are building and why.\n")
+		b.WriteString(accent.Render(tr("Step 1/3 - Problem", "Paso 1/3 - Problema", m.selectedLang)))
+		b.WriteString("\n" + tr("Tell us what you are building and why.", "Cuéntanos qué estás construyendo y por qué.", m.selectedLang) + "\n")
+		b.WriteString(faint.Render(tr("Use your own words. We welcome custom descriptions.", "Usa tus propias palabras. Nos encantan las descripciones personalizadas.", m.selectedLang)))
+		b.WriteString("\n")
 		b.WriteString(m.problemInput.View())
 	case stepTechnologies:
-		b.WriteString(accent.Render("Step 2/3 - Technologies"))
-		b.WriteString("\nComma-separated technologies. Known values are suggested below.\n")
-		b.WriteString(faint.Render("Known: " + strings.Join(onboarding.KnownLanguages, ", ")))
+		b.WriteString(accent.Render(tr("Step 2/3 - Technologies", "Paso 2/3 - Tecnologías", m.selectedLang)))
+		b.WriteString("\n" + tr("Tell us which technologies you plan to use.", "Cuéntanos qué tecnologías planeas usar.", m.selectedLang) + "\n")
+		b.WriteString(faint.Render(tr("Custom technologies are welcome too.", "También puedes incluir tecnologías personalizadas.", m.selectedLang)))
+		b.WriteString("\n")
+		b.WriteString(faint.Render(tr("Known: ", "Conocidas: ", m.selectedLang) + strings.Join(onboarding.KnownLanguages, ", ")))
 		b.WriteString("\n")
 		b.WriteString(m.technologiesInput.View())
 	case stepTargets, stepOtherTargets:
-		b.WriteString(accent.Render("Step 3/3 - Install Targets"))
-		b.WriteString("\nUse Space to toggle one or many targets.\n\n")
+		b.WriteString(accent.Render(tr("Step 3/3 - Install Targets", "Paso 3/3 - Destinos de instalación", m.selectedLang)))
+		b.WriteString("\n" + tr("Use Space to toggle one or many targets.", "Usa Espacio para seleccionar uno o varios destinos.", m.selectedLang) + "\n\n")
 		for i, option := range m.targetOptions {
 			cursor := " "
 			if i == m.targetCursor && m.index == stepTargets {
@@ -225,20 +290,20 @@ func (m model) View() string {
 			}
 			label := option
 			if option == "other" {
-				label = "other (custom)"
+				label = tr("other (custom)", "otro (personalizado)", m.selectedLang)
 			}
 			b.WriteString(fmt.Sprintf("%s %s %s\n", cursor, checked, label))
 		}
 		if m.targetSelected["other"] {
 			b.WriteString("\n")
-			b.WriteString(faint.Render("Other targets (csv)"))
+			b.WriteString(faint.Render(tr("Other targets", "Otros destinos", m.selectedLang)))
 			b.WriteString("\n")
 			b.WriteString(m.otherTargetsInput.View())
 		}
 	}
 
 	b.WriteString("\n\n")
-	b.WriteString(faint.Render("Enter/Tab: next - Shift+Tab: back - Esc: cancel"))
+	b.WriteString(faint.Render(tr("Enter/Tab: next - Shift+Tab: back - Esc: cancel", "Enter/Tab: siguiente - Shift+Tab: atrás - Esc: cancelar", m.selectedLang)))
 	return b.String()
 }
 
@@ -254,9 +319,10 @@ func Run(initial onboarding.Profile) (onboarding.Profile, bool, error) {
 	}
 
 	out := onboarding.Profile{}
+	out.UILanguage = string(m.selectedLang)
 	out.Intents.Problem = strings.TrimSpace(m.problemInput.Value())
 
-	for _, token := range splitCSV(m.technologiesInput.Value()) {
+	for _, token := range splitInputTokens(m.technologiesInput.Value()) {
 		if onboarding.IsKnownLanguage(token) {
 			out.Languages = append(out.Languages, token)
 		} else {
@@ -274,22 +340,38 @@ func Run(initial onboarding.Profile) (onboarding.Profile, bool, error) {
 	}
 	out.Tools = normalizeCSV(out.Tools)
 	if m.targetSelected["other"] {
-		out.CustomTools = normalizeCSV(splitCSV(m.otherTargetsInput.Value()))
+		out.CustomTools = normalizeCSV(splitInputTokens(m.otherTargetsInput.Value()))
 	}
 
 	out.Sources.Languages = "user"
 	out.Sources.Tools = "user"
+	out.Sources.UI = "user"
 	return out, true, nil
 }
 
-func splitCSV(raw string) []string {
-	tokens := strings.Split(raw, ",")
-	out := make([]string, 0, len(tokens))
-	for _, tok := range tokens {
-		t := strings.TrimSpace(tok)
-		if t != "" {
-			out = append(out, t)
+func splitInputTokens(raw string) []string {
+	fields := strings.FieldsFunc(raw, func(r rune) bool {
+		switch r {
+		case ',', ';', '\n', '\t', '|', '/':
+			return true
+		case ' ':
+			return true
+		default:
+			return false
 		}
+	})
+	out := make([]string, 0, len(fields))
+	for _, f := range fields {
+		t := strings.Trim(strings.TrimSpace(f), " .:+")
+		if t == "" {
+			continue
+		}
+		n := onboarding.NormalizeToken(t)
+		switch n {
+		case "and", "with", "using", "use", "the", "a", "an":
+			continue
+		}
+		out = append(out, t)
 	}
 	return out
 }
@@ -307,4 +389,8 @@ func normalizeCSV(in []string) []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+func tr(en, es string, lang i18n.Language) string {
+	return i18n.T(lang, en, es)
 }

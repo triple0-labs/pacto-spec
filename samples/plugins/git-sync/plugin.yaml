@@ -1,0 +1,20 @@
+apiVersion: pacto/v1alpha1
+kind: Plugin
+metadata:
+  id: git-sync
+  version: 0.1.0
+  priority: 50
+spec:
+  cliGuardrails:
+    - id: status-sync
+      commands: [status]
+      run:
+        script: scripts/sync-status.sh
+        timeoutMs: 8000
+      onFail:
+        message: Git sync failed in strict mode. Use --allow-guardrail git-sync/status-sync to bypass this run.
+  agentGuardrails:
+    - id: verify-sync-context
+      tools: [codex, cursor, claude, opencode]
+      workflows: [status, new, exec, move]
+      markdownFile: guardrails/git-sync.md

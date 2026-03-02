@@ -81,6 +81,12 @@ pacto status
 
 # CI-friendly output
 pacto status --format json --fail-on partial
+
+# list and validate local plugins
+pacto plugin list-available
+pacto plugin install git-sync
+pacto plugin list
+pacto plugin validate
 ```
 
 ## Docs
@@ -89,11 +95,12 @@ pacto status --format json --fail-on partial
 - [Concepts](./docs/concepts.md)
 - [Commands](./docs/commands.md)
 - [Integrations](./docs/integrations.md)
+- [Plugins](./docs/plugins.md)
 - [Contributing](./docs/contributing.md)
 - [Releasing](./RELEASING.md)
 
 ## Notes
 
-- CLI output is English-only (`--lang` is deprecated and ignored).
+- CLI supports `--lang en|es`; `pacto init` persists workspace language in `.pacto/config.yaml`.
 - `pacto exec` updates execution artifacts in plan docs (no source-code edits).
 - `.pacto/plans/` files are workspace artifacts/templates; canonical product docs are in `docs/`.

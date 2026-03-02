@@ -3,6 +3,8 @@ package app
 import (
 	"fmt"
 	"strings"
+
+	"pacto/internal/i18n"
 )
 
 type CommandHelp struct {
@@ -14,36 +16,46 @@ type CommandHelp struct {
 }
 
 func RootHelp() string {
+	return RootHelpLang(i18n.English)
+}
+
+func RootHelpLang(lang i18n.Language) string {
 	var b strings.Builder
-	b.WriteString("Pacto CLI\n\n")
-	b.WriteString("Usage:\n")
+	b.WriteString(tr(lang, "Pacto CLI", "CLI de Pacto") + "\n\n")
+	b.WriteString(tr(lang, "Usage:", "Uso:") + "\n")
 	b.WriteString("  pacto <command> [options]\n\n")
-	b.WriteString("Global options:\n")
-	b.WriteString("  --no-color  Disable colored terminal output\n\n")
-	b.WriteString("Commands:\n")
+	b.WriteString(tr(lang, "Global options:", "Opciones globales:") + "\n")
+	b.WriteString("  --lang      " + tr(lang, "Output language (en|es)", "Idioma de salida (en|es)") + "\n")
+	b.WriteString("  --no-color  " + tr(lang, "Disable colored terminal output", "Desactivar salida con color") + "\n\n")
+	b.WriteString("  --allow-guardrail <id[,id...]>  " + tr(lang, "Temporarily bypass specific plugin guardrails", "Omitir temporalmente guardrails de plugins específicos") + "\n\n")
+	b.WriteString(tr(lang, "Commands:", "Comandos:") + "\n")
 	for _, c := range commandCatalog() {
 		b.WriteString("  " + padRight(c.Name, 8) + c.Summary + "\n")
 	}
 	b.WriteString("\n")
-	b.WriteString("Use \"pacto help <command>\" for command details.\n")
+	b.WriteString(tr(lang, "Use \"pacto help <command>\" for command details.\n", "Usa \"pacto help <command>\" para ver detalles del comando.\n"))
 	return b.String()
 }
 
 func HelpFor(name string) string {
+	return HelpForLang(name, i18n.English)
+}
+
+func HelpForLang(name string, lang i18n.Language) string {
 	for _, c := range commandCatalog() {
 		if c.Name == name {
 			var b strings.Builder
-			b.WriteString("Command: " + c.Name + "\n\n")
-			b.WriteString("Summary:\n")
+			b.WriteString(tr(lang, "Command: ", "Comando: ") + c.Name + "\n\n")
+			b.WriteString(tr(lang, "Summary:", "Resumen:") + "\n")
 			b.WriteString("  " + c.Summary + "\n\n")
-			b.WriteString("Usage:\n")
+			b.WriteString(tr(lang, "Usage:", "Uso:") + "\n")
 			b.WriteString("  " + c.Usage + "\n\n")
 			if strings.TrimSpace(c.Description) != "" {
-				b.WriteString("Description:\n")
+				b.WriteString(tr(lang, "Description:", "Descripción:") + "\n")
 				b.WriteString("  " + c.Description + "\n\n")
 			}
 			if len(c.Examples) > 0 {
-				b.WriteString("Examples:\n")
+				b.WriteString(tr(lang, "Examples:", "Ejemplos:") + "\n")
 				for _, ex := range c.Examples {
 					b.WriteString("  " + ex + "\n")
 				}
@@ -119,13 +131,16 @@ func commandCatalog() []CommandHelp {
 		},
 		{
 			Name:        "update",
-			Summary:     "Refresh previously installed Pacto tool artifacts.",
-			Usage:       "pacto update [--tools <all|none|csv>] [--force]",
-			Description: "Refreshes managed Pacto blocks in generated skills and command files for supported tools.",
+			Summary:     "Update pacto binary (default) or refresh tool artifacts.",
+			Usage:       "pacto update [--check] [--yes] [--version <vX.Y.Z>] [--repo <owner/repo>] | --artifacts [--tools <all|none|csv>] [--force]",
+			Description: "By default, updates the installed pacto binary from GitHub releases. Use --artifacts to run legacy managed artifact refresh for supported tools.",
 			Examples: []string{
 				"pacto update",
-				"pacto update --tools claude,opencode",
-				"pacto update --force",
+				"pacto update --check",
+				"pacto update --yes",
+				"pacto update --version v0.1.16",
+				"pacto update --artifacts --tools claude,opencode",
+				"pacto update --artifacts --force",
 			},
 		},
 		{
@@ -147,6 +162,20 @@ func commandCatalog() []CommandHelp {
 			Examples: []string{
 				"pacto move to-implement improve-auth-flow current",
 				"pacto move current improve-auth-flow done --reason \"Tasks complete and evidence verified\"",
+			},
+		},
+		{
+			Name:        "plugin",
+			Summary:     "Manage local Pacto plugins and activation state.",
+			Usage:       "pacto plugin <list|list-available|install|validate|enable|disable> [options]",
+			Description: "Lists built-in plugins shipped by pacto, installs built-ins into `.pacto/plugins`, validates manifests, and updates enabled plugin IDs in `.pacto/config.yaml`.",
+			Examples: []string{
+				"pacto plugin list-available",
+				"pacto plugin install git-sync",
+				"pacto plugin list",
+				"pacto plugin validate",
+				"pacto plugin enable acme-guardrails",
+				"pacto plugin disable acme-guardrails",
 			},
 		},
 		{

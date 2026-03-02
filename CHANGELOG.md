@@ -2,6 +2,25 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.1.16 - 2026-03-02
+
+### Added
+- New i18n foundation for UI output (`en`/`es`) plus workspace-level UI language persistence in `.pacto/config.yaml`.
+- Language selection step at the beginning of `pacto init` onboarding; selected language now drives generated managed docs/templates.
+- Spanish managed template set for workspace artifacts (`README.md`, `PACTO.md`, `PLANTILLA_PACTO_PLAN.md`, `SLASH_COMMANDS.md`, `AGENTS.md`).
+- New plugin subcommands:
+  - `pacto plugin list-available [--format table|json]`
+  - `pacto plugin install <id> [--root <path>] [--force] [--no-enable]`
+- Embedded built-in plugin catalog (first built-in: `git-sync`) with installer support and default `config.env` generation.
+- New sample plugin package at `samples/plugins/git-sync` for manual/project-local usage.
+
+### Changed
+- `pacto init` output summary redesigned to be more user-friendly and structured, including localized labels and next-step guidance.
+- Path output in action-oriented commands now prefers relative paths to current working directory (with absolute fallback outside base).
+- `pacto status` now supports plugin CLI guardrails; guardrails are skipped for help invocations (`--help`, `-h`, `help`).
+- Help and command docs updated to reflect new plugin install/list-available workflows and active language behavior.
+- Onboarding copy updated for clearer, more conversational guidance in problem and technologies steps.
+
 ## 0.1.15 - 2026-02-28
 
 ### Added

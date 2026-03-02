@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"pacto/internal/assets"
+	"pacto/internal/i18n"
 	"pacto/internal/integrations"
 	"pacto/internal/onboarding"
 	initui "pacto/internal/tui/init"
@@ -37,6 +38,10 @@ func RunInit(args []string) int {
 	opts, code, ok := parseInitOptions(args)
 	if !ok {
 		return code
+	}
+	if strings.TrimSpace(opts.lang) != "" {
+		setGlobalLangOverride(opts.lang)
+		defer setGlobalLangOverride("")
 	}
 
 	projectRoot, err := filepath.Abs(opts.root)
@@ -66,40 +71,50 @@ func RunInit(args []string) int {
 		fmt.Fprintf(os.Stderr, "resolve init profile: %v\n", err)
 		return 2
 	}
+	if strings.TrimSpace(opts.lang) != "" {
+	}
+	resolvedUILang := i18n.NormalizeLanguage(profile.UILanguage)
+	if strings.TrimSpace(opts.lang) != "" {
+		resolvedUILang = i18n.NormalizeLanguage(opts.lang)
+	} else if strings.TrimSpace(profile.UILanguage) == "" {
+		resolvedUILang = effectiveLanguage(projectRoot)
+	}
+	profile.UILanguage = string(resolvedUILang)
 	if !interactive {
 		applyInitFallbacks(&profile)
 	}
+	lang := i18n.NormalizeLanguage(profile.UILanguage)
 	validation := onboarding.ValidateProfile(profile)
 	if len(validation.Errors) > 0 {
-		fmt.Fprintln(os.Stderr, "init profile is incomplete:")
+		fmt.Fprintln(os.Stderr, tr(lang, "init profile is incomplete:", "el perfil de init está incompleto:"))
 		for _, msg := range validation.Errors {
 			fmt.Fprintf(os.Stderr, "  - %s\n", msg)
 		}
 		if opts.noInteractive {
-			fmt.Fprintln(os.Stderr, "rerun without --no-interactive to complete onboarding prompts")
+			fmt.Fprintln(os.Stderr, tr(lang, "rerun without --no-interactive to complete onboarding prompts", "ejecuta nuevamente sin --no-interactive para completar el onboarding"))
 		}
 		return 2
 	}
 	for _, warn := range validation.Warnings {
-		fmt.Fprintf(os.Stderr, "warning: %s\n", warn)
+		fmt.Fprintf(os.Stderr, "%s: %s\n", tr(lang, "warning", "advertencia"), warn)
 	}
 
 	if opts.dryRun {
-		fmt.Println(ui.ActionHeader("Init Dry Run", projectRoot))
+		fmt.Println(ui.ActionHeader(tr(lang, "Init Dry Run", "Simulación de Init"), displayPath(projectRoot)))
 		technologies := append([]string{}, profile.Languages...)
 		technologies = append(technologies, profile.CustomLanguages...)
 		fmt.Printf("technologies=%s tools=%s\n", strings.Join(technologies, ","), strings.Join(profile.Tools, ","))
-		fmt.Println(ui.PathLine("created", plansRoot))
-		fmt.Println(ui.PathLine("updated", filepath.Join(projectRoot, ".pacto", "config.yaml")))
-		fmt.Println(ui.PathLine("updated", filepath.Join(projectRoot, "prd.md")))
+		fmt.Println(pathLine("created", plansRoot))
+		fmt.Println(pathLine("updated", filepath.Join(projectRoot, ".pacto", "config.yaml")))
+		fmt.Println(pathLine("updated", filepath.Join(projectRoot, "prd.md")))
 		if opts.withAgents {
-			fmt.Println(ui.PathLine("updated", filepath.Join(projectRoot, "AGENTS.md")))
+			fmt.Println(pathLine("updated", filepath.Join(projectRoot, "AGENTS.md")))
 		}
 		return 0
 	}
 
 	var created, updated, skipped []string
-	if err := bootstrapWorkspace(plansRoot, opts.force, &created, &updated, &skipped); err != nil {
+	if err := bootstrapWorkspace(plansRoot, profile.UILanguage, opts.force, &created, &updated, &skipped); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		return 3
 	}
@@ -136,7 +151,7 @@ func RunInit(args []string) int {
 
 	if opts.withAgents {
 		agentsPath := filepath.Join(projectRoot, "AGENTS.md")
-		act, aerr := writeAgentsManagedBlock(agentsPath, assets.MustTemplate("AGENTS.md"))
+		act, aerr := writeAgentsManagedBlock(agentsPath, assets.MustTemplateLang(profile.UILanguage, "AGENTS.md"))
 		if aerr != nil {
 			fmt.Fprintf(os.Stderr, "update AGENTS.md: %v\n", aerr)
 			return 3
@@ -154,7 +169,7 @@ func RunInit(args []string) int {
 	if !opts.noInstall && len(profile.Tools) > 0 {
 		approve := true
 		if interactive && !opts.yes {
-			fmt.Printf("Install tool artifacts for: %s ? [Y/n]: ", strings.Join(profile.Tools, ", "))
+			fmt.Printf("%s %s ? [Y/n]: ", tr(lang, "Install tool artifacts for:", "¿Instalar artefactos para herramientas:"), strings.Join(profile.Tools, ", "))
 			approve = promptYesNo(true)
 		}
 		if approve {
@@ -175,20 +190,7 @@ func RunInit(args []string) int {
 	sort.Strings(updated)
 	sort.Strings(skipped)
 
-	fmt.Println(ui.ActionHeader("Initialized Workspace", plansRoot))
-	fmt.Printf("Created: %d  Updated: %d  Skipped: %d\n", len(created), len(updated), len(skipped))
-	for _, p := range created {
-		fmt.Println(ui.PathLine("created", p))
-	}
-	for _, p := range updated {
-		fmt.Println(ui.PathLine("updated", p))
-	}
-	for _, p := range skipped {
-		fmt.Println(ui.PathLine("skipped", p))
-	}
-	technologies := append([]string{}, profile.Languages...)
-	technologies = append(technologies, profile.CustomLanguages...)
-	fmt.Printf("Profile: technologies=%s tools=%s\n", strings.Join(technologies, ","), strings.Join(profile.Tools, ","))
+	printInitSummary(lang, plansRoot, profile, created, updated, skipped)
 	return 0
 }
 
@@ -212,7 +214,7 @@ func parseInitOptions(args []string) (initOptions, int, bool) {
 	fs.StringVar(&opts.root, "root", ".", "Project root path")
 	fs.BoolVar(&opts.withAgents, "with-agents", false, "Create or update optional AGENTS.md hand-off block (canonical guidance remains in PACTO.md)")
 	fs.BoolVar(&opts.force, "force", false, "Overwrite init-managed files when they already exist")
-	fs.StringVar(&opts.lang, "lang", "", "Deprecated: ignored, CLI output is English-only")
+	fs.StringVar(&opts.lang, "lang", "", "Output language override: en|es")
 	fs.BoolVar(&opts.noInteractive, "no-interactive", false, "Disable Bubble Tea onboarding and use fallback profile resolution")
 	fs.StringVar(&opts.tools, "tools", "", "Tools to configure during init: all, none, or comma-separated IDs (codex,cursor,claude,opencode)")
 	fs.BoolVar(&opts.yes, "yes", false, "Auto-approve install preview in interactive mode")
@@ -227,8 +229,11 @@ func parseInitOptions(args []string) (initOptions, int, bool) {
 		fmt.Fprintf(os.Stderr, "parse flags: %v\n", err)
 		return initOptions{}, 2, false
 	}
-	if strings.TrimSpace(opts.lang) != "" || hasLangArg(args) {
-		fmt.Fprintln(os.Stderr, "warning: --lang is deprecated and ignored; CLI output is English-only")
+	if strings.TrimSpace(opts.lang) != "" {
+		if _, ok := i18n.ParseLanguage(opts.lang); !ok {
+			fmt.Fprintf(os.Stderr, "invalid --lang value %q (allowed: en|es)\n", opts.lang)
+			return initOptions{}, 2, false
+		}
 	}
 	if len(fs.Args()) > 0 {
 		fs.Usage()
@@ -250,6 +255,9 @@ func applyInitFallbacks(profile *onboarding.Profile) {
 	if strings.TrimSpace(profile.Intents.Problem) == "" {
 		profile.Intents.Problem = "TODO: define the core problem"
 	}
+	if strings.TrimSpace(profile.UILanguage) == "" {
+		profile.UILanguage = string(i18n.English)
+	}
 }
 
 func removedInitFlag(args []string) string {
@@ -264,7 +272,7 @@ func removedInitFlag(args []string) string {
 	return ""
 }
 
-func bootstrapWorkspace(plansRoot string, force bool, created, updated, skipped *[]string) error {
+func bootstrapWorkspace(plansRoot, lang string, force bool, created, updated, skipped *[]string) error {
 	for _, st := range []string{"current", "to-implement", "done", "outdated"} {
 		p := filepath.Join(plansRoot, st)
 		if info, err := os.Stat(p); err == nil {
@@ -281,10 +289,10 @@ func bootstrapWorkspace(plansRoot string, force bool, created, updated, skipped 
 	}
 
 	workspaceFiles := map[string]string{
-		filepath.Join(plansRoot, "README.md"):               assets.MustTemplate("README.md"),
-		filepath.Join(plansRoot, "PACTO.md"):                assets.MustTemplate("PACTO.md"),
-		filepath.Join(plansRoot, "PLANTILLA_PACTO_PLAN.md"): assets.MustTemplate("PLANTILLA_PACTO_PLAN.md"),
-		filepath.Join(plansRoot, "SLASH_COMMANDS.md"):       assets.MustTemplate("SLASH_COMMANDS.md"),
+		filepath.Join(plansRoot, "README.md"):               assets.MustTemplateLang(lang, "README.md"),
+		filepath.Join(plansRoot, "PACTO.md"):                assets.MustTemplateLang(lang, "PACTO.md"),
+		filepath.Join(plansRoot, "PLANTILLA_PACTO_PLAN.md"): assets.MustTemplateLang(lang, "PLANTILLA_PACTO_PLAN.md"),
+		filepath.Join(plansRoot, "SLASH_COMMANDS.md"):       assets.MustTemplateLang(lang, "SLASH_COMMANDS.md"),
 	}
 
 	for path, content := range workspaceFiles {
@@ -405,5 +413,48 @@ func promptYesNo(defaultYes bool) bool {
 		return false
 	default:
 		return defaultYes
+	}
+}
+
+func printInitSummary(lang i18n.Language, plansRoot string, profile onboarding.Profile, created, updated, skipped []string) {
+	fmt.Println(ui.ActionHeader(tr(lang, "Workspace Ready", "Workspace listo"), displayPath(plansRoot)))
+	fmt.Println(tr(lang, "Setup complete. Here's what changed:", "Configuración completada. Esto cambió:"))
+	fmt.Printf("  %s: +%d  ~%d  =%d\n", tr(lang, "Files/Folders", "Archivos/Directorios"), len(created), len(updated), len(skipped))
+	fmt.Printf("  %s: %s\n", tr(lang, "Language", "Idioma"), readableLanguage(lang))
+	fmt.Printf("  %s: %s\n", tr(lang, "Technologies", "Tecnologías"), joinOrNone(append(append([]string{}, profile.Languages...), profile.CustomLanguages...), lang))
+	fmt.Printf("  %s: %s\n", tr(lang, "Tools", "Herramientas"), joinOrNone(profile.Tools, lang))
+	fmt.Println("")
+
+	printPathGroup(lang, tr(lang, "Created", "Creados"), "created", created)
+	printPathGroup(lang, tr(lang, "Updated", "Actualizados"), "updated", updated)
+	printPathGroup(lang, tr(lang, "Unchanged", "Sin cambios"), "skipped", skipped)
+
+	fmt.Println("")
+	fmt.Printf("%s: %s\n", tr(lang, "Next", "Siguiente paso"), tr(lang, "run `pacto status` to inspect your plans", "ejecuta `pacto status` para revisar tus planes"))
+}
+
+func printPathGroup(lang i18n.Language, label, action string, paths []string) {
+	if len(paths) == 0 {
+		return
+	}
+	fmt.Printf("%s (%d)\n", label, len(paths))
+	for _, p := range paths {
+		fmt.Println(pathLine(action, p))
+	}
+}
+
+func joinOrNone(items []string, lang i18n.Language) string {
+	if len(items) == 0 {
+		return tr(lang, "none", "ninguna")
+	}
+	return strings.Join(items, ",")
+}
+
+func readableLanguage(lang i18n.Language) string {
+	switch lang {
+	case i18n.Spanish:
+		return "es (Español)"
+	default:
+		return "en (English)"
 	}
 }

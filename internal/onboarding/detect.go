@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"pacto/internal/i18n"
 )
 
 func DetectProfile(projectRoot string) Profile {
@@ -12,11 +14,13 @@ func DetectProfile(projectRoot string) Profile {
 	tools := detectLocalTools(projectRoot)
 	sort.Strings(tools)
 	return Profile{
-		Languages: langs,
-		Tools:     tools,
+		Languages:  langs,
+		Tools:      tools,
+		UILanguage: string(i18n.English),
 		Sources: Sources{
 			Languages: "auto",
 			Tools:     "auto",
+			UI:        "default",
 		},
 	}
 }

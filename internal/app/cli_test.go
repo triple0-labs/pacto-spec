@@ -37,15 +37,18 @@ func TestRunUnknownCommandShowsHelp(t *testing.T) {
 	}
 }
 
-func TestRunWarnsOnDeprecatedLang(t *testing.T) {
-	_, stderr := captureOutput(t, func() {
+func TestRunAcceptsLangOverride(t *testing.T) {
+	stdout, stderr := captureOutput(t, func() {
 		code := Run([]string{"--lang", "es", "version"})
 		if code != 0 {
 			t.Fatalf("Run returned %d, want 0", code)
 		}
 	})
-	if !strings.Contains(stderr, "--lang is deprecated") {
-		t.Fatalf("expected deprecation warning, got %q", stderr)
+	if strings.TrimSpace(stderr) != "" {
+		t.Fatalf("expected no warning/error, got %q", stderr)
+	}
+	if !strings.Contains(stdout, "pacto version") {
+		t.Fatalf("expected version output, got %q", stdout)
 	}
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"pacto/internal/i18n"
 	"pacto/internal/model"
 
 	"github.com/charmbracelet/bubbles/textinput"
@@ -13,6 +14,7 @@ import (
 
 type Model struct {
 	report      model.StatusReport
+	lang        i18n.Language
 	cursor      int
 	width       int
 	height      int
@@ -21,7 +23,7 @@ type Model struct {
 	stateFilter string
 }
 
-func New(r model.StatusReport) Model {
+func New(r model.StatusReport, lang i18n.Language) Model {
 	in := textinput.New()
 	in.Placeholder = "search slug..."
 	in.CharLimit = 120
@@ -29,6 +31,7 @@ func New(r model.StatusReport) Model {
 	in.Blur()
 	return Model{
 		report:      r,
+		lang:        lang,
 		cursor:      0,
 		searchInput: in,
 		stateFilter: "all",
@@ -145,7 +148,7 @@ func (m Model) selected() *model.PlanStatus {
 
 func (m Model) View() string {
 	plans := m.filtered()
-	head := fmt.Sprintf("Pacto Status  plans=%d pending=%d blocked=%d  filter=%s", len(m.report.Plans), m.report.Summary.TotalPendingTasks, m.report.Summary.TotalBlockedTasks, m.stateFilter)
+	head := fmt.Sprintf("%s  plans=%d pending=%d blocked=%d  filter=%s", tr(m.lang, "Pacto Status", "Estado de Pacto"), len(m.report.Plans), m.report.Summary.TotalPendingTasks, m.report.Summary.TotalBlockedTasks, m.stateFilter)
 	if strings.TrimSpace(m.searchInput.Value()) != "" {
 		head += "  search=" + m.searchInput.Value()
 	}
@@ -160,7 +163,7 @@ func (m Model) View() string {
 	}
 
 	left := make([]string, 0, len(plans)+2)
-	left = append(left, "Plans")
+	left = append(left, tr(m.lang, "Plans", "Planes"))
 	for i, p := range plans {
 		cursor := "  "
 		if i == m.cursor {
@@ -170,10 +173,10 @@ func (m Model) View() string {
 		left = append(left, line)
 	}
 	if len(plans) == 0 {
-		left = append(left, "(no plans for current filter/search)")
+		left = append(left, tr(m.lang, "(no plans for current filter/search)", "(no hay planes para el filtro/búsqueda actual)"))
 	}
 
-	right := []string{"Details"}
+	right := []string{tr(m.lang, "Details", "Detalles")}
 	if sel := m.selected(); sel != nil {
 		right = append(right, fmt.Sprintf("slug: %s", sel.Slug))
 		right = append(right, fmt.Sprintf("state: %s", sel.StateFolder))
@@ -181,32 +184,32 @@ func (m Model) View() string {
 		right = append(right, fmt.Sprintf("pending: %d  blocked: %d", sel.PendingTasks, sel.BlockedTasks))
 		if len(sel.NextActions) > 0 {
 			right = append(right, "")
-			right = append(right, "next actions:")
+			right = append(right, tr(m.lang, "next actions:", "siguientes acciones:"))
 			for _, n := range sel.NextActions {
 				right = append(right, "  - "+n)
 			}
 		}
 		if len(sel.Blockers) > 0 {
 			right = append(right, "")
-			right = append(right, "blockers:")
+			right = append(right, tr(m.lang, "blockers:", "bloqueadores:"))
 			for _, b := range sel.Blockers {
 				right = append(right, "  - "+b)
 			}
 		}
 		if sel.ParseError != "" {
 			right = append(right, "")
-			right = append(right, "parse error: "+sel.ParseError)
+			right = append(right, tr(m.lang, "parse error: ", "error de parseo: ")+sel.ParseError)
 		}
 	} else {
-		right = append(right, "select a plan to inspect details")
+		right = append(right, tr(m.lang, "select a plan to inspect details", "selecciona un plan para ver detalles"))
 	}
 
 	leftStyle := lipgloss.NewStyle().Width(leftW).BorderRight(true).BorderStyle(lipgloss.NormalBorder()).PaddingRight(1)
 	rightStyle := lipgloss.NewStyle().Width(rightW).PaddingLeft(1)
 	body := lipgloss.JoinHorizontal(lipgloss.Top, leftStyle.Render(strings.Join(left, "\n")), rightStyle.Render(strings.Join(right, "\n")))
-	foot := "keys: j/k or arrows navigate • / search • f filter • q quit"
+	foot := tr(m.lang, "keys: j/k or arrows navigate • / search • f filter • q quit", "teclas: j/k o flechas navegar • / buscar • f filtrar • q salir")
 	if m.searching {
-		foot = m.searchInput.View() + "  (enter apply, esc cancel)"
+		foot = m.searchInput.View() + "  " + tr(m.lang, "(enter apply, esc cancel)", "(enter aplica, esc cancela)")
 	}
 	return strings.Join([]string{
 		lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("12")).Render(head),
@@ -238,4 +241,8 @@ func badgeForVerification(v string) string {
 	default:
 		return v
 	}
+}
+
+func tr(lang i18n.Language, en, es string) string {
+	return i18n.T(lang, en, es)
 }

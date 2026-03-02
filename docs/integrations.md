@@ -1,6 +1,7 @@
 # Integrations
 
-`pacto install` and `pacto update` generate managed artifacts for supported AI tools.
+`pacto install` generates managed artifacts for supported AI tools.
+`pacto update --artifacts` refreshes those managed artifacts.
 
 Primary guidance surface is Pacto workspace contracts (`<plans-root>/PACTO.md`).
 Tool artifacts and optional root `AGENTS.md` content are integration hand-offs.
@@ -57,6 +58,18 @@ Update behavior:
 - Unmanaged file exists: skipped unless `--force` is provided.
 - Missing file: created.
 
+## Plugin Guardrail Injection
+
+If active plugins define `agentGuardrails`, `pacto install` and `pacto update --artifacts` append a managed plugin section to generated artifacts:
+
+```text
+<!-- pacto:plugin-guardrails:start -->
+...
+<!-- pacto:plugin-guardrails:end -->
+```
+
+This section is regenerated on update and remains under the main managed block for each generated file.
+
 ## Examples
 
 ```bash
@@ -67,5 +80,5 @@ pacto install
 pacto install --tools codex,cursor
 
 # refresh existing managed artifacts
-pacto update
+pacto update --artifacts
 ```

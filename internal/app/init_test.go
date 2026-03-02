@@ -126,6 +126,82 @@ func TestRunInitUpdatesManagedPRDBlockOnly(t *testing.T) {
 	}
 }
 
+func TestRunInitPreservesExistingEnabledPlugins(t *testing.T) {
+	root := t.TempDir()
+	cfgPath := filepath.Join(root, ".pacto", "config.yaml")
+	if err := os.MkdirAll(filepath.Dir(cfgPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	initial := "version: 1\nplugins:\n  enabled:\n    - acme\n    - qa-guard\n"
+	if err := os.WriteFile(cfgPath, []byte(initial), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if code := RunInit([]string{"--root", root, "--no-install"}); code != 0 {
+		t.Fatalf("RunInit returned %d", code)
+	}
+
+	b, err := os.ReadFile(cfgPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(b)
+	if !strings.Contains(text, "enabled:") || !strings.Contains(text, "- acme") || !strings.Contains(text, "- qa-guard") {
+		t.Fatalf("expected enabled plugins preserved, got %q", text)
+	}
+}
+
+func TestRunInitPersistsUILanguageFromFlag(t *testing.T) {
+	root := t.TempDir()
+	if code := RunInit([]string{"--root", root, "--no-interactive", "--no-install", "--lang", "es"}); code != 0 {
+		t.Fatalf("RunInit returned %d", code)
+	}
+	b, err := os.ReadFile(filepath.Join(root, ".pacto", "config.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(b)
+	if !strings.Contains(text, "ui:") || !strings.Contains(text, "language: es") {
+		t.Fatalf("expected ui.language=es persisted, got %q", text)
+	}
+}
+
+func TestRunInitPrintsUserFriendlySummary(t *testing.T) {
+	root := t.TempDir()
+	stdout, _ := captureOutput(t, func() {
+		if code := RunInit([]string{"--root", root, "--no-interactive", "--no-install"}); code != 0 {
+			t.Fatalf("RunInit returned %d", code)
+		}
+	})
+	if !strings.Contains(stdout, "Workspace Ready") {
+		t.Fatalf("expected summary header, got %q", stdout)
+	}
+	if !strings.Contains(stdout, "Setup complete. Here's what changed:") {
+		t.Fatalf("expected friendly completion text, got %q", stdout)
+	}
+	if !strings.Contains(stdout, "Next: run `pacto status`") {
+		t.Fatalf("expected next-step hint, got %q", stdout)
+	}
+}
+
+func TestRunNewUsesWorkspaceLanguageForGeneratedReadme(t *testing.T) {
+	root := t.TempDir()
+	if code := RunInit([]string{"--root", root, "--no-interactive", "--no-install", "--lang", "es"}); code != 0 {
+		t.Fatalf("RunInit returned %d", code)
+	}
+	if code := RunNew([]string{"to-implement", "idioma-prueba", "--root", filepath.Join(root, ".pacto", "plans")}); code != 0 {
+		t.Fatalf("RunNew returned %d", code)
+	}
+	readmePath := filepath.Join(root, ".pacto", "plans", "to-implement", "idioma-prueba", "README.md")
+	b, err := os.ReadFile(readmePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), "**Estado:**") {
+		t.Fatalf("expected spanish README labels, got %q", string(b))
+	}
+}
+
 func TestRunInitRejectsRemovedEditorFlag(t *testing.T) {
 	root := t.TempDir()
 	if code := RunInit([]string{"--root", root, "--editor", "cursor"}); code != 2 {

@@ -7,6 +7,7 @@ type Intents struct {
 type Sources struct {
 	Languages string
 	Tools     string
+	UI        string
 }
 
 type Profile struct {
@@ -14,6 +15,7 @@ type Profile struct {
 	CustomLanguages []string
 	Tools           []string
 	CustomTools     []string
+	UILanguage      string
 	Intents         Intents
 	Sources         Sources
 }

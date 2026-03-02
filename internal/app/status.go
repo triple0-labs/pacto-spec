@@ -13,6 +13,7 @@ import (
 	"pacto/internal/config"
 	"pacto/internal/discovery"
 	"pacto/internal/exitcode"
+	"pacto/internal/i18n"
 	"pacto/internal/model"
 	"pacto/internal/parser"
 	"pacto/internal/report"
@@ -41,6 +42,10 @@ func RunStatus(args []string) int {
 	if !ok {
 		return code
 	}
+	if strings.TrimSpace(values.lang) != "" {
+		setGlobalLangOverride(values.lang)
+		defer setGlobalLangOverride("")
+	}
 
 	cfg, cfgWarnings, runtimeWarnings, code, ok := buildStatusConfig(values, provided)
 	if !ok {
@@ -56,19 +61,21 @@ func RunStatus(args []string) int {
 	}
 
 	if isTerminal(os.Stdout) {
+		lang := effectiveLanguage(cfg.RepoRoot)
 		if provided["format"] {
 			fmt.Fprintln(os.Stderr, "flag --format is only supported in non-TTY mode for pacto status")
 			fmt.Fprintln(os.Stderr, "hint: run without --format for interactive status, or pipe output for table/json")
 			return 2
 		}
-		if err := statusui.Run(rep); err != nil {
+		if err := statusui.Run(rep, lang); err != nil {
 			fmt.Fprintf(os.Stderr, "run status tui: %v\n", err)
 			return 3
 		}
 		return 0
 	}
 
-	out, err := report.Render(rep, cfg.Format)
+	lang := effectiveLanguage(cfg.RepoRoot)
+	out, err := report.RenderWithLanguage(rep, cfg.Format, lang)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "render report: %v\n", err)
 		return 3
@@ -97,7 +104,7 @@ func parseStatusFlags(args []string) (statusFlagValues, map[string]bool, int, bo
 	fs.StringVar(&values.plansRoot, "plans-root", "", "Deprecated: path to plans root (use --root)")
 	fs.StringVar(&values.repoRoot, "repo-root", "", "Path to repository root for evidence verification")
 	fs.StringVar(&values.mode, "mode", "compat", "Parsing mode: compat|strict")
-	fs.StringVar(&values.lang, "lang", "", "Deprecated: ignored, CLI output is English-only")
+	fs.StringVar(&values.lang, "lang", "", "Output language override: en|es")
 	fs.StringVar(&values.format, "format", "table", "Output format: table|json")
 	fs.StringVar(&values.configPath, "config", "", "Optional path to .pacto-engine.yaml")
 	fs.StringVar(&values.failOn, "fail-on", "none", "Fail policy: none|unverified|partial|blocked")
@@ -115,8 +122,11 @@ func parseStatusFlags(args []string) (statusFlagValues, map[string]bool, int, bo
 		fmt.Fprintf(os.Stderr, "parse flags: %v\n", err)
 		return statusFlagValues{}, nil, 2, false
 	}
-	if strings.TrimSpace(values.lang) != "" || hasLangArg(args) {
-		fmt.Fprintln(os.Stderr, "warning: --lang is deprecated and ignored; CLI output is English-only")
+	if strings.TrimSpace(values.lang) != "" {
+		if _, ok := i18n.ParseLanguage(values.lang); !ok {
+			fmt.Fprintf(os.Stderr, "invalid --lang value %q (allowed: en|es)\n", values.lang)
+			return statusFlagValues{}, nil, 2, false
+		}
 	}
 
 	provided := map[string]bool{}

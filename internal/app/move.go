@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"pacto/internal/i18n"
 	"pacto/internal/ui"
 )
 
@@ -49,6 +50,8 @@ func RunMove(args []string) int {
 		fmt.Fprintf(os.Stderr, "resolve root: %v\n", err)
 		return 2
 	}
+
+	lang := effectiveLanguage(filepath.Dir(plansRoot))
 
 	srcDir := filepath.Join(plansRoot, fromState, slug)
 	dstDir := filepath.Join(plansRoot, toState, slug)
@@ -101,15 +104,15 @@ func RunMove(args []string) int {
 		fmt.Fprintf(os.Stderr, "update root section: %v\n", err)
 		return 3
 	}
-	text = updateLastUpdate(text2, time.Now().Format("2006-01-02"))
+	text = updateLastUpdate(text2, time.Now().Format("2006-01-02"), lang)
 	if err := os.WriteFile(rootReadme, []byte(text), 0o664); err != nil {
 		fmt.Fprintf(os.Stderr, "write root README: %v\n", err)
 		return 3
 	}
 
-	fmt.Println(ui.ActionHeader("Moved Plan", fmt.Sprintf("%s/%s -> %s/%s", fromState, slug, toState, slug)))
-	fmt.Println(ui.PathLine("updated", readmePath))
-	fmt.Println(ui.PathLine("updated", rootReadme))
+	fmt.Println(ui.ActionHeader(tr(lang, "Moved Plan", "Plan movido"), fmt.Sprintf("%s/%s -> %s/%s", fromState, slug, toState, slug)))
+	fmt.Println(pathLine("updated", readmePath))
+	fmt.Println(pathLine("updated", rootReadme))
 	return 0
 }
 
@@ -148,61 +151,52 @@ func parseMoveArgs(args []string) (moveOptions, []string, int, bool) {
 
 func normalizeMoveArgs(args []string) ([]string, error) {
 	withValue := map[string]bool{"--root": true, "-root": true, "--reason": true, "-reason": true}
-	flags := make([]string, 0, len(args))
-	pos := make([]string, 0, len(args))
-	for i := 0; i < len(args); i++ {
-		a := args[i]
-		if strings.HasPrefix(a, "--") || strings.HasPrefix(a, "-") {
-			if withValue[a] {
-				if i+1 >= len(args) {
-					return nil, fmt.Errorf("flag %s expects a value", a)
-				}
-				flags = append(flags, a, args[i+1])
-				i++
-				continue
-			}
-			flags = append(flags, a)
-			continue
-		}
-		pos = append(pos, a)
-	}
-	return append(flags, pos...), nil
+	return normalizeArgs(args, withValue)
 }
 
 func rewritePlanReadmeStatus(path, toState, fromState, reason string) error {
+	lang := effectiveLanguage(filepath.Dir(filepath.Dir(filepath.Dir(path))))
 	b, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
 	text := string(b)
 	lines := strings.Split(text, "\n")
-	newStatus := stateStatusLabel(toState)
+	newStatus := stateStatusLabel(toState, lang)
 	updated := false
 	for i, ln := range lines {
-		if strings.HasPrefix(strings.TrimSpace(ln), "**Status:**") {
-			lines[i] = "**Status:** " + newStatus + "  "
+		trimmed := strings.TrimSpace(ln)
+		if strings.HasPrefix(trimmed, "**Status:**") || strings.HasPrefix(trimmed, "**Estado:**") {
+			lines[i] = tr(lang, "**Status:** ", "**Estado:** ") + newStatus + "  "
 			updated = true
 			break
 		}
 	}
 	if !updated {
-		lines = append([]string{"**Status:** " + newStatus + "  "}, lines...)
+		lines = append([]string{tr(lang, "**Status:** ", "**Estado:** ") + newStatus + "  "}, lines...)
 	}
 	text = strings.Join(lines, "\n")
 	if strings.TrimSpace(reason) != "" {
-		note := fmt.Sprintf("- %s moved from `%s` to `%s`: %s", time.Now().Format("2006-01-02 15:04"), fromState, toState, strings.TrimSpace(reason))
-		text = appendSectionBullet(text, "## Move History", note)
+		note := fmt.Sprintf("- %s %s `%s` %s `%s`: %s", time.Now().Format("2006-01-02 15:04"), tr(lang, "moved from", "movido de"), fromState, tr(lang, "to", "a"), toState, strings.TrimSpace(reason))
+		text = appendSectionBullet(text, tr(lang, "## Move History", "## Historial de cambios"), note)
 	}
 	return os.WriteFile(path, []byte(text), 0o664)
 }
 
-func stateStatusLabel(state string) string {
-	return map[string]string{
+func stateStatusLabel(state string, lang i18n.Language) string {
+	en := map[string]string{
 		"current":      "In Progress (Current)",
 		"to-implement": "Pending (To Implement)",
 		"done":         "Completed (Done)",
 		"outdated":     "Outdated (Outdated)",
 	}[state]
+	es := map[string]string{
+		"current":      "En ejecución (Current)",
+		"to-implement": "Pendiente (To Implement)",
+		"done":         "Completado (Done)",
+		"outdated":     "Obsoleto (Outdated)",
+	}[state]
+	return tr(lang, en, es)
 }
 
 func readPlanTitle(readmePath string) string {

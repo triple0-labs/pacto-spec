@@ -6,10 +6,15 @@ import (
 	"strings"
 	"time"
 
+	"pacto/internal/i18n"
 	"pacto/internal/model"
 )
 
 func Render(r model.StatusReport, format string) (string, error) {
+	return RenderWithLanguage(r, format, i18n.English)
+}
+
+func RenderWithLanguage(r model.StatusReport, format string, lang i18n.Language) (string, error) {
 	switch strings.ToLower(format) {
 	case "json":
 		out := struct {
@@ -35,13 +40,13 @@ func Render(r model.StatusReport, format string) (string, error) {
 		}
 		return string(b), nil
 	case "table":
-		return renderTable(r), nil
+		return renderTable(r, lang), nil
 	default:
 		return "", fmt.Errorf("unsupported format %q", format)
 	}
 }
 
-func renderTable(r model.StatusReport) string {
+func renderTable(r model.StatusReport, lang i18n.Language) string {
 	var b strings.Builder
 	plansRoot := r.PlansRoot
 	if plansRoot == "" {
@@ -51,27 +56,27 @@ func renderTable(r model.StatusReport) string {
 	if repoRoot == "" {
 		repoRoot = r.Root
 	}
-	fmt.Fprintf(&b, "PLANS_ROOT: %s | REPO_ROOT: %s | MODE: %s | GENERATED: %s\n", plansRoot, repoRoot, r.Mode, r.GeneratedAt.Format(time.RFC3339))
-	fmt.Fprintf(&b, "SUMMARY: plans=%d pending=%d blocked=%d\n", r.Summary.TotalPlans, r.Summary.TotalPendingTasks, r.Summary.TotalBlockedTasks)
+	fmt.Fprintf(&b, "%s: %s | %s: %s | MODE: %s | %s: %s\n", i18n.T(lang, "PLANS_ROOT", "RAIZ_PLANES"), plansRoot, i18n.T(lang, "REPO_ROOT", "RAIZ_REPO"), repoRoot, r.Mode, i18n.T(lang, "GENERATED", "GENERADO"), r.GeneratedAt.Format(time.RFC3339))
+	fmt.Fprintf(&b, "%s: plans=%d pending=%d blocked=%d\n", i18n.T(lang, "SUMMARY", "RESUMEN"), r.Summary.TotalPlans, r.Summary.TotalPendingTasks, r.Summary.TotalBlockedTasks)
 	fmt.Fprintf(&b, "%s\n", strings.Repeat("-", 130))
-	fmt.Fprintf(&b, "%-14s %-36s %-11s %-8s %-8s %-10s %-12s\n", "STATE", "PLAN", "VERIF", "PENDING", "BLOCKED", "CONF", "DERIVED")
+	fmt.Fprintf(&b, "%-14s %-36s %-11s %-8s %-8s %-10s %-12s\n", i18n.T(lang, "STATE", "ESTADO"), i18n.T(lang, "PLAN", "PLAN"), i18n.T(lang, "VERIF", "VERIF"), i18n.T(lang, "PENDING", "PEND"), i18n.T(lang, "BLOCKED", "BLOQ"), i18n.T(lang, "CONF", "CONF"), i18n.T(lang, "DERIVED", "DERIVADO"))
 	fmt.Fprintf(&b, "%s\n", strings.Repeat("-", 130))
 	for _, p := range r.Plans {
 		fmt.Fprintf(&b, "%-14s %-36s %-11s %-8d %-8d %-10s %-12s\n", p.StateFolder, shorten(p.Slug, 36), p.Verification, p.PendingTasks, p.BlockedTasks, p.Confidence, shorten(p.DerivedStatus, 12))
 		if len(p.Blockers) > 0 {
-			fmt.Fprintf(&b, "  blockers: %s\n", strings.Join(p.Blockers, " | "))
+			fmt.Fprintf(&b, "  %s: %s\n", i18n.T(lang, "blockers", "bloqueadores"), strings.Join(p.Blockers, " | "))
 		}
 		if len(p.NextActions) > 0 {
-			fmt.Fprintf(&b, "  next: %s\n", strings.Join(p.NextActions, " | "))
+			fmt.Fprintf(&b, "  %s: %s\n", i18n.T(lang, "next", "siguiente"), strings.Join(p.NextActions, " | "))
 		}
 		if len(p.Claims) > 0 {
-			fmt.Fprintf(&b, "  claims: %d\n", len(p.Claims))
+			fmt.Fprintf(&b, "  %s: %d\n", i18n.T(lang, "claims", "afirmaciones"), len(p.Claims))
 		}
 		if len(p.ParseWarnings) > 0 {
-			fmt.Fprintf(&b, "  warnings: %s\n", strings.Join(p.ParseWarnings, " | "))
+			fmt.Fprintf(&b, "  %s: %s\n", i18n.T(lang, "warnings", "advertencias"), strings.Join(p.ParseWarnings, " | "))
 		}
 		if p.ParseError != "" {
-			fmt.Fprintf(&b, "  parse_error: %s\n", p.ParseError)
+			fmt.Fprintf(&b, "  %s: %s\n", i18n.T(lang, "parse_error", "error_parseo"), p.ParseError)
 		}
 	}
 	return strings.TrimRight(b.String(), "\n")

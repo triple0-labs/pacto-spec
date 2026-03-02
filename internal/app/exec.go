@@ -36,21 +36,22 @@ func RunExec(args []string) int {
 	if !ok {
 		return code
 	}
+	lang := effectiveLanguage(opts.root)
 	if len(pos) != 2 {
-		fmt.Fprintln(os.Stderr, "exec requires <state> <slug>")
+		fmt.Fprintln(os.Stderr, tr(lang, "exec requires <state> <slug>", "exec requiere <state> <slug>"))
 		return 2
 	}
 
 	state := strings.ToLower(strings.TrimSpace(pos[0]))
 	slug := strings.TrimSpace(pos[1])
 	if !isValidState(state) {
-		fmt.Fprintf(os.Stderr, "invalid state %q (allowed: current|to-implement|done|outdated)\n", state)
+		fmt.Fprintf(os.Stderr, tr(lang, "invalid state %q (allowed: current|to-implement|done|outdated)\n", "estado inválido %q (permitidos: current|to-implement|done|outdated)\n"), state)
 		return 2
 	}
 	if state != "current" {
-		fmt.Fprintf(os.Stderr, "exec only supports state %q\n", "current")
-		fmt.Fprintf(os.Stderr, "next action: move the plan to current, then retry exec\n")
-		fmt.Fprintf(os.Stderr, "trigger: pacto move %s %s current\n", state, slug)
+		fmt.Fprintf(os.Stderr, tr(lang, "exec only supports state %q\n", "exec solo soporta el estado %q\n"), "current")
+		fmt.Fprintf(os.Stderr, tr(lang, "next action: move the plan to current, then retry exec\n", "siguiente acción: mueve el plan a current y vuelve a intentar exec\n"))
+		fmt.Fprintf(os.Stderr, tr(lang, "trigger: pacto move %s %s current\n", "comando: pacto move %s %s current\n"), state, slug)
 		return 2
 	}
 	if !slugRe.MatchString(slug) {
@@ -107,13 +108,13 @@ func RunExec(args []string) int {
 	}
 
 	if updated == content {
-		fmt.Println(ui.Dim("No execution changes to apply."))
+		fmt.Println(ui.Dim(tr(lang, "No execution changes to apply.", "No hay cambios de ejecución para aplicar.")))
 		return 0
 	}
 
 	if opts.dryRun {
-		fmt.Println(ui.ActionHeader("Dry Run", "execution update"))
-		fmt.Println(ui.PathLine("updated", planPath))
+		fmt.Println(ui.ActionHeader(tr(lang, "Dry Run", "Simulación"), tr(lang, "execution update", "actualización de ejecución")))
+		fmt.Println(pathLine("updated", planPath))
 		for _, a := range actions {
 			fmt.Println(ui.Bullet(a))
 		}
@@ -125,8 +126,8 @@ func RunExec(args []string) int {
 		return 3
 	}
 
-	fmt.Println(ui.ActionHeader("Executed Plan", state+"/"+slug))
-	fmt.Println(ui.PathLine("updated", planPath))
+	fmt.Println(ui.ActionHeader(tr(lang, "Executed Plan", "Plan ejecutado"), state+"/"+slug))
+	fmt.Println(pathLine("updated", planPath))
 	for _, a := range actions {
 		fmt.Println(ui.Bullet(a))
 	}
@@ -145,7 +146,8 @@ func parseExecArgs(args []string) (execOptions, []string, int, bool) {
 		fs.PrintDefaults()
 	}
 
-	fs.StringVar(&opts.root, "root", "", "Project root path (auto-discovers when omitted)")
+	lang := effectiveLanguage("")
+	fs.StringVar(&opts.root, "root", "", tr(lang, "Project root path (auto-discovers when omitted)", "Ruta raíz del proyecto (auto-detecta si se omite)"))
 	fs.StringVar(&opts.step, "step", "", "Target task id (e.g. 1.2)")
 	fs.StringVar(&opts.note, "note", "", "Append execution note")
 	fs.StringVar(&opts.blocker, "blocker", "", "Append blocker")
@@ -166,7 +168,6 @@ func parseExecArgs(args []string) (execOptions, []string, int, bool) {
 		fmt.Fprintf(os.Stderr, "parse flags: %v\n", err)
 		return execOptions{}, nil, 2, false
 	}
-
 	return opts, fs.Args(), 0, true
 }
 
@@ -176,25 +177,7 @@ func normalizeExecArgs(args []string) ([]string, error) {
 		"--note": true, "-note": true, "--blocker": true, "-blocker": true,
 		"--evidence": true, "-evidence": true,
 	}
-	flags := make([]string, 0, len(args))
-	pos := make([]string, 0, len(args))
-	for i := 0; i < len(args); i++ {
-		a := args[i]
-		if strings.HasPrefix(a, "--") || strings.HasPrefix(a, "-") {
-			if withValue[a] {
-				if i+1 >= len(args) {
-					return nil, fmt.Errorf("flag %s expects a value", a)
-				}
-				flags = append(flags, a, args[i+1])
-				i++
-				continue
-			}
-			flags = append(flags, a)
-			continue
-		}
-		pos = append(pos, a)
-	}
-	return append(flags, pos...), nil
+	return normalizeArgs(args, withValue)
 }
 
 func resolvePlansRootForAction(rawRoot string) (string, error) {

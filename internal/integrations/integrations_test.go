@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"pacto/internal/plugins"
 )
 
 func TestParseToolsArg(t *testing.T) {
@@ -161,5 +163,97 @@ func TestGenerateForToolWritesContractAndExecCommand(t *testing.T) {
 	}
 	if !strings.Contains(execContent, "Status: **Implemented**") {
 		t.Fatalf("exec command should be marked implemented, got: %q", execContent)
+	}
+}
+
+func TestGenerateForToolIncludesPluginGuardrailsWhenActive(t *testing.T) {
+	root := t.TempDir()
+	writeIntegrationPlugin(t, root, "acme", true)
+
+	results := GenerateForTool(root, "opencode", false)
+	for _, r := range results {
+		if r.Err != nil {
+			t.Fatalf("unexpected generation error for %s/%s: %v", r.Kind, r.WorkflowID, r.Err)
+		}
+	}
+	statusSkill := filepath.Join(root, ".opencode", "skills", "pacto-status", "SKILL.md")
+	b, err := os.ReadFile(statusSkill)
+	if err != nil {
+		t.Fatalf("read status skill: %v", err)
+	}
+	content := string(b)
+	if !strings.Contains(content, "## Plugin Guardrails") {
+		t.Fatalf("expected plugin guardrails section, got: %q", content)
+	}
+	if !strings.Contains(content, "acme/status-first") {
+		t.Fatalf("expected plugin guardrail id, got: %q", content)
+	}
+	if !strings.Contains(content, "Always run pacto status first") {
+		t.Fatalf("expected plugin markdown content, got: %q", content)
+	}
+}
+
+func TestGenerateForToolSkipsPluginGuardrailsWhenDisabled(t *testing.T) {
+	root := t.TempDir()
+	writeIntegrationPlugin(t, root, "acme", false)
+
+	results := GenerateForTool(root, "opencode", false)
+	for _, r := range results {
+		if r.Err != nil {
+			t.Fatalf("unexpected generation error for %s/%s: %v", r.Kind, r.WorkflowID, r.Err)
+		}
+	}
+	statusSkill := filepath.Join(root, ".opencode", "skills", "pacto-status", "SKILL.md")
+	b, err := os.ReadFile(statusSkill)
+	if err != nil {
+		t.Fatalf("read status skill: %v", err)
+	}
+	content := string(b)
+	if strings.Contains(content, "## Plugin Guardrails") {
+		t.Fatalf("did not expect plugin guardrails section when disabled, got: %q", content)
+	}
+}
+
+func writeIntegrationPlugin(t *testing.T, root, pluginID string, enable bool) {
+	t.Helper()
+	pluginDir := filepath.Join(root, ".pacto", "plugins", pluginID)
+	if err := os.MkdirAll(filepath.Join(pluginDir, "scripts"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(pluginDir, "guardrails"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(pluginDir, "scripts", "check.sh"), []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(pluginDir, "guardrails", "status.md"), []byte("Always run pacto status first."), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	manifest := `apiVersion: pacto/v1alpha1
+kind: Plugin
+metadata:
+  id: ` + pluginID + `
+  version: 0.1.0
+  priority: 1
+spec:
+  cliGuardrails:
+    - id: clean
+      commands: [new]
+      run:
+        script: scripts/check.sh
+        timeoutMs: 1000
+  agentGuardrails:
+    - id: status-first
+      tools: [opencode]
+      workflows: [status]
+      markdownFile: guardrails/status.md
+`
+	if err := os.WriteFile(filepath.Join(pluginDir, "plugin.yaml"), []byte(manifest), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if enable {
+		if err := plugins.WriteActiveConfig(root, []string{pluginID}); err != nil {
+			t.Fatal(err)
+		}
 	}
 }

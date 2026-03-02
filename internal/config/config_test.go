@@ -84,6 +84,38 @@ func TestLoadWarnsOnUnknownKey(t *testing.T) {
 	}
 }
 
+func TestLoadReadsNestedYAMLListsAndBooleans(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, ".pacto-engine.yaml")
+	writeFile(t, path, strings.Join([]string{
+		"mode: strict",
+		"include_archive: true",
+		"limits:",
+		"  max_next_actions: 7",
+		"verification:",
+		"  claims:",
+		"    paths: false",
+		"    symbols: true",
+	}, "\n")+"\n")
+
+	cfg, warnings, err := Load("", root)
+	if err != nil {
+		t.Fatalf("Load returned error: %v", err)
+	}
+	if len(warnings) != 0 {
+		t.Fatalf("unexpected warnings: %v", warnings)
+	}
+	if cfg.Mode != "strict" || !cfg.IncludeArchive || cfg.MaxNextActions != 7 {
+		t.Fatalf("unexpected config values: %#v", cfg)
+	}
+	if cfg.ClaimsPaths {
+		t.Fatalf("expected claims.paths=false, got true")
+	}
+	if !cfg.ClaimsSymbols {
+		t.Fatalf("expected claims.symbols=true")
+	}
+}
+
 func containsWarning(warnings []string, sub string) bool {
 	for _, w := range warnings {
 		if strings.Contains(strings.ToLower(w), strings.ToLower(sub)) {

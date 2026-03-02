@@ -3,6 +3,7 @@ package app
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -50,5 +51,35 @@ func TestRunNewAutoDetectsRootFromNestedDir(t *testing.T) {
 	}
 	if len(planDocs) != 1 {
 		t.Fatalf("expected exactly one PLAN_*.md file, got %d", len(planDocs))
+	}
+}
+
+func TestRunNewPrintsRelativePathsFromCWD(t *testing.T) {
+	root := t.TempDir()
+	if code := RunInit([]string{"--root", root, "--no-interactive", "--no-install"}); code != 0 {
+		t.Fatalf("RunInit returned %d", code)
+	}
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(oldWD) }()
+	if err := os.Chdir(root); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout, _ := captureOutput(t, func() {
+		if code := RunNew([]string{"to-implement", "relative-output"}); code != 0 {
+			t.Fatalf("RunNew returned %d", code)
+		}
+	})
+	out := filepath.ToSlash(stdout)
+
+	if !strings.Contains(out, ".pacto/plans/to-implement/relative-output/README.md") {
+		t.Fatalf("expected relative README path in output, got %q", stdout)
+	}
+	if !strings.Contains(out, ".pacto/plans/README.md") {
+		t.Fatalf("expected relative root README path in output, got %q", stdout)
 	}
 }

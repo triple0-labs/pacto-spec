@@ -283,8 +283,8 @@ func Workflows() []WorkflowSpec {
 	}
 }
 
-func RenderSkill(toolID string, wf WorkflowSpec) string {
-	return fmt.Sprintf(`# %s Skill
+func RenderSkill(toolID string, wf WorkflowSpec, pluginGuardrails ...string) string {
+	base := fmt.Sprintf(`# %s Skill
 
 Use this skill as an agent contract for the %s workflow in Pacto projects.
 
@@ -323,10 +323,11 @@ Use this skill as an agent contract for the %s workflow in Pacto projects.
 - Status: **%s**
 - Fallback: %s
 `, wf.Title, wf.WorkflowID, wf.Summary, wf.WhenToUse, asBullets(wf.RequiredInputs), asBullets(wf.OptionalInputs), toolID, wf.Command, asBullets(wf.OutputContract), asBullets(wf.ValidationChecklist), asBullets(wf.FailureModes), implementationStatusLabel(wf.Implemented), wf.FallbackAction)
+	return appendPluginGuardrails(base, pluginGuardrails)
 }
 
-func RenderCommand(toolID string, wf WorkflowSpec) string {
-	return fmt.Sprintf(`# %s
+func RenderCommand(toolID string, wf WorkflowSpec, pluginGuardrails ...string) string {
+	base := fmt.Sprintf(`# %s
 
 Agent contract for %s.
 
@@ -361,6 +362,30 @@ Agent contract for %s.
 - Status: **%s**
 - Fallback: %s
 `, wf.CommandID, wf.WorkflowID, wf.Summary, asBullets(wf.RequiredInputs), asBullets(wf.OptionalInputs), toolID, wf.Command, asBullets(wf.OutputContract), asBullets(wf.ValidationChecklist), asBullets(wf.FailureModes), implementationStatusLabel(wf.Implemented), wf.FallbackAction)
+	return appendPluginGuardrails(base, pluginGuardrails)
+}
+
+func appendPluginGuardrails(base string, pluginGuardrails []string) string {
+	filtered := make([]string, 0, len(pluginGuardrails))
+	for _, section := range pluginGuardrails {
+		t := strings.TrimSpace(section)
+		if t != "" {
+			filtered = append(filtered, t)
+		}
+	}
+	if len(filtered) == 0 {
+		return base
+	}
+	var b strings.Builder
+	b.WriteString(strings.TrimRight(base, "\n"))
+	b.WriteString("\n\n## Plugin Guardrails\n\n")
+	b.WriteString("<!-- pacto:plugin-guardrails:start -->\n")
+	for _, section := range filtered {
+		b.WriteString(section)
+		b.WriteString("\n\n")
+	}
+	b.WriteString("<!-- pacto:plugin-guardrails:end -->\n")
+	return b.String()
 }
 
 func asBullets(items []string) string {

@@ -11,12 +11,13 @@ import (
 	"strings"
 	"time"
 
+	"pacto/internal/i18n"
 	"pacto/internal/ui"
 )
 
 var (
-	reCreatedAt = regexp.MustCompile(`(?m)^\*\*Created At:\*\*\s*(.+)$`)
-	reUpdatedAt = regexp.MustCompile(`(?m)^\*\*Updated At:\*\*\s*(.+)$`)
+	reCreatedAt = regexp.MustCompile(`(?m)^\*\*(?:Created At|Creado):\*\*\s*(.+)$`)
+	reUpdatedAt = regexp.MustCompile(`(?m)^\*\*(?:Updated At|Actualizado):\*\*\s*(.+)$`)
 )
 
 type exploreOptions struct {
@@ -39,17 +40,19 @@ func RunExplore(args []string) int {
 		return 2
 	}
 
+	lang := effectiveLanguage(root)
+
 	switch {
 	case opts.list:
-		return runExploreList(root)
+		return runExploreList(root, lang)
 	case strings.TrimSpace(opts.show) != "":
-		return runExploreShow(root, strings.TrimSpace(opts.show))
+		return runExploreShow(root, strings.TrimSpace(opts.show), lang)
 	default:
 		if len(pos) != 1 {
-			fmt.Fprintln(os.Stderr, "explore requires a slug, or use --list/--show")
+			fmt.Fprintln(os.Stderr, tr(lang, "explore requires a slug, or use --list/--show", "explore requiere un slug, o usar --list/--show"))
 			return 2
 		}
-		return runExploreCreateOrUpdate(root, pos[0], opts.title, opts.note)
+		return runExploreCreateOrUpdate(root, pos[0], opts.title, opts.note, lang)
 	}
 }
 
@@ -106,25 +109,7 @@ func parseExploreArgs(args []string) (exploreOptions, []string, int, bool) {
 
 func normalizeExploreArgs(args []string) ([]string, error) {
 	withValue := map[string]bool{"--root": true, "-root": true, "--title": true, "-title": true, "--note": true, "-note": true, "--show": true, "-show": true}
-	flags := make([]string, 0, len(args))
-	pos := make([]string, 0, len(args))
-	for i := 0; i < len(args); i++ {
-		a := args[i]
-		if strings.HasPrefix(a, "--") || strings.HasPrefix(a, "-") {
-			if withValue[a] {
-				if i+1 >= len(args) {
-					return nil, fmt.Errorf("flag %s expects a value", a)
-				}
-				flags = append(flags, a, args[i+1])
-				i++
-				continue
-			}
-			flags = append(flags, a)
-			continue
-		}
-		pos = append(pos, a)
-	}
-	return append(flags, pos...), nil
+	return normalizeArgs(args, withValue)
 }
 
 func resolveExploreRoot(rawRoot string) (string, error) {
@@ -141,7 +126,7 @@ func resolveExploreRoot(rawRoot string) (string, error) {
 	return cwd, nil
 }
 
-func runExploreCreateOrUpdate(root, slug, title, note string) int {
+func runExploreCreateOrUpdate(root, slug, title, note string, lang i18n.Language) int {
 	slug = strings.TrimSpace(slug)
 	if !slugRe.MatchString(slug) {
 		fmt.Fprintf(os.Stderr, "invalid slug %q (use lowercase letters, numbers, dashes)\n", slug)
@@ -163,7 +148,7 @@ func runExploreCreateOrUpdate(root, slug, title, note string) int {
 		if ideaTitle == "" {
 			ideaTitle = slugToTitle(slug)
 		}
-		text := buildExploreReadme(ideaTitle, now)
+		text := buildExploreReadme(ideaTitle, now, lang)
 		if strings.TrimSpace(note) != "" {
 			text = appendExploreNote(text, strings.TrimSpace(note), now)
 		}
@@ -171,8 +156,8 @@ func runExploreCreateOrUpdate(root, slug, title, note string) int {
 			fmt.Fprintf(os.Stderr, "write idea readme: %v\n", err)
 			return 3
 		}
-		fmt.Println(ui.ActionHeader("Created Idea", slug))
-		fmt.Println(ui.PathLine("created", readmePath))
+		fmt.Println(ui.ActionHeader(tr(lang, "Created Idea", "Idea creada"), slug))
+		fmt.Println(pathLine("created", readmePath))
 		return 0
 	} else if err != nil {
 		fmt.Fprintf(os.Stderr, "stat idea readme: %v\n", err)
@@ -180,8 +165,8 @@ func runExploreCreateOrUpdate(root, slug, title, note string) int {
 	}
 
 	if strings.TrimSpace(note) == "" {
-		fmt.Println(ui.ActionHeader("Idea Exists", slug))
-		fmt.Println(ui.PathLine("skipped", readmePath))
+		fmt.Println(ui.ActionHeader(tr(lang, "Idea Exists", "Idea existente"), slug))
+		fmt.Println(pathLine("skipped", readmePath))
 		return 0
 	}
 
@@ -196,17 +181,17 @@ func runExploreCreateOrUpdate(root, slug, title, note string) int {
 		fmt.Fprintf(os.Stderr, "update idea readme: %v\n", err)
 		return 3
 	}
-	fmt.Println(ui.ActionHeader("Updated Idea", slug))
-	fmt.Println(ui.PathLine("updated", readmePath))
+	fmt.Println(ui.ActionHeader(tr(lang, "Updated Idea", "Idea actualizada"), slug))
+	fmt.Println(pathLine("updated", readmePath))
 	return 0
 }
 
-func runExploreList(root string) int {
+func runExploreList(root string, lang i18n.Language) int {
 	ideasRoot := filepath.Join(root, ".pacto", "ideas")
 	ents, err := os.ReadDir(ideasRoot)
 	if err != nil {
 		if os.IsNotExist(err) {
-			fmt.Println(ui.Dim("No ideas found."))
+			fmt.Println(ui.Dim(tr(lang, "No ideas found.", "No se encontraron ideas.")))
 			return 0
 		}
 		fmt.Fprintf(os.Stderr, "read ideas: %v\n", err)
@@ -239,23 +224,23 @@ func runExploreList(root string) int {
 	}
 
 	if len(rows) == 0 {
-		fmt.Println(ui.Dim("No ideas found."))
+		fmt.Println(ui.Dim(tr(lang, "No ideas found.", "No se encontraron ideas.")))
 		return 0
 	}
 
 	sort.Slice(rows, func(i, j int) bool { return rows[i].slug < rows[j].slug })
-	fmt.Println(ui.Title("Ideas"))
+	fmt.Println(ui.Title(tr(lang, "Ideas", "Ideas")))
 	fmt.Println("")
 	for _, r := range rows {
 		fmt.Printf("%s\n", ui.Bullet(r.slug))
-		fmt.Printf("  title: %s\n", r.title)
-		fmt.Printf("  created: %s\n", r.createdAt)
-		fmt.Printf("  updated: %s\n", r.updatedAt)
+		fmt.Printf("  %s: %s\n", tr(lang, "title", "título"), r.title)
+		fmt.Printf("  %s: %s\n", tr(lang, "created", "creado"), r.createdAt)
+		fmt.Printf("  %s: %s\n", tr(lang, "updated", "actualizado"), r.updatedAt)
 	}
 	return 0
 }
 
-func runExploreShow(root, slug string) int {
+func runExploreShow(root, slug string, lang i18n.Language) int {
 	slug = strings.TrimSpace(slug)
 	if !slugRe.MatchString(slug) {
 		fmt.Fprintf(os.Stderr, "invalid slug %q (use lowercase letters, numbers, dashes)\n", slug)
@@ -272,29 +257,30 @@ func runExploreShow(root, slug string) int {
 		return 3
 	}
 	content := string(b)
-	fmt.Printf("%s %s\n", ui.Title("Idea"), slug)
-	fmt.Printf("Path: %s\n", readmePath)
-	fmt.Printf("Title: %s\n", extractTitle(content))
-	fmt.Printf("Created At: %s\n", extractStamp(reCreatedAt, content))
-	fmt.Printf("Updated At: %s\n", extractStamp(reUpdatedAt, content))
+	fmt.Printf("%s %s\n", ui.Title(tr(lang, "Idea", "Idea")), slug)
+	fmt.Printf("%s: %s\n", tr(lang, "Path", "Ruta"), displayPath(readmePath))
+	fmt.Printf("%s: %s\n", tr(lang, "Title", "Título"), extractTitle(content))
+	fmt.Printf("%s: %s\n", tr(lang, "Created At", "Creado"), extractStamp(reCreatedAt, content))
+	fmt.Printf("%s: %s\n", tr(lang, "Updated At", "Actualizado"), extractStamp(reUpdatedAt, content))
 	return 0
 }
 
-func buildExploreReadme(title, now string) string {
+func buildExploreReadme(title, now string, lang i18n.Language) string {
 	var b strings.Builder
 	b.WriteString("# " + title + "\n\n")
-	b.WriteString("**Created At:** " + now + "  \n")
-	b.WriteString("**Updated At:** " + now + "\n\n")
-	b.WriteString("## Summary\n\n")
-	b.WriteString("Idea exploration workspace.\n\n")
-	b.WriteString("## Notes\n\n")
-	b.WriteString("- [" + now + "] Idea created.\n")
+	b.WriteString(tr(lang, "**Created At:** ", "**Creado:** ") + now + "  \n")
+	b.WriteString(tr(lang, "**Updated At:** ", "**Actualizado:** ") + now + "\n\n")
+	b.WriteString(tr(lang, "## Summary\n\n", "## Resumen\n\n"))
+	b.WriteString(tr(lang, "Idea exploration workspace.\n\n", "Espacio de exploración de ideas.\n\n"))
+	b.WriteString(tr(lang, "## Notes\n\n", "## Notas\n\n"))
+	b.WriteString("- [" + now + "] " + tr(lang, "Idea created.", "Idea creada.") + "\n")
 	return b.String()
 }
 
 func appendExploreNote(content, note, now string) string {
-	if !strings.Contains(content, "## Notes") {
-		content = strings.TrimRight(content, "\n") + "\n\n## Notes\n\n"
+	if !strings.Contains(content, "## Notes") && !strings.Contains(content, "## Notas") {
+		lang := effectiveLanguage(".")
+		content = strings.TrimRight(content, "\n") + "\n\n" + tr(lang, "## Notes\n\n", "## Notas\n\n")
 	}
 	content = strings.TrimRight(content, "\n")
 	return content + "\n- [" + now + "] " + note + "\n"
@@ -304,8 +290,16 @@ func setUpdatedAt(content, now string) string {
 	if reUpdatedAt.MatchString(content) {
 		return reUpdatedAt.ReplaceAllString(content, "**Updated At:** "+now)
 	}
+	updatedLabel := "**Updated At:** "
+	if strings.Contains(content, "**Creado:**") || strings.Contains(content, "## Notas") {
+		updatedLabel = "**Actualizado:** "
+	}
+	createdLabel := "**Created At:** "
+	if updatedLabel == "**Actualizado:** " {
+		createdLabel = "**Creado:** "
+	}
 	title := extractTitle(content)
-	head := "# " + title + "\n\n**Created At:** " + extractStamp(reCreatedAt, content) + "  \n**Updated At:** " + now + "\n"
+	head := "# " + title + "\n\n" + createdLabel + extractStamp(reCreatedAt, content) + "  \n" + updatedLabel + now + "\n"
 	body := content
 	if idx := strings.Index(content, "\n"); idx >= 0 {
 		body = content[idx+1:]

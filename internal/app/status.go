@@ -42,6 +42,10 @@ func RunStatus(args []string) int {
 	if !ok {
 		return code
 	}
+	return runStatusWithParsed(values, provided)
+}
+
+func runStatusWithParsed(values statusFlagValues, provided map[string]bool) int {
 	if strings.TrimSpace(values.lang) != "" {
 		setGlobalLangOverride(values.lang)
 		defer setGlobalLangOverride("")

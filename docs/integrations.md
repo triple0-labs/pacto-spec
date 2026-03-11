@@ -2,6 +2,8 @@
 
 `pacto install` generates managed artifacts for supported AI tools.
 `pacto update --artifacts` refreshes those managed artifacts.
+`pacto update` without `--artifacts` updates the pacto binary and does not modify generated skill/command files.
+`pacto doctor` audits artifact drift and legacy patterns.
 
 Primary guidance surface is Pacto workspace contracts (`<plans-root>/PACTO.md`).
 Tool artifacts and optional root `AGENTS.md` content are integration hand-offs.
@@ -25,6 +27,7 @@ Generated skills and command prompts include:
 ## Workflows Generated
 
 - `status`
+- `doctor`
 - `new`
 - `explore`
 - `init`
@@ -48,6 +51,7 @@ Generated files use managed markers:
 
 ```text
 <!-- pacto:managed:start -->
+<!-- pacto:managed:meta artifact=... workflow=... contract=... template_sha256=... generated_by=... generated_at=... -->
 ...
 <!-- pacto:managed:end -->
 ```
@@ -57,6 +61,24 @@ Update behavior:
 - Managed block exists: block is updated in place.
 - Unmanaged file exists: skipped unless `--force` is provided.
 - Missing file: created.
+
+## Drift Detection
+
+Use `pacto doctor` to detect:
+
+- missing managed artifacts
+- unmanaged overrides
+- legacy managed blocks without metadata
+- metadata/checksum drift
+- known legacy patterns in tool folders
+
+Suggested fix flow:
+
+```bash
+pacto doctor --format table
+pacto update --artifacts
+pacto doctor --fail-on any
+```
 
 ## Plugin Guardrail Injection
 

@@ -6,33 +6,34 @@ import (
 	"testing"
 )
 
-func TestListAvailableIncludesGitSync(t *testing.T) {
+func TestListAvailableIncludesGitGuardrails(t *testing.T) {
 	infos := ListAvailable()
 	found := false
 	for _, info := range infos {
-		if info.ID == "git-sync" {
+		if info.ID == "git-guardrails" {
 			found = true
-			break
 		}
 	}
 	if !found {
-		t.Fatalf("expected git-sync in available list: %#v", infos)
+		t.Fatalf("expected git-guardrails in available list: %#v", infos)
 	}
 }
 
-func TestInstallWritesFilesAndConfig(t *testing.T) {
+func TestInstallGitGuardrailsWritesFilesAndConfig(t *testing.T) {
 	root := t.TempDir()
-	res, err := Install(root, "git-sync", InstallOptions{})
+	res, err := Install(root, "git-guardrails", InstallOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.PluginID != "git-sync" {
+	if res.PluginID != "git-guardrails" {
 		t.Fatalf("unexpected plugin id %q", res.PluginID)
 	}
-	pluginDir := filepath.Join(root, ".pacto", "plugins", "git-sync")
+	pluginDir := filepath.Join(root, ".pacto", "plugins", "git-guardrails")
 	for _, p := range []string{
 		filepath.Join(pluginDir, "plugin.yaml"),
-		filepath.Join(pluginDir, "scripts", "sync-status.sh"),
+		filepath.Join(pluginDir, "scripts", "preflight.sh"),
+		filepath.Join(pluginDir, "guardrails", "git-guardrails.md"),
+		filepath.Join(pluginDir, "README.md"),
 		filepath.Join(pluginDir, "config.env.example"),
 		filepath.Join(pluginDir, "config.env"),
 	} {
@@ -40,7 +41,7 @@ func TestInstallWritesFilesAndConfig(t *testing.T) {
 			t.Fatalf("expected path %s: %v", p, err)
 		}
 	}
-	info, err := os.Stat(filepath.Join(pluginDir, "scripts", "sync-status.sh"))
+	info, err := os.Stat(filepath.Join(pluginDir, "scripts", "preflight.sh"))
 	if err != nil {
 		t.Fatal(err)
 	}

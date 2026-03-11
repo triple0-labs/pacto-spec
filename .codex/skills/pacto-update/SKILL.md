@@ -28,7 +28,7 @@ Use after upgrading Pacto to refresh managed blocks in generated artifacts.
 ## Execution Contract
 
 - Tool target: codex
-- Recommended command: pacto update [--tools <all|none|csv>] [--force]
+- Recommended command: pacto update --artifacts [--tools <all|none|csv>] [--force]
 
 ## Output Contract
 - Updates managed blocks in skill and command artifacts in place.

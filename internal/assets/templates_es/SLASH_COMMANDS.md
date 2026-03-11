@@ -3,6 +3,7 @@
 IDs de comandos generados/gestionados por `pacto install` y `pacto update`:
 
 - `pacto-status`
+- `pacto-doctor`
 - `pacto-new`
 - `pacto-explore`
 - `pacto-init`

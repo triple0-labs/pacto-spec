@@ -1,61 +1,85 @@
-# Plan: <Título del plan>
+# Plan: <Title>
 
-**Versión:** 1.0  
-**Fecha:** <YYYY-MM-DD>  
-**Estado:** <Draft | En ejecución | Completado | Bloqueado>  
-**Owner:** <nombre o equipo>
+## Metadata
 
----
+- Status: Draft
+- Owner: <team>
+- Created: <YYYY-MM-DD>
+- Last Modified: <YYYY-MM-DD>
+- State: <current|to-implement|done|outdated>
+- Slug: <slug>
 
-## Resumen
+## Problem Statement
 
-<Qué se quiere lograr en 3-6 líneas.>
+<Describe the problem and scope.>
 
-## Contexto
+## Goals
 
-<Contexto técnico/funcional y situación actual.>
+1. <Goal 1>
+2. <Goal 2>
+3. <Goal 3>
 
-## Objetivos
+## Non-Goals
 
-1. <Objetivo 1>
-2. <Objetivo 2>
-3. <Objetivo 3>
+1. <Non-goal 1>
+2. <Non-goal 2>
 
-## No objetivos
+## User Scenarios
 
-1. <No objetivo 1>
-2. <No objetivo 2>
+### Scenario: <name>
 
-## Progreso general
+- **GIVEN** <initial state>
+- **WHEN** <action>
+- **THEN** <outcome>
 
-| Phase | Description | State | Progress | Est. duration | Actual duration |
-|------|-------------|--------|----------|---------------|---------------|
-| Phase 1 | <desc> | ⬜ Pending | 0% | <x> | — |
-| Phase 2 | <desc> | ⬜ Pending | 0% | <x> | — |
+## Functional Requirements
 
-**Progreso total:** <x>%  
-**Tiempo restante estimado:** <x>
+- FR-001: The system MUST <verifiable capability>.
+- FR-002: The system MUST <verifiable capability>.
+
+## Non-Functional Requirements
+
+- NFR-001: <performance/reliability/security requirement>.
+
+## Acceptance Criteria
+
+- AC-001: <measurable outcome>.
+- AC-002: <measurable outcome>.
+
+## Technical Context
+
+- Language/Version: <value>
+- Dependencies: <value>
+- Constraints: <value>
 
 ## Implementation Plan by Phases
 
 ## Phase 1: <optional title>
 
-**Objetivo:** <texto>  
-**Estado actual:** <texto>
-
-**Tasks**
-
 - [ ] 1.1 <task>
 - [ ] 1.2 <task>
 
-## Plan de pruebas
+## Execution Notes
 
-1. <test técnico 1>
-2. <test técnico 2>
-3. <test integración>
+- <YYYY-MM-DD HH:MM> <note>
 
-## Criterios de éxito
+## Blockers
 
-1. <criterio 1>
-2. <criterio 2>
-3. <criterio 3>
+- <YYYY-MM-DD HH:MM> <blocker>
+
+## Evidence
+
+- <YYYY-MM-DD HH:MM> `<path|symbol|command>`
+
+## Risks and Mitigations
+
+1. Risk: <description> | Mitigation: <description>
+
+## Next Steps
+
+1. <next step>
+2. <next step>
+
+## Decisions (ADR) (Optional)
+
+1. Decision: <text> | Rationale: <text>

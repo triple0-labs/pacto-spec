@@ -27,7 +27,9 @@ func TestRunExploreCreateAndNote(t *testing.T) {
 		t.Fatal(err)
 	}
 	content := string(b)
-	if !strings.Contains(content, "**Created At:**") || !strings.Contains(content, "**Updated At:**") {
+	hasEN := strings.Contains(content, "**Created At:**") && strings.Contains(content, "**Updated At:**")
+	hasES := strings.Contains(content, "**Creado:**") && strings.Contains(content, "**Actualizado:**")
+	if !hasEN && !hasES {
 		t.Fatalf("expected timestamps in README, got %q", content)
 	}
 

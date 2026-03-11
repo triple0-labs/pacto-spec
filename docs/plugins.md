@@ -49,7 +49,7 @@ Linux/macOS are supported in v1 (`/bin/sh` runtime).
 
 ```bash
 pacto plugin list-available
-pacto plugin install git-sync
+pacto plugin install git-guardrails
 pacto plugin list
 pacto plugin validate
 pacto plugin enable <id>
@@ -59,9 +59,13 @@ pacto plugin disable <id>
 Built-in plugins can be listed with `list-available` and installed directly with `plugin install <id>`.
 `plugin install` writes files into `.pacto/plugins/<id>` and enables the plugin by default (unless `--no-enable` is set).
 
+Current built-in plugins include:
+
+- `git-guardrails`: fail-closed git preflight checks for planning/execution workflows (`status`, `new`, `explore`, `exec`, `move`).
+
 ## Sample Plugin
 
 See a complete example at:
 
 - `samples/plugins/acme-guardrails/`
-- `samples/plugins/git-sync/`
+- `internal/plugins/builtin/assets/git-guardrails/`

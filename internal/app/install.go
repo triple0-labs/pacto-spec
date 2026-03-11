@@ -34,6 +34,22 @@ var (
 	selfUpdateGOARCH         = runtime.GOARCH
 )
 
+type toolArtifactsOptions struct {
+	Command string
+	Tools   string
+	Force   bool
+}
+
+type updateCommandOptions struct {
+	Artifacts bool
+	Tools     string
+	Force     bool
+	CheckOnly bool
+	Yes       bool
+	Version   string
+	Repo      string
+}
+
 func RunInstall(args []string) int {
 	return runInstallLike("install", args)
 }
@@ -73,7 +89,15 @@ func runToolArtifactsCommand(cmd string, args []string) int {
 		fs.Usage()
 		return 2
 	}
+	return runInstallWithOptions(toolArtifactsOptions{
+		Command: cmd,
+		Tools:   strings.TrimSpace(*toolsArg),
+		Force:   *force,
+	})
+}
 
+func runInstallWithOptions(opts toolArtifactsOptions) int {
+	lang := effectiveLanguage("")
 	cwd, err := filepath.Abs(".")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve cwd: %v\n", err)
@@ -81,8 +105,8 @@ func runToolArtifactsCommand(cmd string, args []string) int {
 	}
 
 	tools := make([]string, 0)
-	if strings.TrimSpace(*toolsArg) != "" {
-		parsed, err := integrations.ParseToolsArg(*toolsArg)
+	if strings.TrimSpace(opts.Tools) != "" {
+		parsed, err := integrations.ParseToolsArg(opts.Tools)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%v\n", err)
 			return 2
@@ -106,14 +130,14 @@ func runToolArtifactsCommand(cmd string, args []string) int {
 		return 0
 	}
 
-	fmt.Println(ui.ActionHeader(tr(lang, "Running "+cmd, "Ejecutando "+cmd), strings.Join(tools, ", ")))
+	fmt.Println(ui.ActionHeader(tr(lang, "Running "+opts.Command, "Ejecutando "+opts.Command), strings.Join(tools, ", ")))
 	created := 0
 	updated := 0
 	skipped := 0
 	failed := 0
 
 	for _, toolID := range tools {
-		results := integrations.GenerateForTool(cwd, toolID, *force)
+		results := integrations.GenerateForTool(cwd, toolID, opts.Force)
 		for _, r := range results {
 			if r.Err != nil {
 				failed++
@@ -178,26 +202,34 @@ func runUpdateCommand(args []string) int {
 		fs.Usage()
 		return 2
 	}
+	return runUpdateWithOptions(updateCommandOptions{
+		Artifacts: *artifacts,
+		Tools:     strings.TrimSpace(*toolsArg),
+		Force:     *force,
+		CheckOnly: *checkOnly,
+		Yes:       *yes,
+		Version:   strings.TrimSpace(*versionArg),
+		Repo:      strings.TrimSpace(*repoArg),
+	})
+}
 
-	legacyMode := *artifacts || strings.TrimSpace(*toolsArg) != "" || *force
+func runUpdateWithOptions(opts updateCommandOptions) int {
+	legacyMode := opts.Artifacts || strings.TrimSpace(opts.Tools) != "" || opts.Force
 	if legacyMode {
-		legacyArgs := make([]string, 0, 4)
-		if strings.TrimSpace(*toolsArg) != "" {
-			legacyArgs = append(legacyArgs, "--tools", strings.TrimSpace(*toolsArg))
-		}
-		if *force {
-			legacyArgs = append(legacyArgs, "--force")
-		}
-		return runToolArtifactsCommand("update", legacyArgs)
+		return runInstallWithOptions(toolArtifactsOptions{
+			Command: "update",
+			Tools:   opts.Tools,
+			Force:   opts.Force,
+		})
 	}
 
-	opts := selfUpdateOptions{
-		Repo:    strings.TrimSpace(*repoArg),
-		Version: strings.TrimSpace(*versionArg),
-		Check:   *checkOnly,
-		Yes:     *yes,
+	selfOpts := selfUpdateOptions{
+		Repo:    strings.TrimSpace(opts.Repo),
+		Version: strings.TrimSpace(opts.Version),
+		Check:   opts.CheckOnly,
+		Yes:     opts.Yes,
 	}
-	return runSelfUpdate(opts)
+	return runSelfUpdate(selfOpts)
 }
 
 type selfUpdateOptions struct {

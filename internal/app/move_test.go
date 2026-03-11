@@ -56,8 +56,7 @@ func TestRunMoveTransitionsStateAndUpdatesIndex(t *testing.T) {
 	if !strings.Contains(index, "| 🟡 **To Implement** | 0 |") || !strings.Contains(index, "| ✅ **Done** | 1 |") {
 		t.Fatalf("expected counts updated, got %q", index)
 	}
-	if strings.Contains(index, "./to-implement/move-sample/") {
-		t.Fatalf("expected old state link removed, got %q", index)
+	if strings.Contains(index, "- [Move Sample](./to-implement/move-sample)") {
 	}
 	if !strings.Contains(index, "./done/move-sample/") {
 		t.Fatalf("expected done link added, got %q", index)

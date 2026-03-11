@@ -1,0 +1,20 @@
+apiVersion: pacto/v1alpha1
+kind: Plugin
+metadata:
+  id: git-guardrails
+  version: 0.1.0
+  priority: 40
+spec:
+  cliGuardrails:
+    - id: git-preflight
+      commands: [status, new, explore, exec, move]
+      run:
+        script: scripts/preflight.sh
+        timeoutMs: 10000
+      onFail:
+        message: Git preflight checks failed. Resolve repository sync/conflicts or bypass once with --allow-guardrail git-guardrails/git-preflight.
+  agentGuardrails:
+    - id: pr-and-conflict-playbook
+      tools: [codex, cursor, claude, opencode]
+      workflows: [status, new, explore, exec, move]
+      markdownFile: guardrails/git-guardrails.md

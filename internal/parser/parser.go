@@ -9,21 +9,38 @@ import (
 	"time"
 
 	"pacto/internal/model"
+	"pacto/internal/planfmt"
 )
 
+type ParsedDeltaChange struct {
+	Op   string
+	Path string
+}
+
+type ParsedDelta struct {
+	ID        string
+	Date      *time.Time
+	Type      string
+	Status    string
+	NextDelta string
+	Changes   []ParsedDeltaChange
+}
+
 type ParsedPlan struct {
-	Ref             model.PlanRef
-	RawText         string
-	DeclaredStatus  string
-	Phases          []model.Phase
-	Tasks           []model.Task
-	BlockerHints    []string
-	NextActions     []string
-	HasCheckpoint   bool
-	HasEvidence     bool
-	LatestDeltaTime *time.Time
-	ParseWarnings   []string
-	ParseError      string
+	Ref                 model.PlanRef
+	RawText             string
+	DeclaredStatus      string
+	Phases              []model.Phase
+	Tasks               []model.Task
+	BlockerHints        []string
+	NextActions         []string
+	HasCheckpoint       bool
+	HasEvidence         bool
+	HasStructuredDeltas bool
+	Deltas              []ParsedDelta
+	LatestDeltaTime     *time.Time
+	ParseWarnings       []string
+	ParseError          string
 }
 
 var (
@@ -35,6 +52,8 @@ var (
 	reStepRef        = regexp.MustCompile(`^([1-9][0-9]*)\.([1-9][0-9]*)\b`)
 	reAnyPercent     = regexp.MustCompile(`(?i)(progreso total|progress)[:\s*]*([0-9]{1,3})%`)
 	reDateTime       = regexp.MustCompile(`(20[0-9]{2}-[0-9]{2}-[0-9]{2})(?:[ T]([0-9]{2}:[0-9]{2}))?`)
+	reDeltaHeader    = regexp.MustCompile(`(?i)^###\s*delta\s+(.+)$`)
+	reDeltaID        = regexp.MustCompile(`^D-[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}$`)
 )
 
 func ParsePlan(ref model.PlanRef, mode string) (ParsedPlan, error) {
@@ -46,7 +65,26 @@ func ParsePlan(ref model.PlanRef, mode string) (ParsedPlan, error) {
 	p.RawText = text
 	lines := strings.Split(text, "\n")
 
+	deltas, deltaWarnings, hasDeltaSection, deltaErr := parseStructuredDeltas(lines, "compat")
+	if len(deltas) > 0 {
+		p.HasStructuredDeltas = true
+		p.Deltas = deltas
+		for _, d := range deltas {
+			if d.Date == nil {
+				continue
+			}
+			if p.LatestDeltaTime == nil || d.Date.After(*p.LatestDeltaTime) {
+				p.LatestDeltaTime = d.Date
+			}
+		}
+	}
+	p.ParseWarnings = append(p.ParseWarnings, deltaWarnings...)
+	if deltaErr != nil {
+		return p, deltaErr
+	}
+
 	currentPhase := 0
+	var legacyLatestDelta *time.Time
 	for _, line := range lines {
 		t := strings.TrimSpace(line)
 		if t == "" {
@@ -91,20 +129,24 @@ func ParsePlan(ref model.PlanRef, mode string) (ParsedPlan, error) {
 		if strings.HasPrefix(lt, "**checkpoint") || strings.HasPrefix(lt, "checkpoint") {
 			p.HasCheckpoint = true
 		}
-		if strings.Contains(lt, "evidencia") || strings.Contains(lt, "smoke") || strings.Contains(lt, "validación") || strings.Contains(lt, "validacion") {
+		if strings.Contains(lt, "evidencia") || strings.Contains(lt, "evidence") || strings.Contains(lt, "smoke") || strings.Contains(lt, "validación") || strings.Contains(lt, "validacion") || strings.Contains(lt, "validation") {
 			p.HasEvidence = true
 		}
 		if looksBlockerLine(t) {
 			p.BlockerHints = appendUnique(p.BlockerHints, trimForReport(t))
 		}
 
-		if strings.Contains(strings.ToLower(t), "delta") || strings.Contains(strings.ToLower(t), "checkpoint") {
+		if strings.Contains(lt, "delta") || strings.Contains(lt, "checkpoint") {
 			if dt := parseDateTime(t); dt != nil {
-				if p.LatestDeltaTime == nil || dt.After(*p.LatestDeltaTime) {
-					p.LatestDeltaTime = dt
+				if legacyLatestDelta == nil || dt.After(*legacyLatestDelta) {
+					legacyLatestDelta = dt
 				}
 			}
 		}
+	}
+
+	if p.LatestDeltaTime == nil && !hasDeltaSection && legacyLatestDelta != nil {
+		p.LatestDeltaTime = legacyLatestDelta
 	}
 
 	extractNextActions(lines, &p)
@@ -114,13 +156,260 @@ func ParsePlan(ref model.PlanRef, mode string) (ParsedPlan, error) {
 		}
 	}
 
-	if p.DeclaredStatus == "" && mode == "strict" {
-		return p, fmt.Errorf("missing declared status")
+	activeStrict := mode == "strict" && (p.Ref.State == "current" || p.Ref.State == "to-implement")
+	if p.DeclaredStatus == "" {
+		if activeStrict {
+			return p, fmt.Errorf("missing declared status")
+		}
+		p.ParseWarnings = append(p.ParseWarnings, "missing declared status")
 	}
-	if len(p.Phases) == 0 && mode == "strict" {
-		p.ParseWarnings = append(p.ParseWarnings, "missing structured progress source")
+	if len(p.Phases) == 0 {
+		if activeStrict {
+			p.ParseWarnings = append(p.ParseWarnings, "missing structured progress source")
+		} else if mode == "strict" {
+			p.ParseWarnings = append(p.ParseWarnings, "missing structured progress source")
+		}
+	}
+
+	structureIssues := planfmt.Validate(text)
+	for _, issue := range structureIssues {
+		p.ParseWarnings = appendUnique(p.ParseWarnings, "plan_structure: "+issue.Code+" - "+issue.Message)
+	}
+	if activeStrict && len(structureIssues) > 0 {
+		first := structureIssues[0]
+		return p, fmt.Errorf("plan structure violation (%s): %s", first.Code, first.Message)
 	}
 	return p, nil
+}
+
+func parseStructuredDeltas(lines []string, mode string) ([]ParsedDelta, []string, bool, error) {
+	start := -1
+	for i, line := range lines {
+		if !strings.HasPrefix(strings.TrimSpace(line), "##") {
+			continue
+		}
+		h := normalizeHeading(strings.TrimSpace(line))
+		if h == "delta history" || h == "historial de deltas" {
+			start = i
+			break
+		}
+	}
+	if start < 0 {
+		return nil, nil, false, nil
+	}
+
+	warnings := make([]string, 0)
+	deltas := make([]ParsedDelta, 0)
+	var curr *ParsedDelta
+	insideChanges := false
+	recordedIssues := map[string]struct{}{}
+
+	addIssue := func(msg string) error {
+		if _, ok := recordedIssues[msg]; ok {
+			return nil
+		}
+		recordedIssues[msg] = struct{}{}
+		if mode == "strict" {
+			return fmt.Errorf("invalid structured delta section: %s", msg)
+		}
+		warnings = append(warnings, msg)
+		return nil
+	}
+
+	flushCurrent := func() error {
+		if curr == nil {
+			return nil
+		}
+		if curr.ID == "" {
+			return addIssue("missing delta id in heading")
+		}
+		if curr.Date == nil {
+			if err := addIssue("delta " + curr.ID + " missing Date"); err != nil {
+				return err
+			}
+		}
+		if curr.Status != "" {
+			s := strings.ToLower(strings.TrimSpace(curr.Status))
+			switch s {
+			case "applied", "partial", "reverted":
+				curr.Status = s
+			default:
+				if err := addIssue("delta " + curr.ID + " has invalid Status: " + curr.Status); err != nil {
+					return err
+				}
+			}
+		}
+		deltas = append(deltas, *curr)
+		curr = nil
+		insideChanges = false
+		return nil
+	}
+
+	for i := start + 1; i < len(lines); i++ {
+		t := strings.TrimSpace(lines[i])
+		if t == "" {
+			continue
+		}
+		if strings.HasPrefix(t, "## ") {
+			break
+		}
+		if m := reDeltaHeader.FindStringSubmatch(t); len(m) == 2 {
+			if err := flushCurrent(); err != nil {
+				return nil, warnings, true, err
+			}
+			id := strings.TrimSpace(m[1])
+			if !reDeltaID.MatchString(id) {
+				if err := addIssue("invalid delta id: " + id); err != nil {
+					return nil, warnings, true, err
+				}
+			}
+			curr = &ParsedDelta{ID: id, Changes: make([]ParsedDeltaChange, 0)}
+			insideChanges = false
+			continue
+		}
+		if curr == nil {
+			continue
+		}
+
+		if key, value, ok := parseDeltaField(t); ok {
+			insideChanges = false
+			switch key {
+			case "date":
+				dt, err := parseStructuredDate(value)
+				if err != nil {
+					if err := addIssue("delta " + curr.ID + " has invalid Date: " + value); err != nil {
+						return nil, warnings, true, err
+					}
+				} else {
+					curr.Date = dt
+				}
+			case "type":
+				curr.Type = strings.TrimSpace(value)
+			case "status":
+				curr.Status = strings.TrimSpace(value)
+			case "next delta":
+				curr.NextDelta = strings.TrimSpace(value)
+			case "changes":
+				insideChanges = true
+			}
+			continue
+		}
+
+		if insideChanges {
+			if change, ok := parseDeltaChangeLine(t); ok {
+				curr.Changes = append(curr.Changes, change)
+				continue
+			}
+			if err := addIssue("delta " + curr.ID + " has invalid change line: " + t); err != nil {
+				return nil, warnings, true, err
+			}
+		}
+	}
+
+	if err := flushCurrent(); err != nil {
+		return nil, warnings, true, err
+	}
+	return deltas, warnings, true, nil
+}
+
+func parseStructuredDate(value string) (*time.Time, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil, fmt.Errorf("empty date")
+	}
+	t, err := time.Parse("2006-01-02 15:04", value)
+	if err != nil {
+		return nil, err
+	}
+	return &t, nil
+}
+
+func parseDeltaChangeLine(line string) (ParsedDeltaChange, bool) {
+	v := strings.TrimSpace(line)
+	for strings.HasPrefix(v, "- ") || strings.HasPrefix(v, "* ") {
+		v = strings.TrimSpace(v[2:])
+	}
+	v = strings.Trim(v, "`")
+	if v == "" {
+		return ParsedDeltaChange{}, false
+	}
+	op := string(v[0])
+	if op != "+" && op != "~" && op != "-" {
+		return ParsedDeltaChange{}, false
+	}
+	path := strings.TrimSpace(v[1:])
+	if path == "" {
+		return ParsedDeltaChange{}, false
+	}
+	return ParsedDeltaChange{Op: op, Path: path}, true
+}
+
+func parseDeltaField(line string) (string, string, bool) {
+	v := strings.TrimSpace(line)
+	for strings.HasPrefix(v, "- ") || strings.HasPrefix(v, "* ") {
+		v = strings.TrimSpace(v[2:])
+	}
+	if strings.HasPrefix(v, "**") {
+		if idx := strings.Index(v[2:], "**"); idx >= 0 {
+			end := 2 + idx
+			label := strings.TrimSpace(v[2:end])
+			label = strings.TrimSuffix(label, ":")
+			rest := strings.TrimSpace(v[end+2:])
+			rest = strings.TrimPrefix(rest, ":")
+			rest = strings.TrimSpace(rest)
+			if key, ok := canonicalDeltaField(label); ok {
+				return key, rest, true
+			}
+		}
+	}
+	if idx := strings.Index(v, ":"); idx >= 0 {
+		label := strings.TrimSpace(v[:idx])
+		rest := strings.TrimSpace(v[idx+1:])
+		if key, ok := canonicalDeltaField(label); ok {
+			return key, rest, true
+		}
+	}
+	return "", "", false
+}
+
+func canonicalDeltaField(label string) (string, bool) {
+	norm := strings.ToLower(strings.TrimSpace(label))
+	norm = strings.Trim(norm, "*")
+	norm = strings.Join(strings.Fields(norm), " ")
+	aliases := map[string]string{
+		"date":            "date",
+		"fecha":           "date",
+		"author":          "author",
+		"autor":           "author",
+		"scope":           "scope",
+		"alcance":         "scope",
+		"type":            "type",
+		"tipo":            "type",
+		"status":          "status",
+		"estado":          "status",
+		"changes":         "changes",
+		"cambios":         "changes",
+		"validation":      "validation",
+		"validacion":      "validation",
+		"validación":      "validation",
+		"risk":            "risk",
+		"riesgo":          "risk",
+		"rollback":        "rollback",
+		"next delta":      "next delta",
+		"siguiente delta": "next delta",
+	}
+	key, ok := aliases[norm]
+	return key, ok
+}
+
+func normalizeHeading(line string) string {
+	t := strings.TrimSpace(line)
+	t = strings.TrimLeft(t, "#")
+	t = strings.TrimSpace(t)
+	t = strings.Trim(t, "*")
+	t = strings.ToLower(t)
+	t = strings.Join(strings.Fields(t), " ")
+	return t
 }
 
 func extractStepRef(text string) (int, int, bool) {
@@ -186,7 +475,7 @@ func extractNextActions(lines []string, p *ParsedPlan) {
 	for _, line := range lines {
 		t := strings.TrimSpace(line)
 		lt := strings.ToLower(t)
-		if strings.HasPrefix(lt, "## siguientes pasos") || strings.HasPrefix(lt, "### siguientes pasos") || strings.Contains(lt, "**siguientes pasos") || strings.Contains(lt, "**siguiente delta") || strings.HasPrefix(lt, "## next steps") {
+		if strings.HasPrefix(lt, "## siguientes pasos") || strings.HasPrefix(lt, "### siguientes pasos") || strings.Contains(lt, "**siguientes pasos") || strings.Contains(lt, "**siguiente delta") || strings.HasPrefix(lt, "## next steps") || strings.Contains(lt, "**next delta") {
 			collect = true
 			continue
 		}

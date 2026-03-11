@@ -52,6 +52,9 @@ func TestRunExecCompletesNextTaskAndAppendsEvidence(t *testing.T) {
 	if !strings.Contains(got, "## Evidence") || !strings.Contains(got, "`src/auth.go`") {
 		t.Fatalf("expected evidence section, got %q", got)
 	}
+	if !strings.Contains(got, "**Last Modified:** ") {
+		t.Fatalf("expected Last Modified metadata update, got %q", got)
+	}
 }
 
 func TestRunExecDryRunDoesNotWrite(t *testing.T) {
@@ -80,7 +83,7 @@ func TestRunExecDryRunDoesNotWrite(t *testing.T) {
 			t.Fatalf("RunExec returned %d", code)
 		}
 	})
-	if !strings.Contains(stdout, "Dry Run") {
+	if !strings.Contains(stdout, "Dry Run") && !strings.Contains(stdout, "Simulación") {
 		t.Fatalf("expected dry-run output, got %q", stdout)
 	}
 
@@ -117,10 +120,10 @@ func TestRunExecRejectsNonCurrentState(t *testing.T) {
 			t.Fatalf("RunExec returned %d, want 2", code)
 		}
 	})
-	if !strings.Contains(stderr, "only supports state") {
+	if !strings.Contains(stderr, "only supports state") && !strings.Contains(stderr, "solo soporta el estado") {
 		t.Fatalf("expected state restriction message, got %q", stderr)
 	}
-	if !strings.Contains(stderr, "trigger: pacto move to-implement needs-move current") {
+	if !strings.Contains(stderr, "pacto move to-implement needs-move current") {
 		t.Fatalf("expected explicit trigger command, got %q", stderr)
 	}
 }

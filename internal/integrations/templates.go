@@ -19,7 +19,6 @@ func Workflows() []WorkflowSpec {
 			},
 			OptionalInputs: []string{
 				"`--root <path>` to pin project root used for `.pacto/plans` discovery.",
-				"`--plans-root <path>` deprecated compatibility alias.",
 				"`--repo-root <path>` to pin evidence verification root.",
 				"`--format table|json`, `--fail-on`, `--state`, `--include-archive`.",
 				"`--mode compat|strict`, `--config`, `--max-next-actions`, `--max-blockers`, `--verbose`.",
@@ -40,6 +39,40 @@ func Workflows() []WorkflowSpec {
 				"Partial verification due to missing or stale repository evidence.",
 			},
 			FallbackAction: "Ask for explicit `--root` and `--repo-root` when auto-discovery fails.",
+			Implemented:    true,
+		},
+		{
+			WorkflowID: "doctor",
+			CommandID:  "pacto-doctor",
+			Title:      "Pacto Doctor",
+			Summary:    "Audit managed integration artifacts for drift and legacy patterns.",
+			Command:    "pacto doctor [--root <path>] [--tools <all|none|csv>] [--format table|json] [--fail-on none|drift|legacy|any]",
+			WhenToUse:  "Use when generated skills/commands might be stale after manual edits or CLI/template upgrades.",
+			RequiredInputs: []string{
+				"None when tool auto-detection succeeds.",
+			},
+			OptionalInputs: []string{
+				"`--root <path>` to target a specific project root.",
+				"`--tools <all|none|csv>` for explicit tool selection.",
+				"`--format table|json` for human vs automation output.",
+				"`--fail-on none|drift|legacy|any` for CI enforcement.",
+			},
+			OutputContract: []string{
+				"Reports managed artifact status (`ok|missing|unmanaged|legacy_managed|stale|meta_mismatch|legacy_pattern`).",
+				"Provides recommended remediation action (typically `pacto update --artifacts`).",
+				"Emits summary counters for drift and legacy findings.",
+			},
+			ValidationChecklist: []string{
+				"Confirm analyzed root and tool selection match user intent.",
+				"Review drift/legacy findings before remediation.",
+				"If CI use case, set explicit `--fail-on` policy.",
+			},
+			FailureModes: []string{
+				"No tools detected when `--tools` is omitted.",
+				"Invalid tool list or fail-on/format flag values.",
+				"Filesystem read errors while auditing artifacts.",
+			},
+			FallbackAction: "If findings are expected but unresolved, run `pacto update --artifacts` and re-run `pacto doctor`.",
 			Implemented:    true,
 		},
 		{
@@ -184,7 +217,7 @@ func Workflows() []WorkflowSpec {
 			CommandID:  "pacto-update",
 			Title:      "Pacto Update",
 			Summary:    "Refresh previously installed managed Pacto artifacts.",
-			Command:    "pacto update [--tools <all|none|csv>] [--force]",
+			Command:    "pacto update --artifacts [--tools <all|none|csv>] [--force]",
 			WhenToUse:  "Use after upgrading Pacto to refresh managed blocks in generated artifacts.",
 			RequiredInputs: []string{
 				"Previously installed tool artifacts, or explicit `--tools` target.",

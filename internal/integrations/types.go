@@ -47,6 +47,28 @@ type ArtifactResult struct {
 	Err        error
 }
 
+type DriftStatus string
+
+const (
+	DriftOK            DriftStatus = "ok"
+	DriftMissing       DriftStatus = "missing"
+	DriftUnmanaged     DriftStatus = "unmanaged"
+	DriftLegacyManaged DriftStatus = "legacy_managed"
+	DriftStale         DriftStatus = "stale"
+	DriftMetaMismatch  DriftStatus = "meta_mismatch"
+	DriftLegacyPattern DriftStatus = "legacy_pattern"
+)
+
+type DriftRecord struct {
+	Tool           string
+	Kind           string
+	WorkflowID     string
+	Path           string
+	Status         DriftStatus
+	Reason         string
+	RecommendedFix string
+}
+
 func SupportedTools() []string {
 	return []string{"codex", "cursor", "claude", "opencode"}
 }

@@ -34,9 +34,9 @@ type InstallResult struct {
 }
 
 var catalog = map[string]PluginInfo{
-	"git-sync": {
-		ID:      "git-sync",
-		Summary: "Sync git fetch/pull context before pacto status.",
+	"git-guardrails": {
+		ID:      "git-guardrails",
+		Summary: "Fail-closed git preflight checks before planning/execution workflows.",
 	},
 }
 

@@ -7,9 +7,9 @@ import (
 )
 
 func main() {
-	os.Exit(run(os.Args[1:]))
+	os.Exit(run())
 }
 
-func run(args []string) int {
-	return app.Run(args)
+func run() int {
+	return app.Execute()
 }

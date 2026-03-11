@@ -82,6 +82,18 @@ func commandCatalog() []CommandHelp {
 			},
 		},
 		{
+			Name:        "doctor",
+			Summary:     "Audit managed tool artifacts for drift and legacy patterns.",
+			Usage:       "pacto doctor [--root <path>] [--tools <all|none|csv>] [--format table|json] [--fail-on none|drift|legacy|any] [--verbose]",
+			Description: "Checks generated skill/command artifacts for missing files, unmanaged files, metadata mismatches, stale managed content, and known legacy patterns. Use `pacto update --artifacts` to refresh managed artifacts.",
+			Examples: []string{
+				"pacto doctor",
+				"pacto doctor --tools cursor --format table",
+				"pacto doctor --format json --fail-on any",
+				"pacto doctor --root .",
+			},
+		},
+		{
 			Name:        "new",
 			Summary:     "Create a new plan scaffold and update root index.",
 			Usage:       "pacto new <current|to-implement|done|outdated> <slug> [--title ...] [--owner ...] [--root <path>] [--allow-minimal-root]",
@@ -165,13 +177,24 @@ func commandCatalog() []CommandHelp {
 			},
 		},
 		{
+			Name:        "normalize",
+			Summary:     "Normalize plan docs to the structured PRD contract.",
+			Usage:       "pacto normalize [--root <path>] [--state <state|all>] [--include-archive] [--write] [--format table|json]",
+			Description: "Audits and normalizes plan markdown structure. Runs in dry-run mode by default and reports per-plan changes/issues. Use --write to apply edits.",
+			Examples: []string{
+				"pacto normalize",
+				"pacto normalize --state current --format json",
+				"pacto normalize --write",
+			},
+		},
+		{
 			Name:        "plugin",
 			Summary:     "Manage local Pacto plugins and activation state.",
 			Usage:       "pacto plugin <list|list-available|install|validate|enable|disable> [options]",
 			Description: "Lists built-in plugins shipped by pacto, installs built-ins into `.pacto/plugins`, validates manifests, and updates enabled plugin IDs in `.pacto/config.yaml`.",
 			Examples: []string{
 				"pacto plugin list-available",
-				"pacto plugin install git-sync",
+				"pacto plugin install git-guardrails",
 				"pacto plugin list",
 				"pacto plugin validate",
 				"pacto plugin enable acme-guardrails",

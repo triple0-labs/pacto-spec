@@ -3,6 +3,7 @@
 Command IDs generated/managed by `pacto install` and `pacto update`:
 
 - `pacto-status`
+- `pacto-doctor`
 - `pacto-new`
 - `pacto-explore`
 - `pacto-init`
@@ -17,6 +18,12 @@ Command IDs generated/managed by `pacto install` and `pacto update`:
 
 - Consolidated state + blockers + next actions.
 - Verification outcome per plan: `verified|partial|unverified`.
+
+### `pacto-doctor`
+
+- Audits managed integration artifacts for drift and legacy patterns.
+- Supports CI enforcement via `--fail-on none|drift|legacy|any`.
+- Recommended remediation: `pacto update --artifacts`.
 
 ### `pacto-new`
 

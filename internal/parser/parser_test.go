@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"pacto/internal/model"
 )
@@ -58,10 +59,127 @@ func TestParsePlanExtractsPhaseTaskRefs(t *testing.T) {
 	}
 }
 
+func TestParsePlanStructuredDeltasEnglish(t *testing.T) {
+	ref := writePlan(t, "Status: In Progress\n\n## Delta History\n### Delta D-2026-03-01-01\n- **Date:** 2026-03-01 10:30\n- **Type:** feat\n- **Status:** applied\n- **Changes:**\n  - `+ src/auth.go`\n  - `~ internal/parser/parser.go`\n- **Next Delta:** add tests\n")
+	p, err := ParsePlan(ref, "compat")
+	if err != nil {
+		t.Fatalf("ParsePlan returned error: %v", err)
+	}
+	if !p.HasStructuredDeltas {
+		t.Fatal("expected HasStructuredDeltas=true")
+	}
+	if len(p.Deltas) != 1 {
+		t.Fatalf("expected 1 delta, got %d", len(p.Deltas))
+	}
+	if got := p.Deltas[0].ID; got != "D-2026-03-01-01" {
+		t.Fatalf("delta id=%q", got)
+	}
+	if p.Deltas[0].Date == nil {
+		t.Fatal("expected parsed delta date")
+	}
+	if len(p.Deltas[0].Changes) != 2 {
+		t.Fatalf("expected 2 changes, got %d", len(p.Deltas[0].Changes))
+	}
+	if p.LatestDeltaTime == nil {
+		t.Fatal("expected LatestDeltaTime from structured delta")
+	}
+}
+
+func TestParsePlanStructuredDeltasSpanishAliases(t *testing.T) {
+	ref := writePlan(t, "Status: In Progress\n\n## Historial de deltas\n### Delta D-2026-03-02-01\n- **Fecha:** 2026-03-02 08:00\n- **Tipo:** fix\n- **Estado:** partial\n- **Cambios:**\n  - `+ src/api.go`\n- **Siguiente delta:** completar pruebas\n")
+	p, err := ParsePlan(ref, "compat")
+	if err != nil {
+		t.Fatalf("ParsePlan returned error: %v", err)
+	}
+	if !p.HasStructuredDeltas {
+		t.Fatal("expected HasStructuredDeltas=true")
+	}
+	if len(p.Deltas) != 1 {
+		t.Fatalf("expected 1 delta, got %d", len(p.Deltas))
+	}
+	if p.Deltas[0].Date == nil {
+		t.Fatal("expected parsed Date from Fecha alias")
+	}
+	if got := p.Deltas[0].Status; got != "partial" {
+		t.Fatalf("status=%q want partial", got)
+	}
+}
+
+func TestParsePlanStructuredDeltaCompatWarning(t *testing.T) {
+	ref := writePlan(t, "Status: In Progress\n\n## Delta History\n### Delta BAD-ID\n- **Date:** bad-date\n- **Status:** nonsense\n")
+	p, err := ParsePlan(ref, "compat")
+	if err != nil {
+		t.Fatalf("ParsePlan returned error: %v", err)
+	}
+	if len(p.ParseWarnings) == 0 {
+		t.Fatal("expected parse warnings for malformed structured delta")
+	}
+}
+
+func TestParsePlanStructuredDeltaStrictError(t *testing.T) {
+	ref := writePlanInState(t, "done", "Status: Completed\n\n## Delta History\n### Delta BAD-ID\n- **Date:** bad-date\n")
+	p, err := ParsePlan(ref, "strict")
+	if err != nil {
+		t.Fatalf("did not expect strict mode error for malformed structured delta: %v", err)
+	}
+	if len(p.ParseWarnings) == 0 {
+		t.Fatal("expected warnings for malformed structured delta in strict mode")
+	}
+}
+
+func TestParsePlanStrictDoneStateWarnOnlyForStructure(t *testing.T) {
+	ref := writePlanInState(t, "done", "Status: Completed\n\n## Summary\n\nshort\n")
+	_, err := ParsePlan(ref, "strict")
+	if err != nil {
+		t.Fatalf("expected done plans in strict mode to warn, not fail: %v", err)
+	}
+}
+
+func TestParsePlanStrictCurrentStateFailsOnMissingSchema(t *testing.T) {
+	ref := writePlanInState(t, "current", "Status: In Progress\n\n## Summary\n\nshort\n")
+	_, err := ParsePlan(ref, "strict")
+	if err == nil {
+		t.Fatal("expected strict current plan to fail on missing required structure")
+	}
+}
+
+func TestParsePlanLegacyDeltaFallbackWithoutSection(t *testing.T) {
+	ref := writePlan(t, "Status: In Progress\n\nRecent delta 2026-03-03 09:15\n")
+	p, err := ParsePlan(ref, "compat")
+	if err != nil {
+		t.Fatalf("ParsePlan returned error: %v", err)
+	}
+	if p.HasStructuredDeltas {
+		t.Fatal("did not expect structured deltas")
+	}
+	if p.LatestDeltaTime == nil {
+		t.Fatal("expected legacy fallback latest delta time")
+	}
+}
+
+func TestParsePlanStructuredTakesPrecedenceOverLegacyHeuristic(t *testing.T) {
+	ref := writePlan(t, "Status: In Progress\n\n## Delta History\n### Delta D-2026-03-01-01\n- **Date:** 2026-03-01 10:30\n- **Status:** applied\n\nSome random delta note 2026-03-04 18:00\n")
+	p, err := ParsePlan(ref, "compat")
+	if err != nil {
+		t.Fatalf("ParsePlan returned error: %v", err)
+	}
+	if p.LatestDeltaTime == nil {
+		t.Fatal("expected LatestDeltaTime")
+	}
+	want := time.Date(2026, 3, 1, 10, 30, 0, 0, time.UTC)
+	if !p.LatestDeltaTime.Equal(want) {
+		t.Fatalf("latest=%s want %s", p.LatestDeltaTime.Format("2006-01-02 15:04"), want.Format("2006-01-02 15:04"))
+	}
+}
+
 func writePlan(t *testing.T, planText string) model.PlanRef {
+	return writePlanInState(t, "current", planText)
+}
+
+func writePlanInState(t *testing.T, state, planText string) model.PlanRef {
 	t.Helper()
 	root := t.TempDir()
-	dir := filepath.Join(root, "current", "sample")
+	dir := filepath.Join(root, state, "sample")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +192,7 @@ func writePlan(t *testing.T, planText string) model.PlanRef {
 		t.Fatal(err)
 	}
 	return model.PlanRef{
-		State:    "current",
+		State:    state,
 		Slug:     "sample",
 		Dir:      dir,
 		Readme:   readme,

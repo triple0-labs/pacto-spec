@@ -43,8 +43,16 @@ func TestDetectToolsIncludesOpenCode(t *testing.T) {
 func TestWriteManagedCreatesAndUpdates(t *testing.T) {
 	root := t.TempDir()
 	p := filepath.Join(root, "x.md")
+	meta := ManagedMetadata{
+		Artifact:    "cursor/command/pacto-status.md",
+		Workflow:    "status",
+		Contract:    ContractVersion,
+		TemplateSHA: TemplateChecksum("hello"),
+		GeneratedBy: "pacto",
+		GeneratedAt: "2026-03-06T00:00:00Z",
+	}
 
-	wr, err := WriteManaged(p, "hello", false)
+	wr, err := WriteManaged(p, "hello", meta, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +60,7 @@ func TestWriteManagedCreatesAndUpdates(t *testing.T) {
 		t.Fatalf("expected created, got %s", wr.Outcome)
 	}
 
-	wr, err = WriteManaged(p, "hello", false)
+	wr, err = WriteManaged(p, "hello", meta, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +71,7 @@ func TestWriteManagedCreatesAndUpdates(t *testing.T) {
 	if err := os.WriteFile(p, []byte("custom no markers\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	wr, err = WriteManaged(p, "hello", false)
+	wr, err = WriteManaged(p, "hello", meta, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +79,7 @@ func TestWriteManagedCreatesAndUpdates(t *testing.T) {
 		t.Fatalf("expected unmanaged skip, got %#v", wr)
 	}
 
-	wr, err = WriteManaged(p, "hello", true)
+	wr, err = WriteManaged(p, "hello", meta, true)
 	if err != nil {
 		t.Fatal(err)
 	}

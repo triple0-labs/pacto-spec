@@ -2,6 +2,7 @@ package analyze
 
 import (
 	"testing"
+	"time"
 
 	"pacto/internal/model"
 	"pacto/internal/parser"
@@ -58,5 +59,30 @@ func TestBuildUsesFallbackNextActions(t *testing.T) {
 	}
 	if p.NextActions[0] != "first task" {
 		t.Fatalf("NextActions[0]=%q, want %q", p.NextActions[0], "first task")
+	}
+}
+
+func TestBuildDeltaSignalDoesNotOverrideDerivedStatus(t *testing.T) {
+	dt := time.Date(2026, 3, 1, 10, 30, 0, 0, time.UTC)
+	in := Input{
+		Root: ".",
+		Mode: "compat",
+		Plans: []parser.ParsedPlan{
+			{
+				Ref:                 model.PlanRef{State: "to-implement", Slug: "c"},
+				HasStructuredDeltas: true,
+				LatestDeltaTime:     &dt,
+			},
+		},
+		Claims: map[string][]model.ClaimResult{},
+	}
+
+	rep := Build(in, Options{MaxNextActions: 3, MaxBlockers: 3})
+	if len(rep.Plans) != 1 {
+		t.Fatalf("plans=%d, want 1", len(rep.Plans))
+	}
+	p := rep.Plans[0]
+	if p.DerivedStatus != "pending" {
+		t.Fatalf("DerivedStatus=%q, want pending", p.DerivedStatus)
 	}
 }

@@ -2,6 +2,37 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.1.17 - 2026-03-04
+
+## 0.1.18 - 2026-03-11
+
+### Added
+- Structured PRD-style plan contract support with dedicated normalization engine (`internal/planfmt`) and coverage tests.
+- New `pacto normalize` command for dry-run and write-mode migration of plan docs to standardized headings/task IDs.
+- New tests for plan normalization and strict-state parser behavior (`internal/app/normalize_test.go`, `internal/planfmt/planfmt_test.go`).
+
+### Changed
+- `pacto status --mode strict` now enforces structured plan rules for active states (`current`, `to-implement`) and reports warnings for non-active states.
+- Plan templates were updated to a document-first standardized PRD layout (metadata, FR/AC, scenarios, phased tasks, evidence, risks, next steps).
+- `pacto new` plan generation now fills state/slug placeholders in templates and fallback template output.
+- `pacto exec` keeps plan metadata fresh by updating `Last Modified` whenever execution updates are written.
+- Command/help/docs surface now includes plan normalization workflow and strict-structure guidance.
+
+### Added
+- New modular command builders in `internal/app/root_cmd.go`, with focused packages for explore/move/markdown helpers (`internal/explore`, `internal/move`, `internal/markdown`).
+- New built-in plugin assets for `git-guardrails` under `internal/plugins/builtin/assets/git-guardrails/`.
+- Project-local agent skill docs under `.agents/skills/pacto-local-dev/`.
+
+### Changed
+- CLI entrypoints (`cmd/pacto`, `cmd/pacto-engine`) now execute through the shared root command wiring in `internal/app`.
+- `pacto plugin install` documentation/examples now use `git-guardrails` as the built-in plugin reference.
+- `pacto update` docs now clarify binary update behavior vs artifacts refresh mode (`--artifacts`).
+- Init/config/install/status/new/exec flows and tests were updated to align with the new command and plugin wiring.
+
+### Removed
+- Legacy `internal/app/cli.go` root command definition.
+- Built-in/sample `git-sync` plugin assets and docs references.
+
 ## 0.1.16 - 2026-03-02
 
 ### Added

@@ -32,6 +32,24 @@ func TestRunInitCreatesWorkspace(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(root, "AGENTS.md")); !os.IsNotExist(err) {
 		t.Fatalf("AGENTS.md should not be created by default")
 	}
+
+	tpl, err := os.ReadFile(filepath.Join(plansRoot, "PLANTILLA_PACTO_PLAN.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	tplText := string(tpl)
+	if strings.Contains(tplText, "## Delta History") {
+		t.Fatalf("did not expect delta section in template, got %q", tplText)
+	}
+	if !strings.Contains(tplText, "## Metadata") {
+		t.Fatalf("expected Metadata section in template, got %q", tplText)
+	}
+	if !strings.Contains(tplText, "## Functional Requirements") {
+		t.Fatalf("expected Functional Requirements section in template, got %q", tplText)
+	}
+	if !strings.Contains(tplText, "- FR-001:") {
+		t.Fatalf("expected FR placeholder in template, got %q", tplText)
+	}
 }
 
 func TestRunInitIdempotentAndForce(t *testing.T) {

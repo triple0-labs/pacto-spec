@@ -75,21 +75,21 @@ func Load(configPath, root string) (Config, []string, error) {
 	}
 	vals := flatten(raw)
 	known := map[string]bool{
-		"root":                           true,
-		"pacto_root":                     true,
-		"plans_root":                     true,
-		"repo_root":                      true,
-		"mode":                           true,
-		"format":                         true,
-		"fail_on":                        true,
-		"state":                          true,
-		"include_archive":                true,
-		"limits.max_next_actions":        true,
-		"limits.max_blockers":            true,
-		"verification.claims.paths":      true,
-		"verification.claims.symbols":    true,
-		"verification.claims.endpoints":  true,
-		"verification.claims.test_refs":  true,
+		"root":                          true,
+		"pacto_root":                    true,
+		"plans_root":                    true,
+		"repo_root":                     true,
+		"mode":                          true,
+		"format":                        true,
+		"fail_on":                       true,
+		"state":                         true,
+		"include_archive":               true,
+		"limits.max_next_actions":       true,
+		"limits.max_blockers":           true,
+		"verification.claims.paths":     true,
+		"verification.claims.symbols":   true,
+		"verification.claims.endpoints": true,
+		"verification.claims.test_refs": true,
 	}
 
 	for k, v := range vals {

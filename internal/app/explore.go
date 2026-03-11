@@ -6,18 +6,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
-	"sort"
 	"strings"
-	"time"
 
+	"pacto/internal/explore"
 	"pacto/internal/i18n"
 	"pacto/internal/ui"
-)
-
-var (
-	reCreatedAt = regexp.MustCompile(`(?m)^\*\*(?:Created At|Creado):\*\*\s*(.+)$`)
-	reUpdatedAt = regexp.MustCompile(`(?m)^\*\*(?:Updated At|Actualizado):\*\*\s*(.+)$`)
 )
 
 type exploreOptions struct {
@@ -33,7 +26,10 @@ func RunExplore(args []string) int {
 	if !ok {
 		return code
 	}
+	return runExplore(opts, pos)
+}
 
+func runExplore(opts exploreOptions, pos []string) int {
 	root, err := resolveExploreRoot(opts.root)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "resolve root: %v\n", err)
@@ -127,200 +123,61 @@ func resolveExploreRoot(rawRoot string) (string, error) {
 }
 
 func runExploreCreateOrUpdate(root, slug, title, note string, lang i18n.Language) int {
-	slug = strings.TrimSpace(slug)
-	if !slugRe.MatchString(slug) {
-		fmt.Fprintf(os.Stderr, "invalid slug %q (use lowercase letters, numbers, dashes)\n", slug)
-		return 2
-	}
-
-	ideasRoot := filepath.Join(root, ".pacto", "ideas")
-	ideaDir := filepath.Join(ideasRoot, slug)
-	readmePath := filepath.Join(ideaDir, "README.md")
-	now := time.Now().Format("2006-01-02 15:04")
-
-	if err := os.MkdirAll(ideaDir, 0o775); err != nil {
-		fmt.Fprintf(os.Stderr, "create idea dir: %v\n", err)
+	action, readmePath, err := explore.CreateOrUpdate(root, slug, title, note, lang)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "explore: %v\n", err)
 		return 3
 	}
 
-	if _, err := os.Stat(readmePath); os.IsNotExist(err) {
-		ideaTitle := strings.TrimSpace(title)
-		if ideaTitle == "" {
-			ideaTitle = slugToTitle(slug)
-		}
-		text := buildExploreReadme(ideaTitle, now, lang)
-		if strings.TrimSpace(note) != "" {
-			text = appendExploreNote(text, strings.TrimSpace(note), now)
-		}
-		if err := os.WriteFile(readmePath, []byte(text), 0o664); err != nil {
-			fmt.Fprintf(os.Stderr, "write idea readme: %v\n", err)
-			return 3
-		}
+	switch action {
+	case "created":
 		fmt.Println(ui.ActionHeader(tr(lang, "Created Idea", "Idea creada"), slug))
 		fmt.Println(pathLine("created", readmePath))
-		return 0
-	} else if err != nil {
-		fmt.Fprintf(os.Stderr, "stat idea readme: %v\n", err)
-		return 3
-	}
-
-	if strings.TrimSpace(note) == "" {
+	case "updated":
+		fmt.Println(ui.ActionHeader(tr(lang, "Updated Idea", "Idea actualizada"), slug))
+		fmt.Println(pathLine("updated", readmePath))
+	case "skipped":
 		fmt.Println(ui.ActionHeader(tr(lang, "Idea Exists", "Idea existente"), slug))
 		fmt.Println(pathLine("skipped", readmePath))
-		return 0
 	}
 
-	b, err := os.ReadFile(readmePath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "read idea readme: %v\n", err)
-		return 3
-	}
-	updated := appendExploreNote(string(b), strings.TrimSpace(note), now)
-	updated = setUpdatedAt(updated, now)
-	if err := os.WriteFile(readmePath, []byte(updated), 0o664); err != nil {
-		fmt.Fprintf(os.Stderr, "update idea readme: %v\n", err)
-		return 3
-	}
-	fmt.Println(ui.ActionHeader(tr(lang, "Updated Idea", "Idea actualizada"), slug))
-	fmt.Println(pathLine("updated", readmePath))
 	return 0
 }
 
 func runExploreList(root string, lang i18n.Language) int {
-	ideasRoot := filepath.Join(root, ".pacto", "ideas")
-	ents, err := os.ReadDir(ideasRoot)
+	ideas, err := explore.ListIdeas(root)
 	if err != nil {
-		if os.IsNotExist(err) {
-			fmt.Println(ui.Dim(tr(lang, "No ideas found.", "No se encontraron ideas.")))
-			return 0
-		}
 		fmt.Fprintf(os.Stderr, "read ideas: %v\n", err)
 		return 3
 	}
 
-	type row struct {
-		slug      string
-		title     string
-		createdAt string
-		updatedAt string
-	}
-	rows := make([]row, 0)
-	for _, e := range ents {
-		if !e.IsDir() {
-			continue
-		}
-		readmePath := filepath.Join(ideasRoot, e.Name(), "README.md")
-		b, err := os.ReadFile(readmePath)
-		if err != nil {
-			continue
-		}
-		content := string(b)
-		rows = append(rows, row{
-			slug:      e.Name(),
-			title:     extractTitle(content),
-			createdAt: extractStamp(reCreatedAt, content),
-			updatedAt: extractStamp(reUpdatedAt, content),
-		})
-	}
-
-	if len(rows) == 0 {
+	if len(ideas) == 0 {
 		fmt.Println(ui.Dim(tr(lang, "No ideas found.", "No se encontraron ideas.")))
 		return 0
 	}
 
-	sort.Slice(rows, func(i, j int) bool { return rows[i].slug < rows[j].slug })
 	fmt.Println(ui.Title(tr(lang, "Ideas", "Ideas")))
 	fmt.Println("")
-	for _, r := range rows {
-		fmt.Printf("%s\n", ui.Bullet(r.slug))
-		fmt.Printf("  %s: %s\n", tr(lang, "title", "título"), r.title)
-		fmt.Printf("  %s: %s\n", tr(lang, "created", "creado"), r.createdAt)
-		fmt.Printf("  %s: %s\n", tr(lang, "updated", "actualizado"), r.updatedAt)
+	for _, r := range ideas {
+		fmt.Printf("%s\n", ui.Bullet(r.Slug))
+		fmt.Printf("  %s: %s\n", tr(lang, "title", "título"), r.Title)
+		fmt.Printf("  %s: %s\n", tr(lang, "created", "creado"), r.CreatedAt)
+		fmt.Printf("  %s: %s\n", tr(lang, "updated", "actualizado"), r.UpdatedAt)
 	}
 	return 0
 }
 
 func runExploreShow(root, slug string, lang i18n.Language) int {
-	slug = strings.TrimSpace(slug)
-	if !slugRe.MatchString(slug) {
-		fmt.Fprintf(os.Stderr, "invalid slug %q (use lowercase letters, numbers, dashes)\n", slug)
+	idea, err := explore.GetIdea(root, slug)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "show idea: %v\n", err)
 		return 2
 	}
-	readmePath := filepath.Join(root, ".pacto", "ideas", slug, "README.md")
-	b, err := os.ReadFile(readmePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "idea not found: %s\n", slug)
-			return 2
-		}
-		fmt.Fprintf(os.Stderr, "read idea: %v\n", err)
-		return 3
-	}
-	content := string(b)
-	fmt.Printf("%s %s\n", ui.Title(tr(lang, "Idea", "Idea")), slug)
-	fmt.Printf("%s: %s\n", tr(lang, "Path", "Ruta"), displayPath(readmePath))
-	fmt.Printf("%s: %s\n", tr(lang, "Title", "Título"), extractTitle(content))
-	fmt.Printf("%s: %s\n", tr(lang, "Created At", "Creado"), extractStamp(reCreatedAt, content))
-	fmt.Printf("%s: %s\n", tr(lang, "Updated At", "Actualizado"), extractStamp(reUpdatedAt, content))
+
+	fmt.Printf("%s %s\n", ui.Title(tr(lang, "Idea", "Idea")), idea.Slug)
+	fmt.Printf("%s: %s\n", tr(lang, "Path", "Ruta"), displayPath(idea.Path))
+	fmt.Printf("%s: %s\n", tr(lang, "Title", "Título"), idea.Title)
+	fmt.Printf("%s: %s\n", tr(lang, "Created At", "Creado"), idea.CreatedAt)
+	fmt.Printf("%s: %s\n", tr(lang, "Updated At", "Actualizado"), idea.UpdatedAt)
 	return 0
-}
-
-func buildExploreReadme(title, now string, lang i18n.Language) string {
-	var b strings.Builder
-	b.WriteString("# " + title + "\n\n")
-	b.WriteString(tr(lang, "**Created At:** ", "**Creado:** ") + now + "  \n")
-	b.WriteString(tr(lang, "**Updated At:** ", "**Actualizado:** ") + now + "\n\n")
-	b.WriteString(tr(lang, "## Summary\n\n", "## Resumen\n\n"))
-	b.WriteString(tr(lang, "Idea exploration workspace.\n\n", "Espacio de exploración de ideas.\n\n"))
-	b.WriteString(tr(lang, "## Notes\n\n", "## Notas\n\n"))
-	b.WriteString("- [" + now + "] " + tr(lang, "Idea created.", "Idea creada.") + "\n")
-	return b.String()
-}
-
-func appendExploreNote(content, note, now string) string {
-	if !strings.Contains(content, "## Notes") && !strings.Contains(content, "## Notas") {
-		lang := effectiveLanguage(".")
-		content = strings.TrimRight(content, "\n") + "\n\n" + tr(lang, "## Notes\n\n", "## Notas\n\n")
-	}
-	content = strings.TrimRight(content, "\n")
-	return content + "\n- [" + now + "] " + note + "\n"
-}
-
-func setUpdatedAt(content, now string) string {
-	if reUpdatedAt.MatchString(content) {
-		return reUpdatedAt.ReplaceAllString(content, "**Updated At:** "+now)
-	}
-	updatedLabel := "**Updated At:** "
-	if strings.Contains(content, "**Creado:**") || strings.Contains(content, "## Notas") {
-		updatedLabel = "**Actualizado:** "
-	}
-	createdLabel := "**Created At:** "
-	if updatedLabel == "**Actualizado:** " {
-		createdLabel = "**Creado:** "
-	}
-	title := extractTitle(content)
-	head := "# " + title + "\n\n" + createdLabel + extractStamp(reCreatedAt, content) + "  \n" + updatedLabel + now + "\n"
-	body := content
-	if idx := strings.Index(content, "\n"); idx >= 0 {
-		body = content[idx+1:]
-	}
-	return strings.TrimRight(head+"\n"+body, "\n") + "\n"
-}
-
-func extractTitle(content string) string {
-	for _, ln := range strings.Split(content, "\n") {
-		ln = strings.TrimSpace(ln)
-		if strings.HasPrefix(ln, "# ") {
-			return strings.TrimSpace(strings.TrimPrefix(ln, "# "))
-		}
-	}
-	return "Untitled"
-}
-
-func extractStamp(re *regexp.Regexp, content string) string {
-	m := re.FindStringSubmatch(content)
-	if len(m) == 2 {
-		return strings.TrimSpace(m[1])
-	}
-	return "-"
 }

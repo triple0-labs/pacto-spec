@@ -164,3 +164,12 @@ func stripAllowGuardrailArg(args []string) ([]string, map[string]bool) {
 	}
 	return out, allow
 }
+
+func wantsHelp(args []string) bool {
+	for _, a := range args {
+		if a == "-h" || a == "--help" || a == "help" {
+			return true
+		}
+	}
+	return false
+}

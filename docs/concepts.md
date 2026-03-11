@@ -41,6 +41,19 @@ Verification outcomes:
 - `partial`
 - `unverified`
 
+## Delta Schema (Canonical + i18n)
+
+Structured delta parsing uses an English canonical schema:
+
+- `Delta History`
+- `Delta D-YYYY-MM-DD-XX`
+- fields like `Date`, `Status`, `Changes`, `Next Delta`
+
+For compatibility and localization, parser aliases accept Spanish headings and
+field labels (for example `Historial de deltas`, `Fecha`, `Siguiente delta`).
+
+Canonical code paths, enums, and config remain English-first.
+
 ## Workspace vs Product Docs
 
 - `docs/`: canonical product/user documentation.

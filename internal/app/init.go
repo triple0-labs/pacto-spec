@@ -39,6 +39,10 @@ func RunInit(args []string) int {
 	if !ok {
 		return code
 	}
+	return runInitWithOptions(opts)
+}
+
+func runInitWithOptions(opts initOptions) int {
 	if strings.TrimSpace(opts.lang) != "" {
 		setGlobalLangOverride(opts.lang)
 		defer setGlobalLangOverride("")
@@ -430,6 +434,26 @@ func printInitSummary(lang i18n.Language, plansRoot string, profile onboarding.P
 	printPathGroup(lang, tr(lang, "Unchanged", "Sin cambios"), "skipped", skipped)
 
 	fmt.Println("")
+
+	if len(profile.Tools) > 0 {
+		fmt.Println(ui.ActionHeader(tr(lang, "IDE Setup", "Configuración de IDE"), ""))
+		for _, tool := range profile.Tools {
+			switch tool {
+			case "cursor":
+				fmt.Println("  - Cursor: Use Composer (Ctrl+I / Cmd+I) or mention @pacto to start working with your plans.")
+			case "claude":
+				fmt.Println("  - Claude: Attach your project root to Claude Desktop to grant it access to the Pacto skills.")
+			case "codex":
+				fmt.Println("  - Codex: Use the Codex sidebar or terminal integration to run actions.")
+			case "opencode":
+				fmt.Println("  - OpenCode: Use the OpenCode assistant to interact with the project context.")
+			case "other":
+				fmt.Println("  - Custom IDE: Configure your assistant to read the .pacto/plans directory.")
+			}
+		}
+		fmt.Println("")
+	}
+
 	fmt.Printf("%s: %s\n", tr(lang, "Next", "Siguiente paso"), tr(lang, "run `pacto status` to inspect your plans", "ejecuta `pacto status` para revisar tus planes"))
 }
 

@@ -56,9 +56,6 @@ func Build(in Input, opts Options) model.StatusReport {
 			declared = deriveStatusFromState(p.Ref.State)
 		}
 		derived := deriveFromSignals(p, blocked)
-		if p.LatestDeltaTime != nil {
-			derived = deriveFromDelta(*p.LatestDeltaTime, derived)
-		}
 
 		progress := deriveProgress(p)
 		next := p.NextActions
@@ -156,10 +153,6 @@ func deriveFromSignals(p parser.ParsedPlan, blocked int) string {
 	return "pending"
 }
 
-func deriveFromDelta(_ time.Time, fallback string) string {
-	return fallback
-}
-
 func deriveProgress(p parser.ParsedPlan) *int {
 	if len(p.Phases) == 0 {
 		return nil
@@ -212,7 +205,7 @@ func classifyConfidence(p parser.ParsedPlan, claims []model.ClaimResult) string 
 	if len(p.Tasks) > 0 {
 		signals++
 	}
-	if p.HasCheckpoint || p.LatestDeltaTime != nil {
+	if p.HasCheckpoint || p.HasStructuredDeltas || p.LatestDeltaTime != nil {
 		signals++
 	}
 	if len(claims) > 0 {

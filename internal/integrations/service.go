@@ -2,6 +2,7 @@ package integrations
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"pacto/internal/plugins"
@@ -21,7 +22,15 @@ func GenerateForTool(projectRoot, toolID string, force bool) []ArtifactResult {
 		if err != nil {
 			results = append(results, ArtifactResult{Tool: toolID, Kind: "skill", WorkflowID: wf.WorkflowID, Err: err})
 		} else {
-			wr, werr := WriteManaged(skillPath, RenderSkill(toolID, wf, pluginSections...), force)
+			body := RenderSkill(toolID, wf, pluginSections...)
+			meta := ManagedMetadata{
+				Artifact:    fmt.Sprintf("%s/skill/pacto-%s", toolID, wf.WorkflowID),
+				Workflow:    wf.WorkflowID,
+				Contract:    ContractVersion,
+				TemplateSHA: TemplateChecksum(body),
+				GeneratedBy: "pacto",
+			}
+			wr, werr := WriteManaged(skillPath, body, meta, force)
 			results = append(results, ArtifactResult{Tool: toolID, Kind: "skill", WorkflowID: wf.WorkflowID, Path: skillPath, Outcome: wr.Outcome, Reason: wr.Reason, Err: werr})
 		}
 
@@ -30,7 +39,15 @@ func GenerateForTool(projectRoot, toolID string, force bool) []ArtifactResult {
 			results = append(results, ArtifactResult{Tool: toolID, Kind: "command", WorkflowID: wf.WorkflowID, Err: err})
 			continue
 		}
-		wr, werr := WriteManaged(commandPath, RenderCommand(toolID, wf, pluginSections...), force)
+		body := RenderCommand(toolID, wf, pluginSections...)
+		meta := ManagedMetadata{
+			Artifact:    fmt.Sprintf("%s/command/%s", toolID, filepath.Base(commandPath)),
+			Workflow:    wf.WorkflowID,
+			Contract:    ContractVersion,
+			TemplateSHA: TemplateChecksum(body),
+			GeneratedBy: "pacto",
+		}
+		wr, werr := WriteManaged(commandPath, body, meta, force)
 		results = append(results, ArtifactResult{Tool: toolID, Kind: "command", WorkflowID: wf.WorkflowID, Path: commandPath, Outcome: wr.Outcome, Reason: wr.Reason, Err: werr})
 	}
 

@@ -81,12 +81,45 @@ pacto status
 
 # CI-friendly output
 pacto status --format json --fail-on partial
+pacto doctor --format json --fail-on any
 
 # list and validate local plugins
 pacto plugin list-available
-pacto plugin install git-sync
+pacto plugin install git-guardrails
 pacto plugin list
 pacto plugin validate
+```
+
+## Drift Check
+
+Use `pacto doctor` to detect stale generated artifacts and legacy integration patterns:
+
+```bash
+pacto doctor --format table
+pacto doctor --format json --fail-on any
+```
+
+Recommended remediation when drift is reported:
+
+```bash
+pacto update --artifacts
+```
+
+## CI Snippet
+
+```yaml
+name: pacto-artifact-drift
+on: [pull_request]
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+      - run: go build -o ./bin/pacto ./cmd/pacto
+      - run: ./bin/pacto doctor --format json --fail-on any
 ```
 
 ## Docs

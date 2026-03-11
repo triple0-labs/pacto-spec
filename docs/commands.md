@@ -17,6 +17,7 @@ Behavior:
 - TTY: launches interactive status UI.
 - Non-TTY: renders `table|json` output.
 - In TTY, `--format` is rejected; use non-TTY (pipe/redirection) for structured output.
+- `--mode strict` enforces structured PRD plan contract for active plans (`current`, `to-implement`) and reports warnings for `done/outdated`.
 
 Key options:
 
@@ -34,6 +35,28 @@ pacto status
 pacto status | cat
 pacto status --format json --fail-on partial
 pacto status --root . --repo-root .
+```
+
+## `pacto doctor`
+
+Audit generated integration artifacts for drift and legacy patterns.
+
+```bash
+pacto doctor [--root <path>] [--tools <all|none|csv>] [--format table|json] [--fail-on none|drift|legacy|any]
+```
+
+Notes:
+
+- Detects stale/missing/unmanaged/legacy-managed artifact files.
+- Flags known legacy patterns (for example `pa-*` compatibility files).
+- Recommended remediation path: `pacto update --artifacts`.
+
+Examples:
+
+```bash
+pacto doctor
+pacto doctor --tools cursor --format table
+pacto doctor --format json --fail-on any
 ```
 
 ## `pacto new`
@@ -98,6 +121,11 @@ pacto update [--check] [--yes] [--version <vX.Y.Z>] [--repo <owner/repo>]
 pacto update --artifacts [--tools <all|none|csv>] [--force]
 ```
 
+Notes:
+
+- `pacto update` (without `--artifacts`) targets the pacto binary only.
+- To refresh generated skills/commands, run `pacto update --artifacts`.
+
 ## `pacto exec`
 
 Execute plan tasks and append execution evidence in plan docs.
@@ -107,6 +135,20 @@ pacto exec <current|to-implement|done|outdated> <slug> [--root <path>] [--step <
 ```
 
 `--step` uses phase task refs (`<phase>.<task>`), for example `1.2`.
+
+## `pacto normalize`
+
+Normalize plan documents to the structured PRD contract and report compliance drift.
+
+```bash
+pacto normalize [--root <path>] [--state <state|all>] [--include-archive] [--write] [--format table|json]
+```
+
+Notes:
+
+- Dry-run by default; no files are written unless `--write` is set.
+- Migrates legacy headings and task IDs (`T1` -> `N.M` when phase context is known).
+- Emits per-plan issue counts before/after normalization.
 
 ## `pacto move`
 
@@ -132,6 +174,7 @@ pacto plugin disable <id> [--root <path>]
 Notes:
 
 - `list-available` shows built-in plugins shipped by pacto.
+- Built-in example: `git-guardrails`.
 - `install` copies a built-in plugin into `.pacto/plugins/<id>` and auto-enables it by default.
 - Plugins are loaded from `.pacto/plugins/*/plugin.yaml`.
 - Only plugins listed in `.pacto/config.yaml` under `plugins.enabled` are active.

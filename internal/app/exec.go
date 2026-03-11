@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"pacto/internal/i18n"
 	"pacto/internal/ui"
 )
 
@@ -36,6 +37,10 @@ func RunExec(args []string) int {
 	if !ok {
 		return code
 	}
+	return runExec(opts, pos)
+}
+
+func runExec(opts execOptions, pos []string) int {
 	lang := effectiveLanguage(opts.root)
 	if len(pos) != 2 {
 		fmt.Fprintln(os.Stderr, tr(lang, "exec requires <state> <slug>", "exec requiere <state> <slug>"))
@@ -111,6 +116,7 @@ func RunExec(args []string) int {
 		fmt.Println(ui.Dim(tr(lang, "No execution changes to apply.", "No hay cambios de ejecución para aplicar.")))
 		return 0
 	}
+	updated = upsertPlanLastModified(updated, ts, lang)
 
 	if opts.dryRun {
 		fmt.Println(ui.ActionHeader(tr(lang, "Dry Run", "Simulación"), tr(lang, "execution update", "actualización de ejecución")))
@@ -392,4 +398,42 @@ func appendSectionBullet(content, heading, bullet string) string {
 		return heading + "\n\n" + bullet + "\n"
 	}
 	return trimmed + "\n\n" + heading + "\n\n" + bullet + "\n"
+}
+
+func upsertPlanLastModified(content, timestamp string, lang i18n.Language) string {
+	lines := strings.Split(content, "\n")
+	label := tr(lang, "**Last Modified:** ", "**Última Modificación:** ")
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "**Last Modified:**") || strings.HasPrefix(trimmed, "**Última Modificación:**") {
+			lines[i] = label + timestamp + "  "
+			return strings.Join(lines, "\n")
+		}
+	}
+
+	insertAt := -1
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "**Date:**") || strings.HasPrefix(trimmed, "**Fecha:**") {
+			insertAt = i + 1
+			break
+		}
+	}
+	if insertAt < 0 {
+		for i, line := range lines {
+			if strings.HasPrefix(strings.TrimSpace(line), "# Plan:") {
+				insertAt = i + 1
+				break
+			}
+		}
+	}
+	if insertAt < 0 {
+		insertAt = 0
+	}
+
+	out := make([]string, 0, len(lines)+1)
+	out = append(out, lines[:insertAt]...)
+	out = append(out, label+timestamp+"  ")
+	out = append(out, lines[insertAt:]...)
+	return strings.Join(out, "\n")
 }

@@ -235,16 +235,26 @@ func (m model) back() (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	m.problemInput.Placeholder = tr("Describe the core problem", "Describe el problema principal", m.selectedLang)
+	m.problemInput.Placeholder = tr("State the core problem", "Indica el problema principal", m.selectedLang)
 	m.technologiesInput.Placeholder = tr("Go, TypeScript, PostgreSQL", "Go, TypeScript, PostgreSQL", m.selectedLang)
 	m.otherTargetsInput.Placeholder = tr("Only if you selected Other", "Solo si seleccionaste otro", m.selectedLang)
 
-	title := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("12")).Render(tr("Pacto Init Onboarding", "Onboarding de Pacto Init", m.selectedLang))
+	logo := `
+ ____            _        
+|  _ \ __ _  ___| |_ ___  
+| |_) / _` + "`" + ` |/ __| __/ _ \ 
+|  __/ (_| | (__| || (_) |
+|_|   \__,_|\___|\__\___/ `
+
+	title := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("205")).Render(strings.TrimPrefix(logo, "\n"))
 	faint := lipgloss.NewStyle().Faint(true)
 	accent := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("10"))
+	selectedItem := lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
 
 	var b strings.Builder
 	b.WriteString(title)
+	b.WriteString("\n\n")
+	b.WriteString(faint.Render(tr("Scaffold your project.", "Estructura tu proyecto.", m.selectedLang)))
 	b.WriteString("\n\n")
 
 	switch m.index {
@@ -264,21 +274,21 @@ func (m model) View() string {
 		}
 	case stepProblem:
 		b.WriteString(accent.Render(tr("Step 1/3 - Problem", "Paso 1/3 - Problema", m.selectedLang)))
-		b.WriteString("\n" + tr("Tell us what you are building and why.", "Cuéntanos qué estás construyendo y por qué.", m.selectedLang) + "\n")
-		b.WriteString(faint.Render(tr("Use your own words. We welcome custom descriptions.", "Usa tus propias palabras. Nos encantan las descripciones personalizadas.", m.selectedLang)))
+		b.WriteString("\n" + tr("Please state what you are building and why.", "Por favor, indica qué estás construyendo y por qué.", m.selectedLang) + "\n")
+		b.WriteString(faint.Render(tr("Use your own words, the more specific the better.", "Usa tus propias palabras, mientras mas especifico mejor.", m.selectedLang)))
 		b.WriteString("\n")
 		b.WriteString(m.problemInput.View())
 	case stepTechnologies:
 		b.WriteString(accent.Render(tr("Step 2/3 - Technologies", "Paso 2/3 - Tecnologías", m.selectedLang)))
-		b.WriteString("\n" + tr("Tell us which technologies you plan to use.", "Cuéntanos qué tecnologías planeas usar.", m.selectedLang) + "\n")
+		b.WriteString("\n" + tr("Please state which technologies you plan to use.", "Por favor, indica qué tecnologías planeas usar.", m.selectedLang) + "\n")
 		b.WriteString(faint.Render(tr("Custom technologies are welcome too.", "También puedes incluir tecnologías personalizadas.", m.selectedLang)))
 		b.WriteString("\n")
-		b.WriteString(faint.Render(tr("Known: ", "Conocidas: ", m.selectedLang) + strings.Join(onboarding.KnownLanguages, ", ")))
+		b.WriteString(faint.Render(tr("Example: javascript for the frontend, python for the backend", "Ejemplo: javascript para el frontend, python para el backend", m.selectedLang)))
 		b.WriteString("\n")
 		b.WriteString(m.technologiesInput.View())
 	case stepTargets, stepOtherTargets:
-		b.WriteString(accent.Render(tr("Step 3/3 - Install Targets", "Paso 3/3 - Destinos de instalación", m.selectedLang)))
-		b.WriteString("\n" + tr("Use Space to toggle one or many targets.", "Usa Espacio para seleccionar uno o varios destinos.", m.selectedLang) + "\n\n")
+		b.WriteString(accent.Render(tr("Step 3/3 - AI Assistants / IDEs", "Paso 3/3 - Asistentes de IA / IDEs", m.selectedLang)))
+		b.WriteString("\n" + tr("Select one or multiple AI Assistants / IDEs to install Pacto skills and commands.", "Selecciona uno o varios Asistentes de IA / IDEs para instalar las skills y comandos de Pacto.", m.selectedLang) + "\n\n")
 		for i, option := range m.targetOptions {
 			cursor := " "
 			if i == m.targetCursor && m.index == stepTargets {
@@ -286,11 +296,20 @@ func (m model) View() string {
 			}
 			checked := "[ ]"
 			if m.targetSelected[option] {
-				checked = "[x]"
+				checked = selectedItem.Render("[✓]")
 			}
 			label := option
-			if option == "other" {
-				label = tr("other (custom)", "otro (personalizado)", m.selectedLang)
+			switch option {
+			case "other":
+				label = tr("Other (custom)", "Otro (personalizado)", m.selectedLang)
+			case "codex":
+				label = "Codex"
+			case "cursor":
+				label = "Cursor"
+			case "claude":
+				label = "Claude"
+			case "opencode":
+				label = "OpenCode"
 			}
 			b.WriteString(fmt.Sprintf("%s %s %s\n", cursor, checked, label))
 		}
@@ -304,7 +323,13 @@ func (m model) View() string {
 
 	b.WriteString("\n\n")
 	b.WriteString(faint.Render(tr("Enter/Tab: next - Shift+Tab: back - Esc: cancel", "Enter/Tab: siguiente - Shift+Tab: atrás - Esc: cancelar", m.selectedLang)))
-	return b.String()
+
+	return lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("62")).
+		Padding(1, 2).
+		Margin(1, 1).
+		Render(b.String())
 }
 
 func Run(initial onboarding.Profile) (onboarding.Profile, bool, error) {

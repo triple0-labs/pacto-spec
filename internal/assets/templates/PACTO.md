@@ -31,7 +31,7 @@ Required state folders:
 
 Core root files:
 
-- `README.md` (index + counts)
+- `README.md` (workspace overview)
 - `PACTO.md` (this contract)
 - `PLANTILLA_PACTO_PLAN.md` (plan template)
 - `SLASH_COMMANDS.md` (assistant command conventions)
@@ -115,7 +115,6 @@ Fail policies:
 1. resolves/validates plan root
 2. creates `<state>/<slug>/`
 3. generates `README.md` + `PLAN_*.md`
-4. updates root `README.md` counts and section links
 
 With `--allow-minimal-root`, Pacto can bootstrap missing root files with minimal defaults.
 

@@ -79,7 +79,4 @@ func TestRunNewPrintsRelativePathsFromCWD(t *testing.T) {
 	if !strings.Contains(out, ".pacto/plans/to-implement/relative-output/README.md") {
 		t.Fatalf("expected relative README path in output, got %q", stdout)
 	}
-	if !strings.Contains(out, ".pacto/plans/README.md") {
-		t.Fatalf("expected relative root README path in output, got %q", stdout)
-	}
 }

@@ -44,7 +44,7 @@ func runMove(opts moveOptions, pos []string) int {
 
 	lang := effectiveLanguage(filepath.Dir(plansRoot))
 
-	readmePath, rootReadme, err := move.MovePlan(plansRoot, fromState, slug, toState, opts.force, opts.reason, lang)
+	readmePath, err := move.MovePlan(plansRoot, fromState, slug, toState, opts.force, opts.reason, lang)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "move error: %v\n", err)
 		return 3
@@ -52,7 +52,6 @@ func runMove(opts moveOptions, pos []string) int {
 
 	fmt.Println(ui.ActionHeader(move.Tr(lang, "Moved Plan", "Plan movido"), fmt.Sprintf("%s/%s -> %s/%s", fromState, slug, toState, slug)))
 	fmt.Println(pathLine("updated", readmePath))
-	fmt.Println(pathLine("updated", rootReadme))
 	return 0
 }
 

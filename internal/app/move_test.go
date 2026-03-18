@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestRunMoveTransitionsStateAndUpdatesIndex(t *testing.T) {
+func TestRunMoveTransitionsStateAndUpdatesPlanReadme(t *testing.T) {
 	root := t.TempDir()
 	if code := RunInit([]string{"--root", root}); code != 0 {
 		t.Fatalf("RunInit returned %d", code)
@@ -48,17 +48,4 @@ func TestRunMoveTransitionsStateAndUpdatesIndex(t *testing.T) {
 		t.Fatalf("expected move history note, got %q", text)
 	}
 
-	idx, err := os.ReadFile(filepath.Join(plansRoot, "README.md"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	index := string(idx)
-	if !strings.Contains(index, "| 🟡 **To Implement** | 0 |") || !strings.Contains(index, "| ✅ **Done** | 1 |") {
-		t.Fatalf("expected counts updated, got %q", index)
-	}
-	if strings.Contains(index, "- [Move Sample](./to-implement/move-sample)") {
-	}
-	if !strings.Contains(index, "./done/move-sample/") {
-		t.Fatalf("expected done link added, got %q", index)
-	}
 }

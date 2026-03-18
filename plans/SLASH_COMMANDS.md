@@ -27,7 +27,6 @@ This file defines workflow command IDs used by Pacto-managed assistant integrati
 - Goal: create a new plan slice under a target state.
 - Requires: `<current|to-implement|done|outdated> <slug>`.
 - Generates `README.md` + `PLAN_<TOPIC>_<YYYY-MM-DD>.md`.
-- Updates root index counts/links in `<plans-root>/README.md`.
 
 ### `pacto-explore`
 
@@ -56,7 +55,7 @@ This file defines workflow command IDs used by Pacto-managed assistant integrati
 
 - Goal: perform explicit state transitions for a plan slice.
 - Usage: `pacto move <from-state> <slug> <to-state>`.
-- Updates slice README status and root index counts/links.
+- Updates slice README status.
 
 ### `pacto-exec`
 

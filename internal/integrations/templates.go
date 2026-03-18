@@ -79,7 +79,7 @@ func Workflows() []WorkflowSpec {
 			WorkflowID: "new",
 			CommandID:  "pacto-new",
 			Title:      "Pacto New",
-			Summary:    "Create a new plan scaffold and update plan index metadata.",
+			Summary:    "Create a new plan scaffold.",
 			Command:    "pacto new to-implement my-plan-slug",
 			WhenToUse:  "Use when a new plan slice must be created in one of the canonical states.",
 			RequiredInputs: []string{
@@ -93,13 +93,12 @@ func Workflows() []WorkflowSpec {
 			},
 			OutputContract: []string{
 				"Creates `<state>/<slug>/README.md` and `PLAN_<TOPIC>_<YYYY-MM-DD>.md`.",
-				"Updates root `README.md` counts, section links, and last update date.",
-				"Prints created paths and updated index path.",
+				"Prints created plan artifact paths.",
 			},
 			ValidationChecklist: []string{
 				"Verify state and slug validity before execution.",
 				"Confirm plan directory does not already exist.",
-				"Confirm index update succeeded in root `README.md`.",
+				"Confirm plan appears in `pacto status` output for the target state.",
 			},
 			FailureModes: []string{
 				"Invalid state or invalid slug format.",
@@ -264,12 +263,11 @@ func Workflows() []WorkflowSpec {
 			OutputContract: []string{
 				"Moves plan directory from source state folder to destination state folder.",
 				"Updates moved plan README `Status` line.",
-				"Refreshes root plans index counts and section links.",
 			},
 			ValidationChecklist: []string{
 				"Confirm source plan exists before moving.",
 				"Confirm destination does not exist unless force overwrite is intended.",
-				"Confirm root plans index reflects new counts and link location.",
+				"Confirm `pacto status` reflects the new state location.",
 			},
 			FailureModes: []string{
 				"Invalid state values or invalid slug format.",

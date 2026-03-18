@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -62,15 +61,9 @@ func runNewParsed(opts newOptions, state, slug string, rootProvided bool) int {
 		return code
 	}
 
-	if err := updateRootIndex(req.root, req.state, req.slug, req.title, req.date, lang); err != nil {
-		fmt.Fprintf(os.Stderr, "update root README: %v\n", err)
-		return 3
-	}
-
 	fmt.Println(ui.ActionHeader(tr(lang, "Created Plan", "Plan creado"), req.state+"/"+req.slug))
 	fmt.Println(pathLine("created", req.readmePath))
 	fmt.Println(pathLine("created", req.planPath))
-	fmt.Println(pathLine("updated", filepath.Join(req.root, "README.md")))
 	return 0
 }
 
@@ -343,224 +336,6 @@ func slugToTopic(slug string) string {
 	return up
 }
 
-func updateRootIndex(root, state, slug, title, date string, lang i18n.Language) error {
-	readmePath := filepath.Join(root, "README.md")
-	b, err := os.ReadFile(readmePath)
-	if err != nil {
-		return err
-	}
-	text := string(b)
-
-	counts, err := countPlans(root)
-	if err != nil {
-		return err
-	}
-	text = updateCountsTable(text, counts)
-	text, err = upsertLinkInSection(text, state, title, fmt.Sprintf("./%s/%s/", state, slug))
-	if err != nil {
-		return err
-	}
-	text = updateLastUpdate(text, date, lang)
-
-	return os.WriteFile(readmePath, []byte(text), 0o664)
-}
-
-func countPlans(root string) (map[string]int, error) {
-	out := map[string]int{}
-	for _, st := range []string{"current", "to-implement", "done", "outdated"} {
-		dir := filepath.Join(root, st)
-		ents, err := os.ReadDir(dir)
-		if err != nil {
-			return nil, err
-		}
-		n := 0
-		for _, e := range ents {
-			if !e.IsDir() {
-				continue
-			}
-			if _, err := os.Stat(filepath.Join(dir, e.Name(), "README.md")); err == nil {
-				n++
-			}
-		}
-		out[st] = n
-	}
-	return out, nil
-}
-
-func updateCountsTable(text string, counts map[string]int) string {
-	repls := map[string]string{
-		"| 🟢 **Current** |":      fmt.Sprintf("| 🟢 **Current** | %d |", counts["current"]),
-		"| 🟡 **To Implement** |": fmt.Sprintf("| 🟡 **To Implement** | %d |", counts["to-implement"]),
-		"| ✅ **Done** |":         fmt.Sprintf("| ✅ **Done** | %d |", counts["done"]),
-		"| ⚠️ **Outdated** |":    fmt.Sprintf("| ⚠️ **Outdated** | %d |", counts["outdated"]),
-	}
-	lines := strings.Split(text, "\n")
-	for i, ln := range lines {
-		for prefix, rep := range repls {
-			if strings.HasPrefix(strings.TrimSpace(ln), prefix) {
-				lines[i] = rep
-			}
-		}
-	}
-	return strings.Join(lines, "\n")
-}
-
-func upsertLinkInSection(text, state, title, relPath string) (string, error) {
-	entry := fmt.Sprintf("- [%s](%s)", title, relPath)
-	lines := strings.Split(text, "\n")
-
-	start, end, sep := findCanonicalSection(lines, state)
-	if start < 0 {
-		start, end, sep = findSectionByStateLink(lines, state)
-	}
-	if start < 0 {
-		return addFallbackSection(lines, state, entry), nil
-	}
-
-	sec := append([]string{}, lines[start+1:sep]...)
-	for _, ln := range sec {
-		if strings.TrimSpace(ln) == strings.TrimSpace(entry) {
-			return text, nil
-		}
-	}
-
-	bullets := make([]string, 0)
-	for _, ln := range sec {
-		t := strings.TrimSpace(ln)
-		if strings.HasPrefix(t, "- [") {
-			bullets = append(bullets, t)
-		}
-	}
-	bullets = append(bullets, entry)
-	sort.Strings(bullets)
-
-	newSec := make([]string, 0, len(sec)+2)
-	for _, ln := range sec {
-		t := strings.TrimSpace(ln)
-		if strings.HasPrefix(t, "- [") || strings.HasPrefix(t, "_No plans") || strings.HasPrefix(t, "_No hay planes") || strings.HasPrefix(t, "<!-- Add:") || strings.HasPrefix(t, "<!-- Añadir:") {
-			continue
-		}
-		newSec = append(newSec, ln)
-	}
-	for len(newSec) > 0 && strings.TrimSpace(newSec[len(newSec)-1]) == "" {
-		newSec = newSec[:len(newSec)-1]
-	}
-	if len(newSec) > 0 {
-		newSec = append(newSec, "")
-	}
-	newSec = append(newSec, bullets...)
-
-	out := make([]string, 0, len(lines)+4)
-	out = append(out, lines[:start+1]...)
-	out = append(out, newSec...)
-	out = append(out, lines[sep:]...)
-	if end > sep {
-		_ = end // keep shape explicit; sep drives splice point
-	}
-	return strings.Join(out, "\n"), nil
-}
-
-func findCanonicalSection(lines []string, state string) (start, end, sep int) {
-	candidates := map[string][]string{
-		"current":      {"## 🟢 Current (En Ejecución)", "## 🟢 Current (In Progress)", "## 🟢 Current"},
-		"to-implement": {"## 🟡 To Implement (Pendientes)", "## 🟡 To Implement (Pending)", "## 🟡 To Implement"},
-		"done":         {"## ✅ Done (Completados)", "## ✅ Done (Completed)", "## ✅ Done"},
-		"outdated":     {"## ⚠️ Outdated (Obsoletos)", "## ⚠️ Outdated (Outdated)", "## ⚠️ Outdated"},
-	}[state]
-	if len(candidates) == 0 {
-		return -1, -1, -1
-	}
-	start = -1
-	for i, ln := range lines {
-		trimmed := strings.TrimSpace(ln)
-		for _, heading := range candidates {
-			if trimmed == heading {
-				start = i
-				break
-			}
-		}
-		if start >= 0 {
-			break
-		}
-	}
-	if start < 0 {
-		return -1, -1, -1
-	}
-	end = len(lines)
-	for i := start + 1; i < len(lines); i++ {
-		if strings.HasPrefix(lines[i], "## ") {
-			end = i
-			break
-		}
-	}
-	sep = end
-	for i := start + 1; i < end; i++ {
-		if strings.TrimSpace(lines[i]) == "---" {
-			sep = i
-			break
-		}
-	}
-	return start, end, sep
-}
-
-func findSectionByStateLink(lines []string, state string) (start, end, sep int) {
-	needle := "./" + state + "/"
-	for i := 0; i < len(lines); i++ {
-		if !strings.HasPrefix(strings.TrimSpace(lines[i]), "## ") {
-			continue
-		}
-		end = len(lines)
-		for j := i + 1; j < len(lines); j++ {
-			if strings.HasPrefix(strings.TrimSpace(lines[j]), "## ") {
-				end = j
-				break
-			}
-		}
-		for j := i + 1; j < end; j++ {
-			if strings.Contains(lines[j], needle) {
-				sep = end
-				for k := i + 1; k < end; k++ {
-					if strings.TrimSpace(lines[k]) == "---" {
-						sep = k
-						break
-					}
-				}
-				return i, end, sep
-			}
-		}
-	}
-	return -1, -1, -1
-}
-
-func addFallbackSection(lines []string, state, entry string) string {
-	heading := "## Plans (" + state + ")"
-	insertAt := len(lines)
-	for i, ln := range lines {
-		if strings.TrimSpace(ln) == "## 📜 Pacto" {
-			insertAt = i
-			break
-		}
-	}
-	block := []string{"", heading, entry, "---"}
-	out := make([]string, 0, len(lines)+len(block))
-	out = append(out, lines[:insertAt]...)
-	out = append(out, block...)
-	out = append(out, lines[insertAt:]...)
-	return strings.Join(out, "\n")
-}
-
-func updateLastUpdate(text, date string, lang i18n.Language) string {
-	lines := strings.Split(text, "\n")
-	for i, ln := range lines {
-		trimmed := strings.TrimSpace(ln)
-		if strings.HasPrefix(trimmed, "**Last Updated:**") || strings.HasPrefix(trimmed, "**Última Actualización:**") {
-			lines[i] = tr(lang, "**Last Updated:** ", "**Última Actualización:** ") + date
-			return strings.Join(lines, "\n")
-		}
-	}
-	return text + "\n\n" + tr(lang, "**Last Updated:** ", "**Última Actualización:** ") + date + "\n"
-}
-
 func defaultPlanTemplate(state, slug, title, date, owner string, lang i18n.Language) string {
 	t := defaultMinimalTemplate(lang)
 	t = strings.ReplaceAll(t, "<Title>", title)
@@ -577,41 +352,23 @@ func defaultRootReadme(lang i18n.Language) string {
 	if lang == i18n.Spanish {
 		return "# Planes de Pacto\n\n" +
 			"## Resumen\n\n" +
-			"| Estado | Cantidad |\n" +
-			"|-------|-------|\n" +
-			"| 🟢 **Current** | 0 |\n" +
-			"| 🟡 **To Implement** | 0 |\n" +
-			"| ✅ **Done** | 0 |\n" +
-			"| ⚠️ **Outdated** | 0 |\n\n" +
+			"El estado de planes se deriva de carpetas y documentos mediante `pacto status`.\n" +
+			"Este README es solo una vista general, no la fuente de verdad del estado.\n\n" +
 			"---\n\n" +
-			"## 🟢 Current (En Ejecución)\n_No hay planes._\n\n---\n\n" +
-			"## 🟡 To Implement (Pendientes)\n_No hay planes._\n\n---\n\n" +
-			"## ✅ Done (Completados)\n_No hay planes._\n\n---\n\n" +
-			"## ⚠️ Outdated (Obsoletos)\n_No hay planes._\n\n---\n\n" +
 			"## 📜 Pacto\n\n" +
 			"- [PACTO.md](./PACTO.md)\n" +
-			"- [PLANTILLA_PACTO_PLAN.md](./PLANTILLA_PACTO_PLAN.md)\n\n" +
-			"---\n\n" +
-			"**Última Actualización:** 1970-01-01\n"
+			"- [PLANTILLA_PACTO_PLAN.md](./PLANTILLA_PACTO_PLAN.md)\n" +
+			"- [SLASH_COMMANDS.md](./SLASH_COMMANDS.md)\n"
 	}
 	return "# Pacto Plans\n\n" +
 		"## Summary\n\n" +
-		"| State | Count |\n" +
-		"|-------|-------|\n" +
-		"| 🟢 **Current** | 0 |\n" +
-		"| 🟡 **To Implement** | 0 |\n" +
-		"| ✅ **Done** | 0 |\n" +
-		"| ⚠️ **Outdated** | 0 |\n\n" +
+		"Plan status is derived from plan folders and documents via `pacto status`.\n" +
+		"This README is an overview, not a status source of truth.\n\n" +
 		"---\n\n" +
-		"## 🟢 Current (In Progress)\n_No plans._\n\n---\n\n" +
-		"## 🟡 To Implement (Pending)\n_No plans._\n\n---\n\n" +
-		"## ✅ Done (Completed)\n_No plans._\n\n---\n\n" +
-		"## ⚠️ Outdated (Outdated)\n_No plans._\n\n---\n\n" +
 		"## 📜 Pacto\n\n" +
 		"- [PACTO.md](./PACTO.md)\n" +
-		"- [PLANTILLA_PACTO_PLAN.md](./PLANTILLA_PACTO_PLAN.md)\n\n" +
-		"---\n\n" +
-		"**Last Updated:** 1970-01-01\n"
+		"- [PLANTILLA_PACTO_PLAN.md](./PLANTILLA_PACTO_PLAN.md)\n" +
+		"- [SLASH_COMMANDS.md](./SLASH_COMMANDS.md)\n"
 }
 
 func defaultMinimalTemplate(lang i18n.Language) string {

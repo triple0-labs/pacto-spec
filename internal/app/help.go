@@ -95,9 +95,9 @@ func commandCatalog() []CommandHelp {
 		},
 		{
 			Name:        "new",
-			Summary:     "Create a new plan scaffold and update root index.",
+			Summary:     "Create a new plan scaffold.",
 			Usage:       "pacto new <current|to-implement|done|outdated> <slug> [--title ...] [--owner ...] [--root <path>] [--allow-minimal-root]",
-			Description: "Generates plan folder with README + PLAN file from template and updates root README counters, links, and last update date. If --root is omitted, auto-discovers from current directory and parents.",
+			Description: "Generates plan folder with README + PLAN file from template. Plan status is derived from state folders and plan documents. If --root is omitted, auto-discovers from current directory and parents.",
 			Examples: []string{
 				"pacto new to-implement polling-contactos-v2",
 				"pacto new to-implement polling-contactos-v2 # from nested directory",
@@ -170,7 +170,7 @@ func commandCatalog() []CommandHelp {
 			Name:        "move",
 			Summary:     "Move a plan slice between states.",
 			Usage:       "pacto move <from-state> <slug> <to-state> [--root <path>] [--reason <text>] [--force]",
-			Description: "Performs explicit state transitions (to-implement/current/done/outdated), updates plan README status, and refreshes plans index links/counts.",
+			Description: "Performs explicit state transitions (to-implement/current/done/outdated) and updates plan README status.",
 			Examples: []string{
 				"pacto move to-implement improve-auth-flow current",
 				"pacto move current improve-auth-flow done --reason \"Tasks complete and evidence verified\"",

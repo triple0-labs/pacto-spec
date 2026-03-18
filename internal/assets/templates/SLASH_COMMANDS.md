@@ -29,7 +29,6 @@ Command IDs generated/managed by `pacto install` and `pacto update`:
 
 - Creates plan folder in target state.
 - Generates `README.md` and `PLAN_<TOPIC>_<YYYY-MM-DD>.md`.
-- Updates root index metadata.
 
 ### `pacto-explore`
 
@@ -47,7 +46,7 @@ Command IDs generated/managed by `pacto install` and `pacto update`:
 ### `pacto-move`
 
 - Performs explicit state transitions between canonical state folders.
-- Updates moved plan README status and root index metadata.
+- Updates moved plan README status.
 
 ### `pacto-exec`
 

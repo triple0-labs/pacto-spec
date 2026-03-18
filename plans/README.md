@@ -4,12 +4,8 @@ All previous archived and active plan slices were removed from this workspace.
 
 ## Current State
 
-| State | Count |
-|-------|-------|
-| current | 0 |
-| to-implement | 0 |
-| done | 0 |
-| outdated | 0 |
+Plan status is derived from plan folders and documents via `pacto status`.
+This README is informational only.
 
 ## Mock Project
 
@@ -23,5 +19,3 @@ Example:
 pacto status --root ./samples/mock-pacto-repo --repo-root .
 pacto new to-implement demo --root ./samples/mock-pacto-repo
 ```
-
-**Last Updated:** 2026-02-26

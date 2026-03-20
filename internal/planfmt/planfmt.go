@@ -28,6 +28,7 @@ var (
 	reScenario     = regexp.MustCompile(`(?im)^###\s*(scenario|escenario)\s*:`)
 	reNumericTask  = regexp.MustCompile(`(?im)^\s*[-*]\s*\[[ xX]\]\s*[1-9][0-9]*\.[1-9][0-9]*\s+`)
 	reLegacyTaskID = regexp.MustCompile(`(?im)^\s*[-*]\s*\[[ xX]\]\s*T[0-9]+\.`)
+	reLastModified = regexp.MustCompile(`(?im)^\s*[-*]?\s*(last modified|última modificación|ultima modificacion)\s*:\s*(.+)$`)
 )
 
 var requiredCanon = []string{
@@ -49,6 +50,9 @@ var requiredCanon = []string{
 var canonicalAliases = map[string]string{
 	"metadata":                         "metadata",
 	"metadatos":                        "metadata",
+	"intent":                           "intent",
+	"intención":                        "intent",
+	"intencion":                        "intent",
 	"problem statement":                "problem",
 	"planteamiento del problema":       "problem",
 	"declaracion del problema":         "problem",
@@ -94,37 +98,48 @@ var canonicalAliases = map[string]string{
 func Validate(content string) []Issue {
 	issues := make([]Issue, 0, 16)
 	headings := collectCanonicalHeadings(content)
-	for _, canon := range requiredCanon {
-		if _, ok := headings[canon]; !ok {
+	if _, ok := headings["problem"]; !ok {
+		if _, hasIntent := headings["intent"]; !hasIntent {
 			issues = append(issues, Issue{
-				Code:    "missing_section",
-				Message: fmt.Sprintf("missing required section: %s", canon),
+				Code:    "missing_core_intent",
+				Message: "missing core section: problem statement or intent",
 			})
 		}
 	}
-
-	fr := reFRLine.FindAllStringSubmatch(content, -1)
-	if len(fr) == 0 {
-		issues = append(issues, Issue{Code: "missing_fr", Message: "missing FR-### requirements"})
-	}
-	for _, m := range fr {
-		if len(m) < 2 {
-			continue
-		}
-		text := strings.ToUpper(m[1])
-		if !strings.Contains(text, "MUST") && !strings.Contains(text, "SHALL") {
-			issues = append(issues, Issue{Code: "fr_must_shall", Message: "each FR must include MUST or SHALL"})
-			break
-		}
-	}
-	if len(reACLine.FindAllStringSubmatch(content, -1)) == 0 {
-		issues = append(issues, Issue{Code: "missing_ac", Message: "missing AC-### acceptance criteria"})
+	if _, ok := headings["acceptance_criteria"]; !ok && len(reACLine.FindAllStringSubmatch(content, -1)) == 0 {
+		issues = append(issues, Issue{Code: "missing_core_acceptance", Message: "missing core acceptance criteria"})
 	}
 	if len(reScenario.FindAllStringSubmatch(content, -1)) == 0 {
-		issues = append(issues, Issue{Code: "missing_scenarios", Message: "missing scenario blocks (### Scenario: ...)"})
+		issues = append(issues, Issue{Code: "missing_core_scenarios", Message: "missing core scenarios"})
 	}
 	if len(reNumericTask.FindAllStringSubmatch(content, -1)) == 0 {
-		issues = append(issues, Issue{Code: "missing_numeric_tasks", Message: "missing numeric phase tasks (N.M format)"})
+		issues = append(issues, Issue{Code: "missing_core_tasks", Message: "missing core numeric phase tasks (N.M format)"})
+	}
+	if _, ok := headings["evidence"]; !ok {
+		issues = append(issues, Issue{Code: "missing_core_evidence", Message: "missing core evidence section"})
+	}
+	if len(reLastModified.FindAllStringSubmatch(content, -1)) == 0 {
+		issues = append(issues, Issue{Code: "missing_core_last_modified", Message: "missing core last modified metadata"})
+	}
+
+	fr := reFRLine.FindAllStringSubmatch(content, -1)
+	if _, hasFRModule := headings["functional_requirements"]; hasFRModule && len(fr) == 0 {
+		issues = append(issues, Issue{Code: "module_missing_fr", Message: "functional requirements section present but no FR-### entries"})
+	}
+	if len(fr) > 0 {
+		for _, m := range fr {
+			if len(m) < 2 {
+				continue
+			}
+			text := strings.ToUpper(m[1])
+			if !strings.Contains(text, "MUST") && !strings.Contains(text, "SHALL") {
+				issues = append(issues, Issue{Code: "fr_must_shall", Message: "each FR must include MUST or SHALL"})
+				break
+			}
+		}
+	}
+	if _, hasACModule := headings["acceptance_criteria"]; hasACModule && len(reACLine.FindAllStringSubmatch(content, -1)) == 0 {
+		issues = append(issues, Issue{Code: "module_missing_ac", Message: "acceptance criteria section present but no AC-### entries"})
 	}
 	if reLegacyTaskID.MatchString(content) {
 		issues = append(issues, Issue{Code: "legacy_task_id", Message: "legacy task IDs (T1/T2) are not allowed in strict mode"})
@@ -164,24 +179,6 @@ func Normalize(content string) NormalizeResult {
 			}
 		}
 		out = append(out, normalizedLine)
-	}
-
-	withMetadata, addedMeta := ensureMetadataSection(out, lang)
-	if addedMeta {
-		changes = append(changes, "added missing metadata section")
-	}
-	out = withMetadata
-
-	headings := collectCanonicalHeadings(strings.Join(out, "\n"))
-	for _, canon := range requiredCanon {
-		if _, ok := headings[canon]; ok {
-			continue
-		}
-		out = append(out, "")
-		out = append(out, "## "+sectionTitle(canon, lang))
-		out = append(out, "")
-		out = append(out, sectionPlaceholder(canon, lang))
-		changes = append(changes, "added missing section: "+canon)
 	}
 
 	resultText := strings.Join(out, "\n")

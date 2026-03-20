@@ -2,6 +2,20 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.1.19 - 2026-03-20
+
+### Added
+- `pacto new` now supports `--layout split|legacy` and defaults to split plan scaffolds (`spec.md`, `design.md`, `tasks.md`).
+- New split-layout scaffolding templates for spec, design, and tasks artifacts.
+- New tests covering split default scaffolding, legacy scaffold compatibility, and `pacto exec` preference for `tasks.md`.
+
+### Changed
+- `pacto exec` now targets `tasks.md` when present (split layout), while preserving legacy PLAN document behavior.
+- Plan structure validation (`planfmt`) moved to a core contract (intent/problem, scenarios, acceptance, phase tasks, evidence, last-modified) with optional module checks only when present.
+- `pacto normalize` keeps heading/task normalization but no longer auto-injects large missing section blocks.
+- Strict parsing no longer hard-fails on missing declared status alone; structure enforcement follows the relaxed core contract.
+- Help and command docs updated for layout-aware `pacto new` usage.
+
 ## 0.1.17 - 2026-03-04
 
 ## 0.1.18 - 2026-03-11

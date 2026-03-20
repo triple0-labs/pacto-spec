@@ -22,6 +22,7 @@ type newOptions struct {
 	owner        string
 	allowMinimal bool
 	lang         string
+	layout       string
 }
 
 type newRequest struct {
@@ -32,10 +33,14 @@ type newRequest struct {
 	owner        string
 	allowMinimal bool
 	date         string
+	layout       string
 	planDir      string
 	planFileName string
 	planPath     string
 	readmePath   string
+	specPath     string
+	designPath   string
+	tasksPath    string
 }
 
 func RunNew(args []string) int {
@@ -57,13 +62,15 @@ func runNewParsed(opts newOptions, state, slug string, rootProvided bool) int {
 		return code
 	}
 	lang := effectiveLanguage(req.root)
-	if code = createPlanScaffold(req); code != 0 {
+	created, code := createPlanScaffold(req)
+	if code != 0 {
 		return code
 	}
 
 	fmt.Println(ui.ActionHeader(tr(lang, "Created Plan", "Plan creado"), req.state+"/"+req.slug))
-	fmt.Println(pathLine("created", req.readmePath))
-	fmt.Println(pathLine("created", req.planPath))
+	for _, p := range created {
+		fmt.Println(pathLine("created", p))
+	}
 	return 0
 }
 
@@ -73,7 +80,7 @@ func parseAndValidateNewArgs(args []string) (newOptions, string, string, bool, i
 	fs.SetOutput(os.Stderr)
 	fs.Usage = func() {
 		fmt.Fprintln(os.Stderr, "Usage:")
-		fmt.Fprintln(os.Stderr, "  pacto new <current|to-implement|done|outdated> <slug> [--title ...] [--owner ...] [--root <path>] [--allow-minimal-root]")
+		fmt.Fprintln(os.Stderr, "  pacto new <current|to-implement|done|outdated> <slug> [--title ...] [--owner ...] [--root <path>] [--layout split|legacy] [--allow-minimal-root]")
 		fmt.Fprintln(os.Stderr, "")
 		fmt.Fprintln(os.Stderr, "Options:")
 		fs.PrintDefaults()
@@ -83,6 +90,7 @@ func parseAndValidateNewArgs(args []string) (newOptions, string, string, bool, i
 	fs.StringVar(&opts.owner, "owner", "Platform Team", "Owner for generated plan")
 	fs.BoolVar(&opts.allowMinimal, "allow-minimal-root", false, "Allow creating plans in lightweight/non-canonical roots")
 	fs.StringVar(&opts.lang, "lang", "", "Output language override: en|es")
+	fs.StringVar(&opts.layout, "layout", "split", "Plan layout: split|legacy")
 
 	normalizedArgs, normErr := normalizeNewArgs(args)
 	if normErr != nil {
@@ -102,6 +110,11 @@ func parseAndValidateNewArgs(args []string) (newOptions, string, string, bool, i
 			fmt.Fprintf(os.Stderr, "invalid --lang value %q (allowed: en|es)\n", opts.lang)
 			return newOptions{}, "", "", false, 2, false
 		}
+	}
+	opts.layout = strings.ToLower(strings.TrimSpace(opts.layout))
+	if opts.layout != "split" && opts.layout != "legacy" {
+		fmt.Fprintf(os.Stderr, "invalid --layout value %q (allowed: split|legacy)\n", opts.layout)
+		return newOptions{}, "", "", false, 2, false
 	}
 	rootProvided := false
 	fs.Visit(func(f *flag.Flag) {
@@ -176,39 +189,71 @@ func buildNewRequest(opts newOptions, state, slug string, rootProvided bool) (ne
 		owner:        opts.owner,
 		allowMinimal: opts.allowMinimal,
 		date:         date,
+		layout:       opts.layout,
 		planDir:      planDir,
 		planFileName: planFileName,
 		planPath:     filepath.Join(planDir, planFileName),
 		readmePath:   filepath.Join(planDir, "README.md"),
+		specPath:     filepath.Join(planDir, "spec.md"),
+		designPath:   filepath.Join(planDir, "design.md"),
+		tasksPath:    filepath.Join(planDir, "tasks.md"),
 	}
 	return req, 0, true
 }
 
-func createPlanScaffold(req newRequest) int {
+func createPlanScaffold(req newRequest) ([]string, int) {
 	lang := effectiveLanguage(req.root)
 	if err := os.MkdirAll(req.planDir, 0o775); err != nil {
 		fmt.Fprintf(os.Stderr, "create plan dir: %v\n", err)
-		return 3
+		return nil, 3
 	}
 
-	planText, err := buildPlanFromTemplate(req.root, req.state, req.slug, req.title, req.date, req.owner, req.allowMinimal, lang)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "build plan from template: %v\n", err)
-		return 3
+	created := make([]string, 0, 4)
+	created = append(created, req.readmePath)
+	if req.layout == "legacy" {
+		planText, err := buildPlanFromTemplate(req.root, req.state, req.slug, req.title, req.date, req.owner, req.allowMinimal, lang)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "build plan from template: %v\n", err)
+			return nil, 3
+		}
+		if err := os.WriteFile(req.planPath, []byte(planText), 0o664); err != nil {
+			fmt.Fprintf(os.Stderr, "write plan file: %v\n", err)
+			return nil, 3
+		}
+		if err := os.WriteFile(req.readmePath, []byte(buildPlanReadme(req.title, req.state, req.date, []string{req.planFileName}, lang)), 0o664); err != nil {
+			fmt.Fprintf(os.Stderr, "write readme: %v\n", err)
+			return nil, 3
+		}
+		created = append(created, req.planPath)
+		return created, 0
 	}
-	if err := os.WriteFile(req.planPath, []byte(planText), 0o664); err != nil {
-		fmt.Fprintf(os.Stderr, "write plan file: %v\n", err)
-		return 3
+
+	specText := defaultSpecTemplate(req.title, req.date, req.owner, req.state, req.slug, lang)
+	designText := defaultDesignTemplate(req.title, req.date, req.owner, req.state, req.slug, lang)
+	tasksText := defaultTasksTemplate(req.title, req.date, req.owner, req.state, req.slug, lang)
+
+	if err := os.WriteFile(req.specPath, []byte(specText), 0o664); err != nil {
+		fmt.Fprintf(os.Stderr, "write spec file: %v\n", err)
+		return nil, 3
 	}
-	if err := os.WriteFile(req.readmePath, []byte(buildPlanReadme(req.title, req.state, req.date, req.planFileName, lang)), 0o664); err != nil {
+	if err := os.WriteFile(req.designPath, []byte(designText), 0o664); err != nil {
+		fmt.Fprintf(os.Stderr, "write design file: %v\n", err)
+		return nil, 3
+	}
+	if err := os.WriteFile(req.tasksPath, []byte(tasksText), 0o664); err != nil {
+		fmt.Fprintf(os.Stderr, "write tasks file: %v\n", err)
+		return nil, 3
+	}
+	if err := os.WriteFile(req.readmePath, []byte(buildPlanReadme(req.title, req.state, req.date, []string{"spec.md", "design.md", "tasks.md"}, lang)), 0o664); err != nil {
 		fmt.Fprintf(os.Stderr, "write readme: %v\n", err)
-		return 3
+		return nil, 3
 	}
-	return 0
+	created = append(created, req.specPath, req.designPath, req.tasksPath)
+	return created, 0
 }
 
 func normalizeNewArgs(args []string) ([]string, error) {
-	withValue := map[string]bool{"--root": true, "-root": true, "--title": true, "-title": true, "--owner": true, "-owner": true, "--lang": true, "-lang": true}
+	withValue := map[string]bool{"--root": true, "-root": true, "--title": true, "-title": true, "--owner": true, "-owner": true, "--lang": true, "-lang": true, "--layout": true, "-layout": true}
 	return normalizeArgs(args, withValue)
 }
 
@@ -291,7 +336,7 @@ func buildPlanFromTemplate(root, state, slug, title, date, owner string, allowMi
 	return t, nil
 }
 
-func buildPlanReadme(title, state, date, planFileName string, lang i18n.Language) string {
+func buildPlanReadme(title, state, date string, docs []string, lang i18n.Language) string {
 	statusEN := map[string]string{
 		"current":      "In Progress (Current)",
 		"to-implement": "Pending (To Implement)",
@@ -312,7 +357,9 @@ func buildPlanReadme(title, state, date, planFileName string, lang i18n.Language
 	b.WriteString(tr(lang, "## Description\n\n", "## Descripción\n\n"))
 	b.WriteString(tr(lang, "Plan created with `pacto new`.\n\n", "Plan creado con `pacto new`.\n\n"))
 	b.WriteString(tr(lang, "## Documents\n\n", "## Documentos\n\n"))
-	b.WriteString("- [" + planFileName + "](./" + planFileName + ")\n")
+	for _, doc := range docs {
+		b.WriteString("- [" + doc + "](./" + doc + ")\n")
+	}
 	return b.String()
 }
 
@@ -375,5 +422,26 @@ func defaultMinimalTemplate(lang i18n.Language) string {
 	return tr(lang,
 		"# Plan: <Title>\n\n## Metadata\n\n- Status: Draft\n- Owner: <team>\n- Created: <YYYY-MM-DD>\n- Last Modified: <YYYY-MM-DD>\n- State: <current|to-implement|done|outdated>\n- Slug: <slug>\n\n## Problem Statement\n\n<Describe the problem and scope.>\n\n## Goals\n\n1. <Goal 1>\n2. <Goal 2>\n\n## Non-Goals\n\n1. <Non-goal 1>\n\n## User Scenarios\n\n### Scenario: <name>\n\n- **GIVEN** <initial state>\n- **WHEN** <action>\n- **THEN** <outcome>\n\n## Functional Requirements\n\n- FR-001: The system MUST <verifiable capability>.\n\n## Non-Functional Requirements\n\n- NFR-001: <constraint or quality requirement>.\n\n## Acceptance Criteria\n\n- AC-001: <measurable outcome>.\n\n## Technical Context\n\n- Language/Version: <value>\n- Dependencies: <value>\n\n## Implementation Plan by Phases\n\n## Phase 1: <title>\n\n- [ ] 1.1 <task>\n\n## Evidence\n\n- <YYYY-MM-DD HH:MM> `<path|symbol|command>`\n\n## Risks and Mitigations\n\n1. Risk: <description> | Mitigation: <description>\n\n## Next Steps\n\n1. <next step>\n",
 		"# Plan: <Título del plan>\n\n## Metadatos\n\n- Estado: Borrador\n- Owner: <nombre o equipo>\n- Creado: <YYYY-MM-DD>\n- Última Modificación: <YYYY-MM-DD>\n- Estado de Carpeta: <current|to-implement|done|outdated>\n- Slug: <slug>\n\n## Planteamiento del Problema\n\n<Describe el problema y su alcance.>\n\n## Objetivos\n\n1. <Objetivo 1>\n2. <Objetivo 2>\n\n## No Objetivos\n\n1. <No objetivo 1>\n\n## Escenarios de Usuario\n\n### Escenario: <nombre>\n\n- **GIVEN** <estado inicial>\n- **WHEN** <acción>\n- **THEN** <resultado>\n\n## Requerimientos Funcionales\n\n- FR-001: El sistema MUST <capacidad verificable>.\n\n## Requerimientos No Funcionales\n\n- NFR-001: <restricción o requisito de calidad>.\n\n## Criterios de Aceptación\n\n- AC-001: <resultado medible>.\n\n## Contexto Técnico\n\n- Lenguaje/Versión: <valor>\n- Dependencias: <valor>\n\n## Plan de Implementación por Fases\n\n## Phase 1: <título>\n\n- [ ] 1.1 <tarea>\n\n## Evidencia\n\n- <YYYY-MM-DD HH:MM> `<ruta|símbolo|comando>`\n\n## Riesgos y Mitigaciones\n\n1. Riesgo: <descripción> | Mitigación: <descripción>\n\n## Siguientes Pasos\n\n1. <siguiente paso>\n",
+	)
+}
+
+func defaultSpecTemplate(title, date, owner, state, slug string, lang i18n.Language) string {
+	return tr(lang,
+		fmt.Sprintf("# Spec: %s\n\n## Metadata\n\n- Owner: %s\n- Created: %s\n- Last Modified: %s\n- State: %s\n- Slug: %s\n\n## Problem Statement\n\n<Describe the problem and scope.>\n\n## User Scenarios\n\n### Scenario: <name>\n\n- **GIVEN** <initial state>\n- **WHEN** <action>\n- **THEN** <outcome>\n\n## Acceptance Criteria\n\n- AC-001: <measurable outcome>.\n", title, owner, date, date, state, slug),
+		fmt.Sprintf("# Spec: %s\n\n## Metadatos\n\n- Owner: %s\n- Creado: %s\n- Última Modificación: %s\n- Estado de Carpeta: %s\n- Slug: %s\n\n## Planteamiento del Problema\n\n<Describe el problema y su alcance.>\n\n## Escenarios de Usuario\n\n### Escenario: <nombre>\n\n- **GIVEN** <estado inicial>\n- **WHEN** <acción>\n- **THEN** <resultado>\n\n## Criterios de Aceptación\n\n- AC-001: <resultado medible>.\n", title, owner, date, date, state, slug),
+	)
+}
+
+func defaultDesignTemplate(title, date, owner, state, slug string, lang i18n.Language) string {
+	return tr(lang,
+		fmt.Sprintf("# Design: %s\n\n## Metadata\n\n- Owner: %s\n- Created: %s\n- Last Modified: %s\n- State: %s\n- Slug: %s\n\n## Technical Context\n\n- Language/Version: <value>\n- Dependencies: <value>\n- Constraints: <value>\n\n## Architecture Decisions\n\n1. Decision: <text> | Rationale: <text>\n", title, owner, date, date, state, slug),
+		fmt.Sprintf("# Design: %s\n\n## Metadatos\n\n- Owner: %s\n- Creado: %s\n- Última Modificación: %s\n- Estado de Carpeta: %s\n- Slug: %s\n\n## Contexto Técnico\n\n- Lenguaje/Versión: <valor>\n- Dependencias: <valor>\n- Restricciones: <valor>\n\n## Decisiones de Arquitectura\n\n1. Decisión: <texto> | Rationale: <texto>\n", title, owner, date, date, state, slug),
+	)
+}
+
+func defaultTasksTemplate(title, date, owner, state, slug string, lang i18n.Language) string {
+	return tr(lang,
+		fmt.Sprintf("# Tasks: %s\n\n## Execution Metadata\n\n- Status: Draft\n- Owner: %s\n- Created: %s\n- Last Modified: %s\n- State: %s\n- Slug: %s\n\n## Implementation Plan by Phases\n\n## Phase 1: <title>\n\n- [ ] 1.1 <task>\n\n## Evidence\n\n- <YYYY-MM-DD HH:MM> `<path|symbol|command>`\n\n## Blockers\n\n- <YYYY-MM-DD HH:MM> <blocker>\n\n## Next Steps\n\n1. <next step>\n", title, owner, date, date, state, slug),
+		fmt.Sprintf("# Tasks: %s\n\n## Metadatos de Ejecución\n\n- Estado: Borrador\n- Owner: %s\n- Creado: %s\n- Última Modificación: %s\n- Estado de Carpeta: %s\n- Slug: %s\n\n## Plan de Implementación por Fases\n\n## Fase 1: <título>\n\n- [ ] 1.1 <tarea>\n\n## Evidencia\n\n- <YYYY-MM-DD HH:MM> `<ruta|símbolo|comando>`\n\n## Bloqueadores\n\n- <YYYY-MM-DD HH:MM> <bloqueador>\n\n## Siguientes Pasos\n\n1. <siguiente paso>\n", title, owner, date, date, state, slug),
 	)
 }

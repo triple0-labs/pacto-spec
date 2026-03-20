@@ -157,12 +157,6 @@ func ParsePlan(ref model.PlanRef, mode string) (ParsedPlan, error) {
 	}
 
 	activeStrict := mode == "strict" && (p.Ref.State == "current" || p.Ref.State == "to-implement")
-	if p.DeclaredStatus == "" {
-		if activeStrict {
-			return p, fmt.Errorf("missing declared status")
-		}
-		p.ParseWarnings = append(p.ParseWarnings, "missing declared status")
-	}
 	if len(p.Phases) == 0 {
 		if activeStrict {
 			p.ParseWarnings = append(p.ParseWarnings, "missing structured progress source")

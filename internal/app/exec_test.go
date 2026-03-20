@@ -217,3 +217,47 @@ func TestRunExecRejectsPlanWithoutPhaseRefs(t *testing.T) {
 		t.Fatalf("expected phase task contract error, got %q", stderr)
 	}
 }
+
+func TestRunExecPrefersTasksDocumentForSplitLayout(t *testing.T) {
+	root := t.TempDir()
+	if code := RunInit([]string{"--root", root}); code != 0 {
+		t.Fatalf("RunInit returned %d", code)
+	}
+
+	plansRoot := filepath.Join(root, ".pacto", "plans")
+	planDir := filepath.Join(plansRoot, "current", "split-pref")
+	if err := os.MkdirAll(planDir, 0o775); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(planDir, "README.md"), []byte("# Split Pref\n"), 0o664); err != nil {
+		t.Fatal(err)
+	}
+	tasksPath := filepath.Join(planDir, "tasks.md")
+	if err := os.WriteFile(tasksPath, []byte("# Tasks\n\n## Phase 1\n\n- [ ] 1.1 do it\n"), 0o664); err != nil {
+		t.Fatal(err)
+	}
+	legacyPlanPath := filepath.Join(planDir, "PLAN_SPLIT_PREF.md")
+	legacyOriginal := "# Plan\n\n## Phase 1\n\n- [ ] 1.1 should stay untouched\n"
+	if err := os.WriteFile(legacyPlanPath, []byte(legacyOriginal), 0o664); err != nil {
+		t.Fatal(err)
+	}
+
+	if code := RunExec([]string{"current", "split-pref", "--root", root}); code != 0 {
+		t.Fatalf("RunExec returned %d", code)
+	}
+
+	tasksBody, err := os.ReadFile(tasksPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(tasksBody), "- [x] 1.1 do it") {
+		t.Fatalf("expected tasks.md to be updated, got %q", string(tasksBody))
+	}
+	legacyBody, err := os.ReadFile(legacyPlanPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(legacyBody) != legacyOriginal {
+		t.Fatalf("expected legacy PLAN file to remain unchanged")
+	}
+}

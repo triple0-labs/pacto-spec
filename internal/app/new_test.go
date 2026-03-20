@@ -45,12 +45,17 @@ func TestRunNewAutoDetectsRootFromNestedDir(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(planDir, "README.md")); err != nil {
 		t.Fatalf("expected README.md in plan dir: %v", err)
 	}
+	for _, name := range []string{"spec.md", "design.md", "tasks.md"} {
+		if _, err := os.Stat(filepath.Join(planDir, name)); err != nil {
+			t.Fatalf("expected %s in split layout: %v", name, err)
+		}
+	}
 	planDocs, err := filepath.Glob(filepath.Join(planDir, "PLAN_*.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(planDocs) != 1 {
-		t.Fatalf("expected exactly one PLAN_*.md file, got %d", len(planDocs))
+	if len(planDocs) != 0 {
+		t.Fatalf("expected no PLAN_*.md files for split default, got %d", len(planDocs))
 	}
 }
 
@@ -78,5 +83,25 @@ func TestRunNewPrintsRelativePathsFromCWD(t *testing.T) {
 
 	if !strings.Contains(out, ".pacto/plans/to-implement/relative-output/README.md") {
 		t.Fatalf("expected relative README path in output, got %q", stdout)
+	}
+}
+
+func TestRunNewLegacyLayoutCreatesPlanDocument(t *testing.T) {
+	root := t.TempDir()
+	if code := RunInit([]string{"--root", root, "--no-interactive", "--no-install"}); code != 0 {
+		t.Fatalf("RunInit returned %d", code)
+	}
+
+	if code := RunNew([]string{"to-implement", "legacy-output", "--root", root, "--layout", "legacy"}); code != 0 {
+		t.Fatalf("RunNew returned %d", code)
+	}
+
+	planDir := filepath.Join(root, ".pacto", "plans", "to-implement", "legacy-output")
+	planDocs, err := filepath.Glob(filepath.Join(planDir, "PLAN_*.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(planDocs) != 1 {
+		t.Fatalf("expected exactly one PLAN_*.md file, got %d", len(planDocs))
 	}
 }

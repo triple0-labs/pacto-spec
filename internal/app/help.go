@@ -96,12 +96,13 @@ func commandCatalog() []CommandHelp {
 		{
 			Name:        "new",
 			Summary:     "Create a new plan scaffold.",
-			Usage:       "pacto new <current|to-implement|done|outdated> <slug> [--title ...] [--owner ...] [--root <path>] [--allow-minimal-root]",
-			Description: "Generates plan folder with README + PLAN file from template. Plan status is derived from state folders and plan documents. If --root is omitted, auto-discovers from current directory and parents.",
+			Usage:       "pacto new <current|to-implement|done|outdated> <slug> [--title ...] [--owner ...] [--layout split|legacy] [--root <path>] [--allow-minimal-root]",
+			Description: "Generates plan folder artifacts. Default layout is split (`spec.md`, `design.md`, `tasks.md`); use `--layout legacy` for a single PLAN file. Plan status is derived from state folders and plan documents. If --root is omitted, auto-discovers from current directory and parents.",
 			Examples: []string{
 				"pacto new to-implement polling-contactos-v2",
 				"pacto new to-implement polling-contactos-v2 # from nested directory",
 				"pacto new current api-contract-refresh --title \"API Contract Refresh\" --owner \"Backend Team\"",
+				"pacto new to-implement legacy-plan --layout legacy",
 				"pacto new to-implement sandbox --root ./samples/mock-pacto-repo --allow-minimal-root",
 			},
 		},

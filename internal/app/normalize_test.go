@@ -83,10 +83,10 @@ func TestRunNormalizeWriteAppliesChanges(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := string(b)
-	if !strings.Contains(got, "## Metadatos") && !strings.Contains(got, "## Metadata") {
-		t.Fatalf("expected metadata section after normalization, got %q", got)
-	}
 	if !strings.Contains(got, "- [ ] 1.2 arreglar") {
 		t.Fatalf("expected converted task ID, got %q", got)
+	}
+	if strings.Contains(got, "## Metadatos") || strings.Contains(got, "## Metadata") {
+		t.Fatalf("did not expect normalize to auto-add metadata section, got %q", got)
 	}
 }

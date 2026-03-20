@@ -77,6 +77,9 @@ func runExec(opts execOptions, pos []string) int {
 	}
 
 	planPath := ref.PlanDocs[0]
+	if strings.EqualFold(filepath.Base(ref.ExecDoc), "tasks.md") {
+		planPath = ref.ExecDoc
+	}
 	orig, err := os.ReadFile(planPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "read plan doc: %v\n", err)
@@ -211,12 +214,22 @@ func resolvePlansRootForAction(rawRoot string) (string, error) {
 func resolvePlanRef(plansRoot, state, slug string) (planRef struct {
 	Dir      string
 	Readme   string
+	ExecDoc  string
 	PlanDocs []string
 }, err error) {
 	dir := filepath.Join(plansRoot, state, slug)
 	readme := filepath.Join(dir, "README.md")
 	if _, err := os.Stat(readme); err != nil {
 		return planRef, fmt.Errorf("plan not found: %s/%s", state, slug)
+	}
+
+	tasksPath := filepath.Join(dir, "tasks.md")
+	if _, err := os.Stat(tasksPath); err == nil {
+		planRef.Dir = dir
+		planRef.Readme = readme
+		planRef.ExecDoc = tasksPath
+		planRef.PlanDocs = []string{tasksPath}
+		return planRef, nil
 	}
 
 	docs, _ := filepath.Glob(filepath.Join(dir, "PLAN*.md"))
@@ -238,6 +251,7 @@ func resolvePlanRef(plansRoot, state, slug string) (planRef struct {
 
 	planRef.Dir = dir
 	planRef.Readme = readme
+	planRef.ExecDoc = docs[0]
 	planRef.PlanDocs = docs
 	return planRef, nil
 }

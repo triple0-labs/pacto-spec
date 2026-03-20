@@ -231,13 +231,14 @@ func newNewCommand() *cobra.Command {
 		Use:   "new <current|to-implement|done|outdated> <slug>",
 		Short: "Create a new plan.",
 		Run: func(cmd *cobra.Command, args []string) {
-			forwarded := forwardChangedFlags(cmd, args, []string{"root", "title", "owner", "allow-minimal-root", "lang"})
+			forwarded := forwardChangedFlags(cmd, args, []string{"root", "title", "owner", "allow-minimal-root", "layout", "lang"})
 			exitCode = RunNew(forwarded)
 		},
 	}
 	cmd.Flags().String("title", "", "Optional plan title")
 	cmd.Flags().String("owner", "Platform Team", "Owner for generated plan")
 	cmd.Flags().Bool("allow-minimal-root", false, "Allow creating plans in lightweight/non-canonical roots")
+	cmd.Flags().String("layout", "split", "Plan layout: split|legacy")
 	return cmd
 }
 

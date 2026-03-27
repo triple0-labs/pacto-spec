@@ -4,44 +4,52 @@ description: Agent contract for the Pacto exec workflow (currently planned/not i
 ---
 
 <!-- pacto:managed:start -->
+<!-- pacto:managed:meta artifact=codex/skill/pacto-exec workflow=exec contract=v1 template_sha256=15bee19d46439e6f2434a42170fdec5799075fb9d55dc3039628bdfde6544d7a generated_by=pacto generated_at=2026-03-27T13:34:57Z -->
 # Pacto Exec Skill
 
 Use this skill as an agent contract for the exec workflow in Pacto projects.
 
 ## Objective
 
-Execute plan slices and capture deltas/evidence.
+Execute plan tasks and register execution evidence in plan artifacts.
 
 ## When To Use
 
-Reserved workflow for guided plan execution when command implementation becomes available.
+Use after moving a plan to `current` to advance tasks while keeping execution evidence in plan documents.
 
 ## Input Contract
 
 ### Required Inputs
-- `<path-to-plan-md>` of the plan to execute (future behavior).
+- `<state>` and `<slug>` identifying an existing plan slice (`state` must be `current`).
 
 ### Optional Inputs
-- None currently, command is planned.
+- `--root <path>` to target a specific project root.
+- `--step <phase.task>` to complete a specific task (for example, `1.2`).
+- `--note`, `--blocker`, `--evidence` to append execution context.
+- `--dry-run` to preview updates without writing files.
 
 ## Execution Contract
 
 - Tool target: codex
-- Recommended command: pacto exec <path-to-plan-md>
+- Recommended command: pacto exec <state> <slug> [--root <path>] [--step <phase.task>] [--note <text>] [--blocker <text>] [--evidence <claim>] [--dry-run]
 
 ## Output Contract
-- Current expected output is a planned/not-implemented message.
-- Do not represent this workflow as executing plan slices today.
+- Marks pending tasks as completed in plan markdown checklists.
+- Appends execution notes, blockers, and evidence references.
+- Writes only plan artifact files (no source-code edits).
 
 ## Validation Checklist
-- Explicitly communicate that `pacto exec` is planned and not implemented.
-- Offer a fallback workflow (`status`, `new`, or `explore`) aligned with user intent.
+- Confirm target plan exists before execution updates.
+- Confirm intended task selection (`next pending` vs explicit `--step`).
+- When dry-run is used, confirm no files are modified.
 
 ## Failure Modes and Handling
-- Users may expect execution; command currently cannot execute slices.
+- Missing/invalid plan target or invalid step id.
+- No matching pending task for selected step.
+- Filesystem write errors updating plan markdown.
 
 ## Implementation Status
 
-- Status: **Planned (Not Implemented)**
-- Fallback: Use `pacto status` for verification, `pacto new` for scaffolding, and `pacto explore` for ideation until exec ships.
+- Status: **Implemented**
+- Fallback: Use `pacto status` to inspect blockers or task state if execution updates cannot be applied.
 <!-- pacto:managed:end -->

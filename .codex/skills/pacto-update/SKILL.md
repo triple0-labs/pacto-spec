@@ -4,6 +4,7 @@ description: Agent contract for the Pacto update workflow to refresh previously 
 ---
 
 <!-- pacto:managed:start -->
+<!-- pacto:managed:meta artifact=codex/skill/pacto-update workflow=update contract=v1 template_sha256=bd67ca98b46dd605742ad4ba62fac9d1b7674cb82b30c370de4f6929d0ea8eda generated_by=pacto generated_at=2026-03-27T13:34:57Z -->
 # Pacto Update Skill
 
 Use this skill as an agent contract for the update workflow in Pacto projects.

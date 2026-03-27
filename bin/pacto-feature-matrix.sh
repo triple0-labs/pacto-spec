@@ -84,23 +84,23 @@ mkdir -p "$PROJECT"
 
 print_header "CLI Basics"
 run_expect "version command" 0 "pacto version" "$BIN" version
-run_expect "root help no args" 0 "Pacto CLI" "$BIN"
+run_expect "root help no args" 0 "Pacto is a specialized CLI tool" "$BIN"
 run_expect "help command" 0 "Commands:" "$BIN" help
-run_expect "help status" 0 "Command: status" "$BIN" help status
-run_expect "help unknown topic" 2 "unknown help topic" "$BIN" help unknown-topic
-run_expect "unknown command" 2 "unknown command" "$BIN" does-not-exist
-run_expect "deprecated --lang warning" 0 "--lang is deprecated" "$BIN" --lang es version
+run_expect "help status" 0 "Show current workspace status." "$BIN" help status
+run_expect "help unknown topic" 0 "Unknown help topic" "$BIN" help unknown-topic
+run_expect "unknown command" 1 "unknown command" "$BIN" does-not-exist
+run_expect "version with lang override" 0 "pacto version" "$BIN" --lang es version
 
 print_header "init"
-run_expect "init basic" 0 "Initialized Pacto workspace" "$BIN" init --root "$PROJECT"
+run_expect "init basic" 0 "Workspace Ready" "$BIN" init --root "$PROJECT"
 assert_dir "plans root exists" "$PLANS"
 assert_dir "state current exists" "$PLANS/current"
 assert_dir "state to-implement exists" "$PLANS/to-implement"
 assert_dir "state done exists" "$PLANS/done"
 assert_dir "state outdated exists" "$PLANS/outdated"
 assert_file "plans README exists" "$PLANS/README.md"
-assert_file "plans template exists" "$PLANS/PLANTILLA_PACTO_PLAN.md"
-run_expect "init idempotent" 0 "Skipped:" "$BIN" init --root "$PROJECT"
+assert_file "plans PACTO exists" "$PLANS/PACTO.md"
+run_expect "init idempotent" 0 "Workspace Ready" "$BIN" init --root "$PROJECT"
 run_expect "init with agents" 0 "AGENTS.md" "$BIN" init --root "$PROJECT" --with-agents
 assert_file "agents created" "$PROJECT/AGENTS.md"
 
@@ -108,8 +108,8 @@ print_header "new"
 run_expect "new invalid state" 2 "invalid state" "$BIN" new invalid slug --root "$PLANS"
 run_expect "new invalid slug" 2 "invalid slug" "$BIN" new current BadSlug --root "$PLANS"
 run_expect "new missing args" 2 "Usage:" "$BIN" new --root "$PLANS"
-run_expect "new help" 0 "Command: new" "$BIN" new --help
-run_expect "new creates current plan" 0 "Created plan: current/api-core" "$BIN" new current api-core --root "$PLANS" --title "API Core" --owner "Platform"
+run_expect "new help" 0 "Create a new plan." "$BIN" new --help
+run_expect "new creates current plan" 0 "Created Plan" "$BIN" new current api-core --root "$PLANS" --title "API Core" --owner "Platform"
 run_expect "new duplicate rejected" 2 "plan already exists" "$BIN" new current api-core --root "$PLANS"
 
 print_header "status setup data"
@@ -119,56 +119,92 @@ package src
 
 func ValidateToken() bool { return true }
 EOF
-cat >"$PLANS/current/api-core/README.md" <<'EOF'
-# API Core
+cat >"$PLANS/current/api-core/spec.md" <<'EOF'
+# Spec: API Core
 
-**Status:** In Progress
+## Metadata
 
-## Next Steps
-1. Wire token validator
-2. Ship QA deploy
+- Owner: Platform
+- Created: 2026-03-27
+- Last Modified: 2026-03-27
+- State: current
+- Slug: api-core
 
-- [ ] Integrate `src/auth.go` in middleware
-- [ ] Fix blocked deploy in QA
+## Problem Statement
+
+Expose auth health and token validation status for verification flows.
+
+## User Scenarios
+
+### Scenario: health check
+
+- **GIVEN** token middleware is wired
+- **WHEN** auth health is requested
+- **THEN** the service exposes token validation state
+
+## Acceptance Criteria
+
+- AC-001: Status verification can trace auth health implementation to repository evidence.
 EOF
+cat >"$PLANS/current/api-core/design.md" <<'EOF'
+# Design: API Core
 
-PLAN_FILE="$(find "$PLANS/current/api-core" -maxdepth 1 -type f -name 'PLAN_*.md' | head -n 1)"
-cat >"$PLAN_FILE" <<'EOF'
-# Plan: API Core
+## Metadata
 
-**Status:** In Progress
+- Owner: Platform
+- Created: 2026-03-27
+- Last Modified: 2026-03-27
+- State: current
+- Slug: api-core
 
-| Fase 1 | Build | In Progress | 50% |
+## Technical Context
+
+- Language/Version: Go 1.24
+- Dependencies: standard library
+- Constraints: keep the flow local and testable
+
+## Architecture Decisions
+
+1. Decision: Validate token state in-process | Rationale: keep evidence easy to verify in smoke coverage
+EOF
+cat >"$PLANS/current/api-core/tasks.md" <<'EOF'
+# Tasks: API Core
+
+## Execution Metadata
+
+- Status: Draft
+- Owner: Platform
+- Created: 2026-03-27
+- Last Modified: 2026-03-27
+- State: current
+- Slug: api-core
+
+## Implementation Plan by Phases
+
+## Phase 1: Build
+
+- [ ] 1.1 Wire token validator
 
 ## Evidence
-- `src/auth.go`
-- `ValidateToken`
-- `GET /api/auth/health`
-EOF
 
-run_expect "new creates to-implement plan" 0 "Created plan: to-implement/docs-cleanup" "$BIN" new to-implement docs-cleanup --root "$PLANS" --title "Docs cleanup"
-PLAN2_FILE="$(find "$PLANS/to-implement/docs-cleanup" -maxdepth 1 -type f -name 'PLAN_*.md' | head -n 1)"
-cat >"$PLANS/to-implement/docs-cleanup/README.md" <<'EOF'
-# Docs cleanup
+- 2026-03-27 10:00 `src/auth.go`
+- 2026-03-27 10:01 `ValidateToken`
+- 2026-03-27 10:02 `GET /api/auth/health`
 
-**Status:** Pending
+## Blockers
+
+- 2026-03-27 10:03 Fix blocked deploy in QA
 
 ## Next Steps
-1. Update onboarding docs
 
-- [ ] Refresh README examples
+1. Ship QA deploy
 EOF
-cat >"$PLAN2_FILE" <<'EOF'
-# Plan: Docs cleanup
 
-**Status:** Pending
-
-Progress: 15%
-EOF
+run_expect "new creates to-implement plan" 0 "Created Plan" "$BIN" new to-implement docs-cleanup --root "$PLANS" --title "Docs cleanup"
 
 print_header "status split-root behavior"
 run_expect "status json split roots" 0 "\"plans_root\"" "$BIN" status --plans-root "$PLANS" --repo-root "$PROJECT" --format json
-run_expect "status deprecated root warning" 0 "deprecated for status" "$BIN" status --root "$PROJECT" --format table
+run_expect "status root mode" 0 "PLANS_ROOT:" "$BIN" status --root "$PROJECT" --format table
 run_expect "status state filter current" 0 "api-core" "$BIN" status --plans-root "$PLANS" --repo-root "$PROJECT" --state current --format table
 run_expect "status strict mode" 0 "MODE: strict" "$BIN" status --plans-root "$PLANS" --repo-root "$PROJECT" --mode strict --format table
 run_expect "status fail-on none" 0 "" "$BIN" status --plans-root "$PLANS" --repo-root "$PROJECT" --fail-on none --format table
@@ -190,10 +226,10 @@ cat >"$CFG_DIR/legacy.yaml" <<EOF
 root: ../project
 format: json
 EOF
-run_expect "status with deprecated config root" 0 "deprecated for status" "$BIN" status --config "$CFG_DIR/legacy.yaml"
+run_expect "status with config root" 0 "\"plans_root\"" "$BIN" status --config "$CFG_DIR/legacy.yaml"
 
 print_header "exec planned"
-run_expect "exec not implemented guidance" 2 "planned but not implemented" "$BIN" exec
+run_expect "exec missing args" 2 "exec requires <state> <slug>" "$BIN" exec
 
 print_header "Summary"
 printf "Workdir: %s\n" "$WORKDIR"

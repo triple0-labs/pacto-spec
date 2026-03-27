@@ -64,13 +64,12 @@ pacto doctor --format json --fail-on any
 Create a plan scaffold and update root index.
 
 ```bash
-pacto new <current|to-implement|done|outdated> <slug> [--title ...] [--owner ...] [--layout split|legacy]
+pacto new <current|to-implement|done|outdated> <slug> [--title ...] [--owner ...]
 ```
 
 Key options:
 
 - `--root <path>`
-- `--layout split|legacy` (default: `split`)
 - `--allow-minimal-root`
 
 Examples:

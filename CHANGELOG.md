@@ -2,6 +2,23 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.1.21 - 2026-03-27
+
+### Changed
+- `pacto init` and minimal-root bootstrapping no longer generate or reference the legacy `SLASH_COMMANDS.md` workspace file.
+- Managed workspace templates, root contracts, help text, and getting-started docs were updated to remove legacy `SLASH_COMMANDS.md` guidance.
+- Legacy single-file plan template artifacts (`PLANTILLA_PACTO_PLAN.md`) were removed from active templates and example workspace assets.
+- The stale `samples/mock-pacto-repo` fixture was removed; examples and smoke flows now generate temporary workspaces instead of relying on checked-in sample plans.
+- `bin/pacto-feature-matrix.sh` was updated to validate the current split-plan CLI behavior and current help/output surface.
+- Release guidance and local publish skills were simplified to GitHub Release flow only, and the dormant npm publish workflow was removed.
+
+## 0.1.20 - 2026-03-20
+
+### Changed
+- `pacto new` now uses split scaffolding only (`README.md`, `spec.md`, `design.md`, `tasks.md`); legacy single-file scaffold creation is deprecated and removed.
+- Workspace bootstrap/root validation no longer requires or creates `PLANTILLA_PACTO_PLAN.md`.
+- Contract/help/getting-started docs and managed templates were updated to reflect split-only plan creation.
+
 ## 0.1.19 - 2026-03-20
 
 ### Added

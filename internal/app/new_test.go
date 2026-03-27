@@ -17,9 +17,6 @@ func TestRunNewAutoDetectsRootFromNestedDir(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(plansRoot, "PACTO.md"), []byte("# Pacto\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(plansRoot, "PLANTILLA_PACTO_PLAN.md"), []byte("# Plan: <Título del plan>\n\n**Date:** <YYYY-MM-DD>\n**Owner:** <nombre o equipo>\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
 	nestedDir := filepath.Join(workspace, "src", "pkg", "nested")
 	if err := os.MkdirAll(nestedDir, 0o755); err != nil {
 		t.Fatal(err)
@@ -86,22 +83,21 @@ func TestRunNewPrintsRelativePathsFromCWD(t *testing.T) {
 	}
 }
 
-func TestRunNewLegacyLayoutCreatesPlanDocument(t *testing.T) {
+func TestRunNewMinimalRootDoesNotReferenceLegacySlashCommands(t *testing.T) {
 	root := t.TempDir()
-	if code := RunInit([]string{"--root", root, "--no-interactive", "--no-install"}); code != 0 {
-		t.Fatalf("RunInit returned %d", code)
-	}
 
-	if code := RunNew([]string{"to-implement", "legacy-output", "--root", root, "--layout", "legacy"}); code != 0 {
+	if code := RunNew([]string{"to-implement", "minimal-root", "--root", root, "--allow-minimal-root"}); code != 0 {
 		t.Fatalf("RunNew returned %d", code)
 	}
 
-	planDir := filepath.Join(root, ".pacto", "plans", "to-implement", "legacy-output")
-	planDocs, err := filepath.Glob(filepath.Join(planDir, "PLAN_*.md"))
+	plansReadme, err := os.ReadFile(filepath.Join(root, "README.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(planDocs) != 1 {
-		t.Fatalf("expected exactly one PLAN_*.md file, got %d", len(planDocs))
+	if strings.Contains(string(plansReadme), "SLASH_COMMANDS.md") {
+		t.Fatalf("expected minimal root README to avoid legacy slash commands reference, got %q", string(plansReadme))
+	}
+	if _, err := os.Stat(filepath.Join(root, "SLASH_COMMANDS.md")); !os.IsNotExist(err) {
+		t.Fatalf("expected minimal root to avoid creating SLASH_COMMANDS.md, got err=%v", err)
 	}
 }

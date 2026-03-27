@@ -20,7 +20,9 @@ Each plan slice lives at:
 Minimum files per slice:
 
 - `README.md`
-- `PLAN_<TOPIC>_<YYYY-MM-DD>.md`
+- `spec.md`
+- `design.md`
+- `tasks.md`
 
 ## Evidence-First Verification
 

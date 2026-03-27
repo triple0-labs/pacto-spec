@@ -17,7 +17,7 @@ func TestRunInitCreatesWorkspace(t *testing.T) {
 	for _, st := range []string{"current", "to-implement", "done", "outdated"} {
 		assertPathExists(t, filepath.Join(plansRoot, st))
 	}
-	for _, f := range []string{"README.md", "PACTO.md", "PLANTILLA_PACTO_PLAN.md", "SLASH_COMMANDS.md"} {
+	for _, f := range []string{"README.md", "PACTO.md"} {
 		assertPathExists(t, filepath.Join(plansRoot, f))
 	}
 	assertPathExists(t, filepath.Join(root, ".pacto", "config.yaml"))
@@ -33,23 +33,6 @@ func TestRunInitCreatesWorkspace(t *testing.T) {
 		t.Fatalf("AGENTS.md should not be created by default")
 	}
 
-	tpl, err := os.ReadFile(filepath.Join(plansRoot, "PLANTILLA_PACTO_PLAN.md"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	tplText := string(tpl)
-	if strings.Contains(tplText, "## Delta History") {
-		t.Fatalf("did not expect delta section in template, got %q", tplText)
-	}
-	if !strings.Contains(tplText, "## Metadata") {
-		t.Fatalf("expected Metadata section in template, got %q", tplText)
-	}
-	if !strings.Contains(tplText, "## Functional Requirements") {
-		t.Fatalf("expected Functional Requirements section in template, got %q", tplText)
-	}
-	if !strings.Contains(tplText, "- FR-001:") {
-		t.Fatalf("expected FR placeholder in template, got %q", tplText)
-	}
 }
 
 func TestRunInitIdempotentAndForce(t *testing.T) {

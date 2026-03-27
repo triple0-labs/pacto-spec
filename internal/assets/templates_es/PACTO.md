@@ -33,5 +33,3 @@ Archivos base en la raíz:
 
 - `README.md` (vista general del workspace)
 - `PACTO.md` (este contrato)
-- `PLANTILLA_PACTO_PLAN.md` (plantilla de plan)
-- `SLASH_COMMANDS.md` (convenciones para asistentes)

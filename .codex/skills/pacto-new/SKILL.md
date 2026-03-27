@@ -1,16 +1,17 @@
 ---
 name: pacto-new
-description: Agent contract for the Pacto new workflow to create plan scaffolds and update index metadata.
+description: Agent contract for the Pacto new workflow to create plan scaffolds.
 ---
 
 <!-- pacto:managed:start -->
+<!-- pacto:managed:meta artifact=codex/skill/pacto-new workflow=new contract=v1 template_sha256=f7a040d2b1037760dd875b47ce75105e6af73a97b37b4f8ddee601dc0b2c5a0a generated_by=pacto generated_at=2026-03-27T13:34:57Z -->
 # Pacto New Skill
 
 Use this skill as an agent contract for the new workflow in Pacto projects.
 
 ## Objective
 
-Create a new plan scaffold and update plan index metadata.
+Create a new plan scaffold.
 
 ## When To Use
 
@@ -33,14 +34,13 @@ Use when a new plan slice must be created in one of the canonical states.
 - Recommended command: pacto new to-implement my-plan-slug
 
 ## Output Contract
-- Creates `<state>/<slug>/README.md` and `PLAN_<TOPIC>_<YYYY-MM-DD>.md`.
-- Updates root `README.md` counts, section links, and last update date.
-- Prints created paths and updated index path.
+- Creates `<state>/<slug>/README.md`, `spec.md`, `design.md`, and `tasks.md`.
+- Prints created plan artifact paths.
 
 ## Validation Checklist
 - Verify state and slug validity before execution.
 - Confirm plan directory does not already exist.
-- Confirm index update succeeded in root `README.md`.
+- Confirm plan appears in `pacto status` output for the target state.
 
 ## Failure Modes and Handling
 - Invalid state or invalid slug format.

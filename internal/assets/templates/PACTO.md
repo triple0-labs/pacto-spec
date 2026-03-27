@@ -33,8 +33,6 @@ Core root files:
 
 - `README.md` (workspace overview)
 - `PACTO.md` (this contract)
-- `PLANTILLA_PACTO_PLAN.md` (plan template)
-- `SLASH_COMMANDS.md` (assistant command conventions)
 
 ## Plan Unit
 
@@ -45,7 +43,9 @@ Each plan lives at:
 Minimum files per plan:
 
 - `README.md` (human summary and links)
-- `PLAN_<TOPIC>_<YYYY-MM-DD>.md` (detailed spec/progress)
+- `spec.md` (problem, scenarios, acceptance criteria)
+- `design.md` (technical context and decisions)
+- `tasks.md` (phase tasks, evidence, blockers, next steps)
 
 Slug rules:
 
@@ -114,7 +114,7 @@ Fail policies:
 
 1. resolves/validates plan root
 2. creates `<state>/<slug>/`
-3. generates `README.md` + `PLAN_*.md`
+3. generates `README.md`, `spec.md`, `design.md`, `tasks.md`
 
 With `--allow-minimal-root`, Pacto can bootstrap missing root files with minimal defaults.
 
@@ -133,4 +133,4 @@ With `--allow-minimal-root`, Pacto can bootstrap missing root files with minimal
 ## Evolution
 
 This file defines the operational contract for the current CLI behavior.  
-If command behavior changes, update this file and `PLANTILLA_PACTO_PLAN.md` together.
+If command behavior changes, update this file with the managed root templates.

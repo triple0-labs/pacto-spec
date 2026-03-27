@@ -34,7 +34,6 @@ tiny-smoke:
 	"$$PCT" version; \
 	printf '# Tiny Mock Project\n' > "$$MOCK_DIR/README.md"; \
 	printf '# PACTO\n' > "$$MOCK_DIR/PACTO.md"; \
-	printf '# PLAN {{PLAN_NAME}}\n\n## Steps\n- [ ] First step.\n' > "$$MOCK_DIR/PLANTILLA_PACTO_PLAN.md"; \
 	mkdir -p "$$MOCK_DIR/current" "$$MOCK_DIR/done" "$$MOCK_DIR/to-implement" "$$MOCK_DIR/outdated"; \
 	"$$PCT" status --root "$$MOCK_DIR"; \
 	"$$PCT" new to-implement tiny-plan --root "$$MOCK_DIR"; \

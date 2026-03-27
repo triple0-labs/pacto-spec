@@ -30,9 +30,7 @@ Generated structure:
   ├── done/
   ├── outdated/
   ├── README.md
-  ├── PACTO.md
-  ├── PLANTILLA_PACTO_PLAN.md
-  └── SLASH_COMMANDS.md
+  └── PACTO.md
 ```
 
 Canonical workflow contract is:
@@ -60,7 +58,9 @@ pacto new to-implement improve-auth-flow
 Creates:
 
 - `<plans-root>/to-implement/improve-auth-flow/README.md`
-- `<plans-root>/to-implement/improve-auth-flow/PLAN_IMPROVE_AUTH_FLOW_<YYYY-MM-DD>.md`
+- `<plans-root>/to-implement/improve-auth-flow/spec.md`
+- `<plans-root>/to-implement/improve-auth-flow/design.md`
+- `<plans-root>/to-implement/improve-auth-flow/tasks.md`
 
 Also updates `<plans-root>/README.md` counts and links.
 

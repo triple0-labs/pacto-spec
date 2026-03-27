@@ -293,10 +293,8 @@ func bootstrapWorkspace(plansRoot, lang string, force bool, created, updated, sk
 	}
 
 	workspaceFiles := map[string]string{
-		filepath.Join(plansRoot, "README.md"):               assets.MustTemplateLang(lang, "README.md"),
-		filepath.Join(plansRoot, "PACTO.md"):                assets.MustTemplateLang(lang, "PACTO.md"),
-		filepath.Join(plansRoot, "PLANTILLA_PACTO_PLAN.md"): assets.MustTemplateLang(lang, "PLANTILLA_PACTO_PLAN.md"),
-		filepath.Join(plansRoot, "SLASH_COMMANDS.md"):       assets.MustTemplateLang(lang, "SLASH_COMMANDS.md"),
+		filepath.Join(plansRoot, "README.md"): assets.MustTemplateLang(lang, "README.md"),
+		filepath.Join(plansRoot, "PACTO.md"):  assets.MustTemplateLang(lang, "PACTO.md"),
 	}
 
 	for path, content := range workspaceFiles {

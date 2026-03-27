@@ -92,7 +92,7 @@ func Workflows() []WorkflowSpec {
 				"`--allow-minimal-root` to bootstrap missing root files.",
 			},
 			OutputContract: []string{
-				"Creates `<state>/<slug>/README.md` and `PLAN_<TOPIC>_<YYYY-MM-DD>.md`.",
+				"Creates `<state>/<slug>/README.md`, `spec.md`, `design.md`, and `tasks.md`.",
 				"Prints created plan artifact paths.",
 			},
 			ValidationChecklist: []string{
@@ -166,7 +166,7 @@ func Workflows() []WorkflowSpec {
 			},
 			ValidationChecklist: []string{
 				"Confirm `.pacto/plans/{current,to-implement,done,outdated}` exist.",
-				"Confirm core docs (`README.md`, `PACTO.md`, template, slash commands) exist.",
+				"Confirm core docs (`README.md`, `PACTO.md`) exist.",
 				"When `--with-agents`, confirm managed block markers are present in `AGENTS.md`.",
 				"Confirm the agent asked clarifying intent questions before drafting `prd.md`.",
 				"Confirm `prd.md` includes at least: problem, goals, non-goals, users, scope, success metrics, open questions.",

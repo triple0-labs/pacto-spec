@@ -20,12 +20,12 @@ const (
 )
 
 type ManagedMetadata struct {
-	Artifact     string
-	Workflow     string
-	Contract     string
-	TemplateSHA  string
-	GeneratedBy  string
-	GeneratedAt  string
+	Artifact    string
+	Workflow    string
+	Contract    string
+	TemplateSHA string
+	GeneratedBy string
+	GeneratedAt string
 }
 
 func (m ManagedMetadata) normalize() ManagedMetadata {
@@ -111,7 +111,16 @@ func WrapManaged(body string, meta ManagedMetadata) string {
 }
 
 func WriteManaged(path, body string, meta ManagedMetadata, force bool) (WriteResult, error) {
+	return writeManaged(path, body, meta, force, "")
+}
+
+func WriteManagedWithPrefix(path, body string, meta ManagedMetadata, force bool, prefix string) (WriteResult, error) {
+	return writeManaged(path, body, meta, force, prefix)
+}
+
+func writeManaged(path, body string, meta ManagedMetadata, force bool, prefix string) (WriteResult, error) {
 	wrapped := WrapManaged(body, meta)
+	prefix = strings.TrimSpace(prefix)
 	if err := os.MkdirAll(filepath.Dir(path), 0o775); err != nil {
 		return WriteResult{}, err
 	}
@@ -119,7 +128,11 @@ func WriteManaged(path, body string, meta ManagedMetadata, force bool) (WriteRes
 	b, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			if err := os.WriteFile(path, []byte(wrapped), 0o664); err != nil {
+			out := wrapped
+			if prefix != "" {
+				out = prefix + "\n\n" + wrapped
+			}
+			if err := os.WriteFile(path, []byte(out), 0o664); err != nil {
 				return WriteResult{}, err
 			}
 			return WriteResult{Outcome: OutcomeCreated}, nil
@@ -132,7 +145,11 @@ func WriteManaged(path, body string, meta ManagedMetadata, force bool) (WriteRes
 	end := strings.Index(s, ManagedEnd)
 	if start >= 0 && end > start {
 		end += len(ManagedEnd)
-		next := s[:start] + strings.TrimRight(wrapped, "\n") + s[end:]
+		pre := s[:start]
+		if prefix != "" && !hasYAMLFrontmatterAtTop(s) {
+			pre = prefix + "\n\n" + pre
+		}
+		next := pre + strings.TrimRight(wrapped, "\n") + s[end:]
 		if next == s {
 			return WriteResult{Outcome: OutcomeSkipped, Reason: "unchanged"}, nil
 		}
@@ -145,10 +162,23 @@ func WriteManaged(path, body string, meta ManagedMetadata, force bool) (WriteRes
 	if !force {
 		return WriteResult{Outcome: OutcomeSkipped, Reason: "unmanaged_exists"}, nil
 	}
-	if err := os.WriteFile(path, []byte(wrapped), 0o664); err != nil {
+	out := wrapped
+	if prefix != "" {
+		out = prefix + "\n\n" + wrapped
+	}
+	if err := os.WriteFile(path, []byte(out), 0o664); err != nil {
 		return WriteResult{}, err
 	}
 	return WriteResult{Outcome: OutcomeUpdated, Reason: "force_overwrite"}, nil
+}
+
+func hasYAMLFrontmatterAtTop(content string) bool {
+	s := strings.TrimLeft(content, "\ufeff\r\n\t ")
+	if !strings.HasPrefix(s, "---\n") {
+		return false
+	}
+	rest := s[len("---\n"):]
+	return strings.Contains(rest, "\n---")
 }
 
 func FindManagedMeta(content string) (ManagedMetadata, bool, error) {

@@ -23,6 +23,10 @@ func GenerateForTool(projectRoot, toolID string, force bool) []ArtifactResult {
 			results = append(results, ArtifactResult{Tool: toolID, Kind: "skill", WorkflowID: wf.WorkflowID, Err: err})
 		} else {
 			body := RenderSkill(toolID, wf, pluginSections...)
+			prefix := ""
+			if toolID == "codex" {
+				prefix = codexSkillFrontmatter(wf)
+			}
 			meta := ManagedMetadata{
 				Artifact:    fmt.Sprintf("%s/skill/pacto-%s", toolID, wf.WorkflowID),
 				Workflow:    wf.WorkflowID,
@@ -30,7 +34,7 @@ func GenerateForTool(projectRoot, toolID string, force bool) []ArtifactResult {
 				TemplateSHA: TemplateChecksum(body),
 				GeneratedBy: "pacto",
 			}
-			wr, werr := WriteManaged(skillPath, body, meta, force)
+			wr, werr := WriteManagedWithPrefix(skillPath, body, meta, force, prefix)
 			results = append(results, ArtifactResult{Tool: toolID, Kind: "skill", WorkflowID: wf.WorkflowID, Path: skillPath, Outcome: wr.Outcome, Reason: wr.Reason, Err: werr})
 		}
 
@@ -69,4 +73,8 @@ func collectPluginSections(active []plugins.Plugin, toolID, workflowID string) [
 		out = append(out, fmt.Sprintf("### %s\n\n%s", c.FullID(), strings.TrimSpace(c.Markdown)))
 	}
 	return out
+}
+
+func codexSkillFrontmatter(wf WorkflowSpec) string {
+	return fmt.Sprintf("---\nname: pacto-%s\ndescription: Agent contract for the Pacto %s workflow.\n---", wf.WorkflowID, wf.WorkflowID)
 }

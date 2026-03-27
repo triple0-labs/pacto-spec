@@ -201,6 +201,31 @@ func TestGenerateForToolIncludesPluginGuardrailsWhenActive(t *testing.T) {
 	}
 }
 
+func TestGenerateForToolCodexSkillsHaveFrontmatter(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("CODEX_HOME", filepath.Join(root, "_codex_home"))
+
+	results := GenerateForTool(root, "codex", false)
+	for _, r := range results {
+		if r.Err != nil {
+			t.Fatalf("unexpected generation error for %s/%s: %v", r.Kind, r.WorkflowID, r.Err)
+		}
+	}
+
+	skillPath := filepath.Join(root, ".codex", "skills", "pacto-doctor", "SKILL.md")
+	b, err := os.ReadFile(skillPath)
+	if err != nil {
+		t.Fatalf("read codex skill: %v", err)
+	}
+	content := string(b)
+	if !strings.HasPrefix(content, "---\nname: pacto-doctor\n") {
+		t.Fatalf("expected codex skill frontmatter prefix, got: %q", content)
+	}
+	if !strings.Contains(content, "<!-- pacto:managed:start -->") {
+		t.Fatalf("expected managed block in codex skill, got: %q", content)
+	}
+}
+
 func TestGenerateForToolSkipsPluginGuardrailsWhenDisabled(t *testing.T) {
 	root := t.TempDir()
 	writeIntegrationPlugin(t, root, "acme", false)

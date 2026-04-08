@@ -59,6 +59,23 @@ func TestParsePlanExtractsPhaseTaskRefs(t *testing.T) {
 	}
 }
 
+func TestParsePlanExtractsPhaseTaskRefsSpanish(t *testing.T) {
+	ref := writePlan(t, "Estado: En ejecución\n\n## Fase 1: Base\n- [ ] 1.1 Definir interfaces\n- [ ] 1.2 Conectar flujo\n")
+	p, err := ParsePlan(ref, "compat")
+	if err != nil {
+		t.Fatalf("ParsePlan returned error: %v", err)
+	}
+	if len(p.Tasks) != 2 {
+		t.Fatalf("expected 2 tasks, got %d", len(p.Tasks))
+	}
+	if p.Tasks[0].StepRef != "1.1" || p.Tasks[0].Phase != 1 || p.Tasks[0].Number != 1 {
+		t.Fatalf("unexpected first task metadata: %+v", p.Tasks[0])
+	}
+	if p.Tasks[1].StepRef != "1.2" || p.Tasks[1].Phase != 1 || p.Tasks[1].Number != 2 {
+		t.Fatalf("unexpected second task metadata: %+v", p.Tasks[1])
+	}
+}
+
 func TestParsePlanStructuredDeltasEnglish(t *testing.T) {
 	ref := writePlan(t, "Status: In Progress\n\n## Delta History\n### Delta D-2026-03-01-01\n- **Date:** 2026-03-01 10:30\n- **Type:** feat\n- **Status:** applied\n- **Changes:**\n  - `+ src/auth.go`\n  - `~ internal/parser/parser.go`\n- **Next Delta:** add tests\n")
 	p, err := ParsePlan(ref, "compat")

@@ -31,12 +31,14 @@ func detectLocalTools(root string) []string {
 		dir string
 	}
 	checks := []toolDir{
-		{id: "codex", dir: ".codex"},
 		{id: "cursor", dir: ".cursor"},
 		{id: "claude", dir: ".claude"},
 		{id: "opencode", dir: ".opencode"},
 	}
-	out := make([]string, 0, len(checks))
+	out := make([]string, 0, len(checks)+1)
+	if dirExists(filepath.Join(root, ".agents", "skills")) || dirExists(filepath.Join(root, ".codex")) {
+		out = append(out, "codex")
+	}
 	for _, c := range checks {
 		if dirExists(filepath.Join(root, c.dir)) {
 			out = append(out, c.id)

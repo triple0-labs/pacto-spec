@@ -36,12 +36,14 @@ var (
 
 type toolArtifactsOptions struct {
 	Command string
+	Root    string
 	Tools   string
 	Force   bool
 }
 
 type updateCommandOptions struct {
 	Artifacts bool
+	Root      string
 	Tools     string
 	Force     bool
 	CheckOnly bool
@@ -68,13 +70,14 @@ func runToolArtifactsCommand(cmd string, args []string) int {
 	fs.SetOutput(os.Stderr)
 	fs.Usage = func() {
 		fmt.Fprintln(os.Stderr, "Usage:")
-		fmt.Fprintf(os.Stderr, "  pacto %s [--tools <all|none|csv>] [--force]\n", cmd)
+		fmt.Fprintf(os.Stderr, "  pacto %s [--root <path>] [--tools <all|none|csv>] [--force]\n", cmd)
 		fmt.Fprintln(os.Stderr, "")
 		fmt.Fprintln(os.Stderr, "Options:")
 		fs.PrintDefaults()
 	}
 
 	toolsArg := fs.String("tools", "", "Tools to configure: all, none, or comma-separated list (codex,cursor,claude,opencode)")
+	rootArg := fs.String("root", "", "Project root path")
 	force := fs.Bool("force", false, "Overwrite unmanaged existing files")
 
 	if err := fs.Parse(args); err != nil {
@@ -91,16 +94,27 @@ func runToolArtifactsCommand(cmd string, args []string) int {
 	}
 	return runInstallWithOptions(toolArtifactsOptions{
 		Command: cmd,
+		Root:    strings.TrimSpace(*rootArg),
 		Tools:   strings.TrimSpace(*toolsArg),
 		Force:   *force,
 	})
 }
 
 func runInstallWithOptions(opts toolArtifactsOptions) int {
-	lang := effectiveLanguage("")
-	cwd, err := filepath.Abs(".")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "resolve cwd: %v\n", err)
+	projectRoot := strings.TrimSpace(opts.Root)
+	if projectRoot == "" {
+		abs, err := filepath.Abs(".")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "resolve cwd: %v\n", err)
+			return 2
+		}
+		projectRoot = abs
+	}
+	projectRoot = cleanAbs(projectRoot)
+
+	lang := effectiveLanguage(projectRoot)
+	if _, err := os.Stat(projectRoot); err != nil {
+		fmt.Fprintf(os.Stderr, "resolve root: %v\n", err)
 		return 2
 	}
 
@@ -113,7 +127,7 @@ func runInstallWithOptions(opts toolArtifactsOptions) int {
 		}
 		tools = parsed
 	} else {
-		detected, err := integrations.DetectTools(cwd)
+		detected, err := integrations.DetectTools(projectRoot)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%s: %v\n", tr(lang, "detect tools", "detectar herramientas"), err)
 			return 2
@@ -137,7 +151,7 @@ func runInstallWithOptions(opts toolArtifactsOptions) int {
 	failed := 0
 
 	for _, toolID := range tools {
-		results := integrations.GenerateForTool(cwd, toolID, opts.Force)
+		results := integrations.GenerateForTool(projectRoot, toolID, opts.Force)
 		for _, r := range results {
 			if r.Err != nil {
 				failed++
@@ -176,13 +190,14 @@ func runUpdateCommand(args []string) int {
 	fs.Usage = func() {
 		fmt.Fprintln(os.Stderr, "Usage:")
 		fmt.Fprintln(os.Stderr, "  pacto update [--check] [--yes] [--version <vX.Y.Z>] [--repo <owner/repo>]")
-		fmt.Fprintln(os.Stderr, "  pacto update --artifacts [--tools <all|none|csv>] [--force]")
+		fmt.Fprintln(os.Stderr, "  pacto update --artifacts [--root <path>] [--tools <all|none|csv>] [--force]")
 		fmt.Fprintln(os.Stderr, "")
 		fmt.Fprintln(os.Stderr, "Options:")
 		fs.PrintDefaults()
 	}
 
 	artifacts := fs.Bool("artifacts", false, "Use legacy mode: refresh installed tool artifacts instead of updating pacto binary")
+	rootArg := fs.String("root", "", "Project root path")
 	toolsArg := fs.String("tools", "", "Legacy artifacts mode only: tools to configure")
 	force := fs.Bool("force", false, "Legacy artifacts mode only: overwrite unmanaged files")
 	checkOnly := fs.Bool("check", false, "Check latest release and report status without installing")
@@ -204,6 +219,7 @@ func runUpdateCommand(args []string) int {
 	}
 	return runUpdateWithOptions(updateCommandOptions{
 		Artifacts: *artifacts,
+		Root:      strings.TrimSpace(*rootArg),
 		Tools:     strings.TrimSpace(*toolsArg),
 		Force:     *force,
 		CheckOnly: *checkOnly,
@@ -218,6 +234,7 @@ func runUpdateWithOptions(opts updateCommandOptions) int {
 	if legacyMode {
 		return runInstallWithOptions(toolArtifactsOptions{
 			Command: "update",
+			Root:    opts.Root,
 			Tools:   opts.Tools,
 			Force:   opts.Force,
 		})

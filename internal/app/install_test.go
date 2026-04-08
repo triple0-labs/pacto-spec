@@ -62,6 +62,28 @@ func TestRunInstallAutoDetectsOpenCode(t *testing.T) {
 	assertExists(t, filepath.Join(root, ".opencode", "commands", "pacto-status.md"))
 }
 
+func TestRunInstallCodexWritesAgentsSkillsAndPrompts(t *testing.T) {
+	root := t.TempDir()
+	codexHome := filepath.Join(root, "_codex_home")
+	t.Setenv("CODEX_HOME", codexHome)
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(oldWD) }()
+	if err := os.Chdir(root); err != nil {
+		t.Fatal(err)
+	}
+
+	if code := RunInstall([]string{"--tools", "codex"}); code != 0 {
+		t.Fatalf("RunInstall returned %d", code)
+	}
+
+	assertExists(t, filepath.Join(root, ".agents", "skills", "pacto-status", "SKILL.md"))
+	assertExists(t, filepath.Join(codexHome, "prompts", "pacto-status.md"))
+}
+
 func TestRunUpdateSkipsUnmanagedWithoutForce(t *testing.T) {
 	root := t.TempDir()
 	if err := os.MkdirAll(filepath.Join(root, ".cursor", "commands"), 0o755); err != nil {
@@ -87,6 +109,80 @@ func TestRunUpdateSkipsUnmanagedWithoutForce(t *testing.T) {
 	})
 	if !strings.Contains(stderr, "skipped unmanaged file") {
 		t.Fatalf("expected unmanaged warning, got %q", stderr)
+	}
+}
+
+func TestRunUpdateArtifactsHonorsRootFlag(t *testing.T) {
+	targetRoot := t.TempDir()
+	callerRoot := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(targetRoot, ".cursor"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(callerRoot, ".cursor"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(oldWD) }()
+	if err := os.Chdir(callerRoot); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout, stderr := captureOutput(t, func() {
+		if code := RunUpdate([]string{"--artifacts", "--tools", "cursor", "--root", targetRoot}); code != 0 {
+			t.Fatalf("RunUpdate returned %d", code)
+		}
+	})
+	if strings.TrimSpace(stderr) != "" {
+		t.Fatalf("unexpected stderr: %q", stderr)
+	}
+	if !strings.Contains(stdout, "Updated:") {
+		t.Fatalf("expected update summary in stdout, got %q", stdout)
+	}
+
+	assertExists(t, filepath.Join(targetRoot, ".cursor", "commands", "pacto-status.md"))
+	if _, err := os.Stat(filepath.Join(callerRoot, ".cursor", "commands", "pacto-status.md")); !os.IsNotExist(err) {
+		t.Fatalf("expected caller cwd to remain untouched, got err=%v", err)
+	}
+}
+
+func TestExecuteArgsUpdateArtifactsForwardsPersistentRootFlag(t *testing.T) {
+	targetRoot := t.TempDir()
+	callerRoot := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(targetRoot, ".cursor"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(callerRoot, ".cursor"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(oldWD) }()
+	if err := os.Chdir(callerRoot); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout, stderr := captureOutput(t, func() {
+		if code := ExecuteArgs([]string{"update", "--artifacts", "--tools", "cursor", "--root", targetRoot}); code != 0 {
+			t.Fatalf("ExecuteArgs returned %d", code)
+		}
+	})
+	if strings.TrimSpace(stderr) != "" {
+		t.Fatalf("unexpected stderr: %q", stderr)
+	}
+	if !strings.Contains(stdout, "Updated:") {
+		t.Fatalf("expected update summary in stdout, got %q", stdout)
+	}
+
+	assertExists(t, filepath.Join(targetRoot, ".cursor", "commands", "pacto-status.md"))
+	if _, err := os.Stat(filepath.Join(callerRoot, ".cursor", "commands", "pacto-status.md")); !os.IsNotExist(err) {
+		t.Fatalf("expected caller cwd to remain untouched, got err=%v", err)
 	}
 }
 

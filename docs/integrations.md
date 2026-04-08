@@ -40,7 +40,7 @@ Generated skills and command prompts include:
 
 | Tool | Skills path | Command path |
 |------|-------------|--------------|
-| Codex (`codex`) | `.codex/skills/pacto-*/SKILL.md` | `$CODEX_HOME/prompts/pacto-*.md` (or `~/.codex/prompts/pacto-*.md`) |
+| Codex (`codex`) | `.agents/skills/pacto-*/SKILL.md` | `$CODEX_HOME/prompts/pacto-*.md` (or `~/.codex/prompts/pacto-*.md`) |
 | Cursor (`cursor`) | `.cursor/skills/pacto-*/SKILL.md` | `.cursor/commands/pacto-*.md` |
 | Claude (`claude`) | `.claude/skills/pacto-*/SKILL.md` | `.claude/commands/pacto-*.md` |
 | OpenCode (`opencode`) | `.opencode/skills/pacto-*/SKILL.md` | `.opencode/commands/pacto-*.md` |

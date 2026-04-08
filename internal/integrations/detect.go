@@ -12,13 +12,15 @@ func DetectTools(projectRoot string) ([]string, error) {
 		dir string
 	}
 	checks := []toolCheck{
-		{id: "codex", dir: ".codex"},
 		{id: "cursor", dir: ".cursor"},
 		{id: "claude", dir: ".claude"},
 		{id: "opencode", dir: ".opencode"},
 	}
 
 	out := make([]string, 0)
+	if dirExists(filepath.Join(projectRoot, ".agents", "skills")) || dirExists(filepath.Join(projectRoot, ".codex")) {
+		out = append(out, "codex")
+	}
 	for _, c := range checks {
 		if dirExists(filepath.Join(projectRoot, c.dir)) {
 			out = append(out, c.id)

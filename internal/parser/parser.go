@@ -47,8 +47,8 @@ var (
 	reDeclaredStatus = regexp.MustCompile(`(?i)^[-*]?\s*(?:\*\*)?(estado|status)(?::)?(?:\*\*)?:\s*(.+)$`)
 	reCheckbox       = regexp.MustCompile(`^\s*[-*]\s*\[( |x|X)\]\s*(.+)$`)
 	reTaskNumbered   = regexp.MustCompile(`^\s*\d+\.\s+(.+)$`)
-	rePhaseRow       = regexp.MustCompile(`(?i)^\|\s*(phase\s*[^|]+)\|([^|]+)\|([^|]+)\|\s*([0-9]{1,3})%\s*\|`)
-	rePhaseHeading   = regexp.MustCompile(`(?i)^##\s*phase\s+([1-9][0-9]*)(?::\s*(.*))?$`)
+	rePhaseRow       = regexp.MustCompile(`(?i)^\|\s*((phase|fase)\s*[^|]+)\|([^|]+)\|([^|]+)\|\s*([0-9]{1,3})%\s*\|`)
+	rePhaseHeading   = regexp.MustCompile(`(?i)^##\s*(phase|fase)\s+([1-9][0-9]*)(?::\s*(.*))?$`)
 	reStepRef        = regexp.MustCompile(`^([1-9][0-9]*)\.([1-9][0-9]*)\b`)
 	reAnyPercent     = regexp.MustCompile(`(?i)(progreso total|progress)[:\s*]*([0-9]{1,3})%`)
 	reDateTime       = regexp.MustCompile(`(20[0-9]{2}-[0-9]{2}-[0-9]{2})(?:[ T]([0-9]{2}:[0-9]{2}))?`)
@@ -90,8 +90,8 @@ func ParsePlan(ref model.PlanRef, mode string) (ParsedPlan, error) {
 		if t == "" {
 			continue
 		}
-		if m := rePhaseHeading.FindStringSubmatch(t); len(m) >= 2 {
-			currentPhase, _ = strconv.Atoi(strings.TrimSpace(m[1]))
+		if m := rePhaseHeading.FindStringSubmatch(t); len(m) >= 3 {
+			currentPhase, _ = strconv.Atoi(strings.TrimSpace(m[2]))
 		}
 
 		if m := reDeclaredStatus.FindStringSubmatch(t); len(m) == 3 && p.DeclaredStatus == "" {
@@ -106,9 +106,9 @@ func ParsePlan(ref model.PlanRef, mode string) (ParsedPlan, error) {
 			}
 		}
 
-		if m := rePhaseRow.FindStringSubmatch(t); len(m) == 5 {
-			prog, _ := strconv.Atoi(strings.TrimSpace(m[4]))
-			p.Phases = append(p.Phases, model.Phase{Name: strings.TrimSpace(m[1]), RawState: strings.TrimSpace(m[3]), Progress: prog})
+		if m := rePhaseRow.FindStringSubmatch(t); len(m) == 6 {
+			prog, _ := strconv.Atoi(strings.TrimSpace(m[5]))
+			p.Phases = append(p.Phases, model.Phase{Name: strings.TrimSpace(m[1]), RawState: strings.TrimSpace(m[4]), Progress: prog})
 		}
 
 		if m := reCheckbox.FindStringSubmatch(line); len(m) == 3 {

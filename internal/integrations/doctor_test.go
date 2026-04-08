@@ -95,6 +95,27 @@ func TestAnalyzeDriftDetectsLegacyPatternFiles(t *testing.T) {
 	}
 }
 
+func TestAnalyzeDriftDetectsLegacyCodexSkillsPath(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("CODEX_HOME", filepath.Join(root, "_codex_home"))
+
+	if err := os.MkdirAll(filepath.Join(root, ".codex", "skills", "pacto-status"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	legacy := filepath.Join(root, ".codex", "skills", "pacto-status", "SKILL.md")
+	if err := os.WriteFile(legacy, []byte("legacy codex skill"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	drift, err := AnalyzeDrift(root, []string{"codex"})
+	if err != nil {
+		t.Fatalf("AnalyzeDrift error: %v", err)
+	}
+	if !hasStatusForPath(drift, legacy, DriftLegacyPattern) {
+		t.Fatalf("expected legacy pattern status for %s", legacy)
+	}
+}
+
 func hasStatusForPath(records []DriftRecord, path string, status DriftStatus) bool {
 	for _, r := range records {
 		if r.Path == path && r.Status == status {
@@ -103,4 +124,3 @@ func hasStatusForPath(records []DriftRecord, path string, status DriftStatus) bo
 	}
 	return false
 }
-

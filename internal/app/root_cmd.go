@@ -182,7 +182,7 @@ func newInstallCommand() *cobra.Command {
 		Use:   "install",
 		Short: "Install managed skills and command prompts.",
 		Run: func(cmd *cobra.Command, args []string) {
-			forwarded := forwardChangedFlags(cmd, args, []string{"tools", "force"})
+			forwarded := forwardChangedFlags(cmd, args, []string{"root", "tools", "force"})
 			exitCode = RunInstall(forwarded)
 		},
 	}
@@ -212,7 +212,7 @@ func newUpdateCommand() *cobra.Command {
 		Use:   "update",
 		Short: "Update pacto binary or refresh managed artifacts.",
 		Run: func(cmd *cobra.Command, args []string) {
-			forwarded := forwardChangedFlags(cmd, args, []string{"artifacts", "tools", "force", "check", "yes", "version", "repo"})
+			forwarded := forwardChangedFlags(cmd, args, []string{"root", "artifacts", "tools", "force", "check", "yes", "version", "repo"})
 			exitCode = RunUpdate(forwarded)
 		},
 	}

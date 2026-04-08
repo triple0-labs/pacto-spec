@@ -312,9 +312,9 @@ func sectionPlaceholder(canon, lang string) string {
 		case "acceptance_criteria":
 			return "- AC-001: <resultado medible>"
 		case "user_scenarios":
-			return "### Escenario: <nombre>\n- **GIVEN** <estado inicial>\n- **WHEN** <acción>\n- **THEN** <resultado>"
+			return "### Escenario: <nombre>\n- **DADO** <estado inicial>\n- **CUANDO** <acción>\n- **ENTONCES** <resultado>"
 		case "implementation_phases":
-			return "## Phase 1: <título>\n- [ ] 1.1 <tarea>"
+			return "## Fase 1: <título>\n- [ ] 1.1 <tarea>"
 		default:
 			return "<Completar>"
 		}
@@ -377,7 +377,7 @@ func label(name, lang string) string {
 		case "status":
 			return "Estado"
 		case "owner":
-			return "Owner"
+			return "Responsable"
 		case "created":
 			return "Creado"
 		case "last_modified":

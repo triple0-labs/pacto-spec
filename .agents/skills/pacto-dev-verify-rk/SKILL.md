@@ -1,9 +1,9 @@
 ---
-name: verify-rk
+name: pacto-dev-verify-rk
 description: Audit Pacto usage and configuration in the saas-platform-rk project, including skills, prompts, and workspace contracts. Use when checking alignment/drift without reviewing plan content itself.
 ---
 
-# Verify RK Skill
+# Pacto Dev Verify RK Skill
 
 ## Objective
 
@@ -12,7 +12,7 @@ Assess whether `saas-platform-rk` is aligned with current Pacto workflow artifac
 ## Scope
 
 - Target project: `/home/diego/work/alt94/saas-platform-rk`
-- Focus: `.codex`, `.cursor`, `.pacto/plans` contract files and generated artifacts
+- Focus: `.agents`, `.cursor`, `.pacto/plans` contract files and generated artifacts
 - Out of scope: plan implementation quality/content decisions inside individual plan slices
 
 ## Execution Contract
@@ -25,7 +25,7 @@ Assess whether `saas-platform-rk` is aligned with current Pacto workflow artifac
 
 1. Discover artifact surfaces
 - List:
-  - `/home/diego/work/alt94/saas-platform-rk/.codex/skills`
+  - `/home/diego/work/alt94/saas-platform-rk/.agents/skills`
   - `/home/diego/work/alt94/saas-platform-rk/.cursor/skills`
   - `/home/diego/work/alt94/saas-platform-rk/.cursor/commands`
   - `/home/diego/work/alt94/saas-platform-rk/.pacto/plans`

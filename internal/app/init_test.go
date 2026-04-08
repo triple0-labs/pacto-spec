@@ -185,7 +185,7 @@ func TestRunInitPrintsUserFriendlySummary(t *testing.T) {
 	}
 }
 
-func TestRunNewUsesWorkspaceLanguageForGeneratedReadme(t *testing.T) {
+func TestRunNewUsesWorkspaceLanguageForGeneratedPlanDocs(t *testing.T) {
 	root := t.TempDir()
 	if code := RunInit([]string{"--root", root, "--no-interactive", "--no-install", "--lang", "es"}); code != 0 {
 		t.Fatalf("RunInit returned %d", code)
@@ -193,13 +193,51 @@ func TestRunNewUsesWorkspaceLanguageForGeneratedReadme(t *testing.T) {
 	if code := RunNew([]string{"to-implement", "idioma-prueba", "--root", filepath.Join(root, ".pacto", "plans")}); code != 0 {
 		t.Fatalf("RunNew returned %d", code)
 	}
-	readmePath := filepath.Join(root, ".pacto", "plans", "to-implement", "idioma-prueba", "README.md")
-	b, err := os.ReadFile(readmePath)
+	planDir := filepath.Join(root, ".pacto", "plans", "to-implement", "idioma-prueba")
+
+	readmePath := filepath.Join(planDir, "README.md")
+	readme, err := os.ReadFile(readmePath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(b), "**Estado:**") {
-		t.Fatalf("expected spanish README labels, got %q", string(b))
+	if !strings.Contains(string(readme), "**Estado:**") {
+		t.Fatalf("expected spanish README labels, got %q", string(readme))
+	}
+
+	specPath := filepath.Join(planDir, "spec.md")
+	spec, err := os.ReadFile(specPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	specText := string(spec)
+	if !strings.Contains(specText, "# Especificación:") || !strings.Contains(specText, "- Responsable:") {
+		t.Fatalf("expected spanish spec labels, got %q", specText)
+	}
+	if !strings.Contains(specText, "**DADO**") || !strings.Contains(specText, "**CUANDO**") || !strings.Contains(specText, "**ENTONCES**") {
+		t.Fatalf("expected spanish scenario keywords in spec, got %q", specText)
+	}
+
+	designPath := filepath.Join(planDir, "design.md")
+	design, err := os.ReadFile(designPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	designText := string(design)
+	if !strings.Contains(designText, "# Diseño:") || !strings.Contains(designText, "Justificación:") {
+		t.Fatalf("expected spanish design labels, got %q", designText)
+	}
+
+	tasksPath := filepath.Join(planDir, "tasks.md")
+	tasks, err := os.ReadFile(tasksPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tasksText := string(tasks)
+	if !strings.Contains(tasksText, "# Tareas:") || !strings.Contains(tasksText, "## Fase 1:") {
+		t.Fatalf("expected spanish task headings, got %q", tasksText)
+	}
+	if !strings.Contains(tasksText, "- Responsable:") {
+		t.Fatalf("expected spanish task metadata labels, got %q", tasksText)
 	}
 }
 

@@ -59,3 +59,15 @@ func TestNormalizeConvertsLegacyTaskWithoutAddingMissingSections(t *testing.T) {
 		t.Fatalf("did not expect normalize to auto-add metadata, got: %s", res.Content)
 	}
 }
+
+func TestSectionPlaceholderSpanishUsesLocalizedKeywords(t *testing.T) {
+	scenarios := sectionPlaceholder("user_scenarios", "es")
+	if !strings.Contains(scenarios, "**DADO**") || !strings.Contains(scenarios, "**CUANDO**") || !strings.Contains(scenarios, "**ENTONCES**") {
+		t.Fatalf("expected localized spanish scenario placeholder, got %q", scenarios)
+	}
+
+	phases := sectionPlaceholder("implementation_phases", "es")
+	if !strings.Contains(phases, "## Fase 1:") {
+		t.Fatalf("expected spanish phase placeholder, got %q", phases)
+	}
+}

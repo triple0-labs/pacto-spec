@@ -1,9 +1,9 @@
 ---
-name: publish
+name: pacto-dev-publish
 description: Release workflow for publishing a new pacto version (tag + GitHub Release). Use when preparing or executing a versioned release.
 ---
 
-# Publish Skill
+# Pacto Dev Publish Skill
 
 ## Objective
 

@@ -283,10 +283,10 @@ func buildPlanReadme(title, state, date string, docs []string, lang i18n.Languag
 		"outdated":     "Outdated (Outdated)",
 	}[state]
 	statusES := map[string]string{
-		"current":      "En ejecución (Current)",
-		"to-implement": "Pendiente (To Implement)",
-		"done":         "Completado (Done)",
-		"outdated":     "Obsoleto (Outdated)",
+		"current":      "En ejecución",
+		"to-implement": "Pendiente",
+		"done":         "Completado",
+		"outdated":     "Obsoleto",
 	}[state]
 	status := tr(lang, statusEN, statusES)
 	var b strings.Builder
@@ -335,20 +335,20 @@ func defaultRootReadme(lang i18n.Language) string {
 func defaultSpecTemplate(title, date, owner, state, slug string, lang i18n.Language) string {
 	return tr(lang,
 		fmt.Sprintf("# Spec: %s\n\n## Metadata\n\n- Owner: %s\n- Created: %s\n- Last Modified: %s\n- State: %s\n- Slug: %s\n\n## Problem Statement\n\n<Describe the problem and scope.>\n\n## User Scenarios\n\n### Scenario: <name>\n\n- **GIVEN** <initial state>\n- **WHEN** <action>\n- **THEN** <outcome>\n\n## Acceptance Criteria\n\n- AC-001: <measurable outcome>.\n", title, owner, date, date, state, slug),
-		fmt.Sprintf("# Spec: %s\n\n## Metadatos\n\n- Owner: %s\n- Creado: %s\n- Última Modificación: %s\n- Estado de Carpeta: %s\n- Slug: %s\n\n## Planteamiento del Problema\n\n<Describe el problema y su alcance.>\n\n## Escenarios de Usuario\n\n### Escenario: <nombre>\n\n- **GIVEN** <estado inicial>\n- **WHEN** <acción>\n- **THEN** <resultado>\n\n## Criterios de Aceptación\n\n- AC-001: <resultado medible>.\n", title, owner, date, date, state, slug),
+		fmt.Sprintf("# Especificación: %s\n\n## Metadatos\n\n- Responsable: %s\n- Creado: %s\n- Última Modificación: %s\n- Estado de Carpeta: %s\n- Slug: %s\n\n## Planteamiento del Problema\n\n<Describe el problema y su alcance.>\n\n## Escenarios de Usuario\n\n### Escenario: <nombre>\n\n- **DADO** <estado inicial>\n- **CUANDO** <acción>\n- **ENTONCES** <resultado>\n\n## Criterios de Aceptación\n\n- AC-001: <resultado medible>.\n", title, owner, date, date, state, slug),
 	)
 }
 
 func defaultDesignTemplate(title, date, owner, state, slug string, lang i18n.Language) string {
 	return tr(lang,
 		fmt.Sprintf("# Design: %s\n\n## Metadata\n\n- Owner: %s\n- Created: %s\n- Last Modified: %s\n- State: %s\n- Slug: %s\n\n## Technical Context\n\n- Language/Version: <value>\n- Dependencies: <value>\n- Constraints: <value>\n\n## Architecture Decisions\n\n1. Decision: <text> | Rationale: <text>\n", title, owner, date, date, state, slug),
-		fmt.Sprintf("# Design: %s\n\n## Metadatos\n\n- Owner: %s\n- Creado: %s\n- Última Modificación: %s\n- Estado de Carpeta: %s\n- Slug: %s\n\n## Contexto Técnico\n\n- Lenguaje/Versión: <valor>\n- Dependencias: <valor>\n- Restricciones: <valor>\n\n## Decisiones de Arquitectura\n\n1. Decisión: <texto> | Rationale: <texto>\n", title, owner, date, date, state, slug),
+		fmt.Sprintf("# Diseño: %s\n\n## Metadatos\n\n- Responsable: %s\n- Creado: %s\n- Última Modificación: %s\n- Estado de Carpeta: %s\n- Slug: %s\n\n## Contexto Técnico\n\n- Lenguaje/Versión: <valor>\n- Dependencias: <valor>\n- Restricciones: <valor>\n\n## Decisiones de Arquitectura\n\n1. Decisión: <texto> | Justificación: <texto>\n", title, owner, date, date, state, slug),
 	)
 }
 
 func defaultTasksTemplate(title, date, owner, state, slug string, lang i18n.Language) string {
 	return tr(lang,
 		fmt.Sprintf("# Tasks: %s\n\n## Execution Metadata\n\n- Status: Draft\n- Owner: %s\n- Created: %s\n- Last Modified: %s\n- State: %s\n- Slug: %s\n\n## Implementation Plan by Phases\n\n## Phase 1: <title>\n\n- [ ] 1.1 <task>\n\n## Evidence\n\n- <YYYY-MM-DD HH:MM> `<path|symbol|command>`\n\n## Blockers\n\n- <YYYY-MM-DD HH:MM> <blocker>\n\n## Next Steps\n\n1. <next step>\n", title, owner, date, date, state, slug),
-		fmt.Sprintf("# Tasks: %s\n\n## Metadatos de Ejecución\n\n- Estado: Borrador\n- Owner: %s\n- Creado: %s\n- Última Modificación: %s\n- Estado de Carpeta: %s\n- Slug: %s\n\n## Plan de Implementación por Fases\n\n## Fase 1: <título>\n\n- [ ] 1.1 <tarea>\n\n## Evidencia\n\n- <YYYY-MM-DD HH:MM> `<ruta|símbolo|comando>`\n\n## Bloqueadores\n\n- <YYYY-MM-DD HH:MM> <bloqueador>\n\n## Siguientes Pasos\n\n1. <siguiente paso>\n", title, owner, date, date, state, slug),
+		fmt.Sprintf("# Tareas: %s\n\n## Metadatos de Ejecución\n\n- Estado: Borrador\n- Responsable: %s\n- Creado: %s\n- Última Modificación: %s\n- Estado de Carpeta: %s\n- Slug: %s\n\n## Plan de Implementación por Fases\n\n## Fase 1: <título>\n\n- [ ] 1.1 <tarea>\n\n## Evidencia\n\n- <YYYY-MM-DD HH:MM> `<ruta|simbolo|comando>`\n\n## Bloqueadores\n\n- <YYYY-MM-DD HH:MM> <bloqueador>\n\n## Siguientes Pasos\n\n1. <siguiente paso>\n", title, owner, date, date, state, slug),
 	)
 }

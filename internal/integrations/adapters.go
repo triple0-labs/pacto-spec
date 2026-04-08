@@ -37,7 +37,7 @@ func (a codexAdapter) SkillFilePath(projectRoot, workflowID string) (string, err
 	if workflowID == "" {
 		return "", fmt.Errorf("workflow ID is required")
 	}
-	return filepath.Join(projectRoot, ".codex", "skills", "pacto-"+workflowID, "SKILL.md"), nil
+	return filepath.Join(projectRoot, ".agents", "skills", "pacto-"+workflowID, "SKILL.md"), nil
 }
 
 func (a codexAdapter) CommandFilePath(_ string, commandID string) (string, error) {

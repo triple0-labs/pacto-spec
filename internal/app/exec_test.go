@@ -261,3 +261,51 @@ func TestRunExecPrefersTasksDocumentForSplitLayout(t *testing.T) {
 		t.Fatalf("expected legacy PLAN file to remain unchanged")
 	}
 }
+
+func TestRunExecHandlesSpanishTasksTemplate(t *testing.T) {
+	root := t.TempDir()
+	if code := RunInit([]string{"--root", root, "--no-interactive", "--no-install", "--lang", "es"}); code != 0 {
+		t.Fatalf("RunInit returned %d", code)
+	}
+	if code := RunNew([]string{"current", "spanish-exec", "--root", filepath.Join(root, ".pacto", "plans")}); code != 0 {
+		t.Fatalf("RunNew returned %d", code)
+	}
+
+	_, stderr := captureOutput(t, func() {
+		code := RunExec([]string{
+			"current", "spanish-exec", "--root", root,
+			"--note", "se validó el flujo", "--evidence", "src/api.go", "--blocker", "pendiente QA",
+		})
+		if code != 0 {
+			t.Fatalf("RunExec returned %d", code)
+		}
+	})
+	if stderr != "" {
+		t.Fatalf("unexpected stderr: %q", stderr)
+	}
+
+	tasksPath := filepath.Join(root, ".pacto", "plans", "current", "spanish-exec", "tasks.md")
+	body, err := os.ReadFile(tasksPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(body)
+	if !strings.Contains(got, "- [x] 1.1 <tarea>") {
+		t.Fatalf("expected first spanish task completion, got %q", got)
+	}
+	if !strings.Contains(got, "## Notas de Ejecución") || !strings.Contains(got, "se validó el flujo") {
+		t.Fatalf("expected spanish execution notes section, got %q", got)
+	}
+	if !strings.Contains(got, "## Evidencia") || !strings.Contains(got, "`src/api.go`") {
+		t.Fatalf("expected spanish evidence section, got %q", got)
+	}
+	if !strings.Contains(got, "## Bloqueadores") || !strings.Contains(got, "pendiente QA") {
+		t.Fatalf("expected spanish blockers section, got %q", got)
+	}
+	if !strings.Contains(got, "- Última Modificación: ") {
+		t.Fatalf("expected spanish metadata last-modified update, got %q", got)
+	}
+	if strings.Contains(got, "**Last Modified:**") {
+		t.Fatalf("did not expect english readme-style metadata insertion, got %q", got)
+	}
+}

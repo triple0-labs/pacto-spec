@@ -27,7 +27,7 @@ type execOptions struct {
 
 var (
 	reExecCheckbox = regexp.MustCompile(`^\s*[-*]\s*\[( |x|X)\]\s*(.+)$`)
-	rePhaseHeading = regexp.MustCompile(`(?i)^##\s*phase\s+([1-9][0-9]*)(?::\s*.*)?$`)
+	rePhaseHeading = regexp.MustCompile(`(?i)^##\s*(phase|fase)\s+([1-9][0-9]*)(?::\s*.*)?$`)
 	reStepRef      = regexp.MustCompile(`^([1-9][0-9]*)\.([1-9][0-9]*)\b`)
 	reStrictStepID = regexp.MustCompile(`^[1-9][0-9]*\.[1-9][0-9]*$`)
 )
@@ -86,6 +86,7 @@ func runExec(opts execOptions, pos []string) int {
 		return 3
 	}
 	content := string(orig)
+	docLang := detectPlanDocLanguage(content, lang)
 
 	actions := make([]string, 0, 4)
 	updated, act, err := applyExecTaskUpdate(content, opts.step)
@@ -99,11 +100,11 @@ func runExec(opts execOptions, pos []string) int {
 
 	ts := time.Now().Format("2006-01-02 15:04")
 	if note := strings.TrimSpace(opts.note); note != "" {
-		updated = appendSectionBullet(updated, "## Execution Notes", fmt.Sprintf("- %s %s", ts, note))
+		updated = appendSectionBulletLocalized(updated, localizedSectionHeadings("execution_notes", docLang), fmt.Sprintf("- %s %s", ts, note))
 		actions = append(actions, "appended execution note")
 	}
 	if blocker := strings.TrimSpace(opts.blocker); blocker != "" {
-		updated = appendSectionBullet(updated, "## Blockers", fmt.Sprintf("- %s %s", ts, blocker))
+		updated = appendSectionBulletLocalized(updated, localizedSectionHeadings("blockers", docLang), fmt.Sprintf("- %s %s", ts, blocker))
 		actions = append(actions, "appended blocker")
 	}
 	if evidence := strings.TrimSpace(opts.evidence); evidence != "" {
@@ -111,7 +112,7 @@ func runExec(opts execOptions, pos []string) int {
 		if !strings.Contains(e, "`") {
 			e = "`" + e + "`"
 		}
-		updated = appendSectionBullet(updated, "## Evidence", fmt.Sprintf("- %s %s", ts, e))
+		updated = appendSectionBulletLocalized(updated, localizedSectionHeadings("evidence", docLang), fmt.Sprintf("- %s %s", ts, e))
 		actions = append(actions, "appended evidence")
 	}
 
@@ -119,7 +120,7 @@ func runExec(opts execOptions, pos []string) int {
 		fmt.Println(ui.Dim(tr(lang, "No execution changes to apply.", "No hay cambios de ejecución para aplicar.")))
 		return 0
 	}
-	updated = upsertPlanLastModified(updated, ts, lang)
+	updated = upsertPlanLastModified(updated, ts, docLang)
 
 	if opts.dryRun {
 		fmt.Println(ui.ActionHeader(tr(lang, "Dry Run", "Simulación"), tr(lang, "execution update", "actualización de ejecución")))
@@ -276,8 +277,8 @@ func applyExecTaskUpdate(content, requestedStep string) (string, string, error) 
 	currentPhase := 0
 	for i, line := range lines {
 		t := strings.TrimSpace(line)
-		if m := rePhaseHeading.FindStringSubmatch(t); len(m) == 2 {
-			currentPhase = parsePosInt(m[1])
+		if m := rePhaseHeading.FindStringSubmatch(t); len(m) == 3 {
+			currentPhase = parsePosInt(m[2])
 			continue
 		}
 		m := reExecCheckbox.FindStringSubmatch(line)
@@ -300,7 +301,7 @@ func applyExecTaskUpdate(content, requestedStep string) (string, string, error) 
 	}
 
 	if len(candidates) == 0 {
-		return content, "", fmt.Errorf("no phase tasks found (expected '- [ ] 1.1 ...' under '## Phase N' headings)")
+		return content, "", fmt.Errorf("no phase tasks found (expected '- [ ] 1.1 ...' under '## Phase N' or '## Fase N' headings)")
 	}
 
 	sort.Slice(candidates, func(i, j int) bool {
@@ -378,10 +379,23 @@ func parsePosInt(s string) int {
 	return n
 }
 
-func appendSectionBullet(content, heading, bullet string) string {
+func appendSectionBulletLocalized(content string, headings []string, bullet string) string {
+	if len(headings) == 0 {
+		return content
+	}
+	primary := strings.TrimSpace(headings[0])
+	allowed := map[string]struct{}{}
+	for _, h := range headings {
+		h = strings.ToLower(strings.TrimSpace(h))
+		if h == "" {
+			continue
+		}
+		allowed[h] = struct{}{}
+	}
+
 	lines := strings.Split(content, "\n")
 	for i := 0; i < len(lines); i++ {
-		if strings.TrimSpace(lines[i]) != heading {
+		if _, ok := allowed[strings.ToLower(strings.TrimSpace(lines[i]))]; !ok {
 			continue
 		}
 		j := i + 1
@@ -409,34 +423,47 @@ func appendSectionBullet(content, heading, bullet string) string {
 
 	trimmed := strings.TrimRight(content, "\n")
 	if trimmed == "" {
-		return heading + "\n\n" + bullet + "\n"
+		return primary + "\n\n" + bullet + "\n"
 	}
-	return trimmed + "\n\n" + heading + "\n\n" + bullet + "\n"
+	return trimmed + "\n\n" + primary + "\n\n" + bullet + "\n"
 }
 
 func upsertPlanLastModified(content, timestamp string, lang i18n.Language) string {
 	lines := strings.Split(content, "\n")
-	label := tr(lang, "**Last Modified:** ", "**Última Modificación:** ")
+	boldLabel := tr(lang, "**Last Modified:** ", "**Última Modificación:** ")
+	bulletLabel := tr(lang, "- Last Modified: ", "- Última Modificación: ")
 	for i, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "**Last Modified:**") || strings.HasPrefix(trimmed, "**Última Modificación:**") {
-			lines[i] = label + timestamp + "  "
+			lines[i] = boldLabel + timestamp + "  "
+			return strings.Join(lines, "\n")
+		}
+		if strings.HasPrefix(trimmed, "- Last Modified:") || strings.HasPrefix(trimmed, "- Última Modificación:") || strings.HasPrefix(trimmed, "- Ultima Modificacion:") {
+			lines[i] = bulletLabel + timestamp
 			return strings.Join(lines, "\n")
 		}
 	}
 
 	insertAt := -1
+	preferBullet := true
 	for i, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "**Date:**") || strings.HasPrefix(trimmed, "**Fecha:**") {
 			insertAt = i + 1
+			preferBullet = false
+			break
+		}
+		if strings.HasPrefix(trimmed, "- Created:") || strings.HasPrefix(trimmed, "- Creado:") {
+			insertAt = i + 1
+			preferBullet = true
 			break
 		}
 	}
 	if insertAt < 0 {
 		for i, line := range lines {
-			if strings.HasPrefix(strings.TrimSpace(line), "# Plan:") {
+			if strings.HasPrefix(strings.TrimSpace(line), "# ") {
 				insertAt = i + 1
+				preferBullet = false
 				break
 			}
 		}
@@ -447,7 +474,51 @@ func upsertPlanLastModified(content, timestamp string, lang i18n.Language) strin
 
 	out := make([]string, 0, len(lines)+1)
 	out = append(out, lines[:insertAt]...)
-	out = append(out, label+timestamp+"  ")
+	if preferBullet {
+		out = append(out, bulletLabel+timestamp)
+	} else {
+		out = append(out, boldLabel+timestamp+"  ")
+	}
 	out = append(out, lines[insertAt:]...)
 	return strings.Join(out, "\n")
+}
+
+func detectPlanDocLanguage(content string, fallback i18n.Language) i18n.Language {
+	l := strings.ToLower(content)
+	scoreES := 0
+	for _, tok := range []string{
+		"## fase ", "## plan de implementación por fases", "## plan de implementacion por fases",
+		"## metadatos de ejecución", "## metadatos de ejecucion", "## evidencia",
+		"## bloqueadores", "## siguientes pasos", "última modificación", "ultima modificacion",
+	} {
+		if strings.Contains(l, tok) {
+			scoreES++
+		}
+	}
+	if scoreES >= 2 {
+		return i18n.Spanish
+	}
+	return fallback
+}
+
+func localizedSectionHeadings(section string, lang i18n.Language) []string {
+	switch section {
+	case "execution_notes":
+		if lang == i18n.Spanish {
+			return []string{"## Notas de Ejecución", "## Notas de Ejecucion", "## Execution Notes"}
+		}
+		return []string{"## Execution Notes", "## Notas de Ejecución", "## Notas de Ejecucion"}
+	case "evidence":
+		if lang == i18n.Spanish {
+			return []string{"## Evidencia", "## Evidence"}
+		}
+		return []string{"## Evidence", "## Evidencia"}
+	case "blockers":
+		if lang == i18n.Spanish {
+			return []string{"## Bloqueadores", "## Blockers"}
+		}
+		return []string{"## Blockers", "## Bloqueadores"}
+	default:
+		return nil
+	}
 }

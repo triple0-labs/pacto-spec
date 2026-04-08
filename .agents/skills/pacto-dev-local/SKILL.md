@@ -1,9 +1,9 @@
 ---
-name: pacto-local-dev
+name: pacto-dev-local
 description: Local development workflow for building, installing, and validating the pacto binary from this repository.
 ---
 
-# Pacto Local Dev Skill
+# Pacto Dev Local Skill
 
 Use this skill when developing Pacto itself and validating local changes with Codex.
 

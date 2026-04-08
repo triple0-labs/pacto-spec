@@ -144,13 +144,14 @@ func commandCatalog() []CommandHelp {
 		{
 			Name:        "update",
 			Summary:     "Update pacto binary (default) or refresh tool artifacts.",
-			Usage:       "pacto update [--check] [--yes] [--version <vX.Y.Z>] [--repo <owner/repo>] | --artifacts [--tools <all|none|csv>] [--force]",
+			Usage:       "pacto update [--check] [--yes] [--version <vX.Y.Z>] [--repo <owner/repo>] | --artifacts [--root <path>] [--tools <all|none|csv>] [--force]",
 			Description: "By default, updates the installed pacto binary from GitHub releases. Use --artifacts to run legacy managed artifact refresh for supported tools.",
 			Examples: []string{
 				"pacto update",
 				"pacto update --check",
 				"pacto update --yes",
 				"pacto update --version v0.1.16",
+				"pacto update --artifacts --root /path/to/project --tools cursor",
 				"pacto update --artifacts --tools claude,opencode",
 				"pacto update --artifacts --force",
 			},

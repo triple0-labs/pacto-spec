@@ -158,10 +158,27 @@ func extractManagedBody(content string) string {
 
 func detectLegacyPatterns(projectRoot, toolID string) []DriftRecord {
 	base, ok := toolBaseDir(projectRoot, toolID)
-	if !ok || !dirExists(base) {
+	if !ok {
 		return nil
 	}
 	records := make([]DriftRecord, 0)
+
+	if toolID == "codex" {
+		legacyCodexSkills, _ := filepath.Glob(filepath.Join(projectRoot, ".codex", "skills", "pacto-*", "SKILL.md"))
+		for _, p := range legacyCodexSkills {
+			records = append(records, DriftRecord{
+				Tool:           toolID,
+				Kind:           "skill",
+				Path:           p,
+				Status:         DriftLegacyPattern,
+				Reason:         "legacy .codex/skills path detected",
+				RecommendedFix: "remove legacy .codex/skills pacto-* entries and use .agents/skills for Codex",
+			})
+		}
+	}
+	if !dirExists(base) {
+		return records
+	}
 
 	legacyCommands, _ := filepath.Glob(filepath.Join(base, "commands", "pa-*.md"))
 	for _, p := range legacyCommands {
@@ -247,7 +264,7 @@ func toolBaseDir(projectRoot, toolID string) (string, bool) {
 	case "opencode":
 		return filepath.Join(projectRoot, ".opencode"), true
 	case "codex":
-		return filepath.Join(projectRoot, ".codex"), true
+		return filepath.Join(projectRoot, ".agents"), true
 	default:
 		return "", false
 	}

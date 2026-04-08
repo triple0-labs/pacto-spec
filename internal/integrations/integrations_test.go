@@ -31,12 +31,15 @@ func TestDetectToolsIncludesOpenCode(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(root, ".cursor"), 0o755); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.MkdirAll(filepath.Join(root, ".agents", "skills"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	got, err := DetectTools(root)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !contains(got, "opencode") || !contains(got, "cursor") {
-		t.Fatalf("expected detected tools to include opencode and cursor, got %v", got)
+	if !contains(got, "codex") || !contains(got, "opencode") || !contains(got, "cursor") {
+		t.Fatalf("expected detected tools to include codex, opencode and cursor, got %v", got)
 	}
 }
 
@@ -212,7 +215,7 @@ func TestGenerateForToolCodexSkillsHaveFrontmatter(t *testing.T) {
 		}
 	}
 
-	skillPath := filepath.Join(root, ".codex", "skills", "pacto-doctor", "SKILL.md")
+	skillPath := filepath.Join(root, ".agents", "skills", "pacto-doctor", "SKILL.md")
 	b, err := os.ReadFile(skillPath)
 	if err != nil {
 		t.Fatalf("read codex skill: %v", err)
@@ -223,6 +226,33 @@ func TestGenerateForToolCodexSkillsHaveFrontmatter(t *testing.T) {
 	}
 	if !strings.Contains(content, "<!-- pacto:managed:start -->") {
 		t.Fatalf("expected managed block in codex skill, got: %q", content)
+	}
+}
+
+func TestGenerateForToolOpenCodeSkillsHaveFrontmatter(t *testing.T) {
+	root := t.TempDir()
+
+	results := GenerateForTool(root, "opencode", false)
+	for _, r := range results {
+		if r.Err != nil {
+			t.Fatalf("unexpected generation error for %s/%s: %v", r.Kind, r.WorkflowID, r.Err)
+		}
+	}
+
+	skillPath := filepath.Join(root, ".opencode", "skills", "pacto-doctor", "SKILL.md")
+	b, err := os.ReadFile(skillPath)
+	if err != nil {
+		t.Fatalf("read opencode skill: %v", err)
+	}
+	content := string(b)
+	if !strings.HasPrefix(content, "---\nname: pacto-doctor\n") {
+		t.Fatalf("expected opencode skill frontmatter prefix, got: %q", content)
+	}
+	if !strings.Contains(content, "compatibility: opencode") {
+		t.Fatalf("expected opencode skill compatibility field, got: %q", content)
+	}
+	if !strings.Contains(content, "<!-- pacto:managed:start -->") {
+		t.Fatalf("expected managed block in opencode skill, got: %q", content)
 	}
 }
 

@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.1.22 - 2026-04-08
+
+### Added
+- Spanish (i18n) support for `pacto exec` workflow: phase headings ("Fase"), localized section headings (Notas de Ejecución, Evidencia, Bloqueadores), and automatic language detection from document content.
+- `--root` flag to `pacto install` and `pacto update --artifacts` for specifying project root path explicitly.
+- OpenCode skill frontmatter support for generated skills.
+- Doctor integration check detects legacy `.codex/skills/pacto-*` entries and recommends cleanup.
+
+### Changed
+- Codex integration path migrated from `.codex/skills/` to `.agents/skills/` to align with Codex 2.0 structure.
+- Tool detection now identifies Codex presence via `.agents/skills/` or `.codex/` directories.
+- Parser and planfmt now accept both English ("Phase N") and Spanish ("Fase N") phase headings.
+- Spanish templates updated: GIVEN/WHEN/THEN → DADO/CUANDO/ENTONCES, "Owner" → "Responsable", "Spec:" → "Especificación:", "Design:" → "Diseño:", "Tasks:" → "Tareas:".
+
+### Fixed
+- `pacto exec` correctly matches phase heading regex groups for both languages.
+- Last Modified updates work with both bold and bullet metadata formats.
+
 ## 0.1.21 - 2026-03-27
 
 ### Changed

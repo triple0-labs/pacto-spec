@@ -132,10 +132,6 @@ func ParsePlan(ref model.PlanRef, mode string) (ParsedPlan, error) {
 		if strings.Contains(lt, "evidencia") || strings.Contains(lt, "evidence") || strings.Contains(lt, "smoke") || strings.Contains(lt, "validación") || strings.Contains(lt, "validacion") || strings.Contains(lt, "validation") {
 			p.HasEvidence = true
 		}
-		if looksBlockerLine(t) {
-			p.BlockerHints = appendUnique(p.BlockerHints, trimForReport(t))
-		}
-
 		if strings.Contains(lt, "delta") || strings.Contains(lt, "checkpoint") {
 			if dt := parseDateTime(t); dt != nil {
 				if legacyLatestDelta == nil || dt.After(*legacyLatestDelta) {
@@ -149,6 +145,7 @@ func ParsePlan(ref model.PlanRef, mode string) (ParsedPlan, error) {
 		p.LatestDeltaTime = legacyLatestDelta
 	}
 
+	extractBlockers(lines, &p)
 	extractNextActions(lines, &p)
 	if len(p.Phases) == 0 {
 		if pct := extractTotalProgress(text); pct >= 0 {
@@ -441,7 +438,7 @@ func readPlanText(ref model.PlanRef) (string, error) {
 
 func looksBlocked(text string) bool {
 	t := strings.ToLower(text)
-	keys := []string{"blocked", "bloqueado", "pendiente crítico", "pendiente critico", "falla", "error", "pendiente", "en espera", "bloqueado por"}
+	keys := []string{"blocked", "blocked by", "waiting on", "waiting for", "bloqueado", "bloqueado por", "pendiente crítico", "pendiente critico", "en espera"}
 	for _, k := range keys {
 		if strings.Contains(t, k) {
 			return true
@@ -450,15 +447,69 @@ func looksBlocked(text string) bool {
 	return false
 }
 
-func looksBlockerLine(text string) bool {
-	t := strings.ToLower(text)
-	if strings.Contains(t, "bloqueador") || strings.Contains(t, "blocker") {
+func extractBlockers(lines []string, p *ParsedPlan) {
+	collect := false
+	for _, line := range lines {
+		t := strings.TrimSpace(line)
+		if t == "" {
+			continue
+		}
+		if isBlockersHeading(t) {
+			collect = true
+			continue
+		}
+		if collect {
+			if strings.HasPrefix(t, "## ") || strings.HasPrefix(t, "### ") {
+				collect = false
+				continue
+			}
+			if blocker, ok := parseBlockerLine(line); ok {
+				p.BlockerHints = appendUnique(p.BlockerHints, blocker)
+			}
+		}
+	}
+}
+
+func isBlockersHeading(line string) bool {
+	switch normalizeHeading(line) {
+	case "blockers", "bloqueadores":
+		return true
+	default:
+		return false
+	}
+}
+
+func parseBlockerLine(line string) (string, bool) {
+	t := strings.TrimSpace(line)
+	if t == "" {
+		return "", false
+	}
+
+	text := t
+	switch {
+	case strings.HasPrefix(t, "- ") || strings.HasPrefix(t, "* "):
+		text = strings.TrimSpace(t[2:])
+	case len(reCheckbox.FindStringSubmatch(line)) == 3:
+		text = strings.TrimSpace(reCheckbox.FindStringSubmatch(line)[2])
+	case len(reTaskNumbered.FindStringSubmatch(t)) == 2:
+		text = strings.TrimSpace(reTaskNumbered.FindStringSubmatch(t)[1])
+	}
+
+	if isBlockerPlaceholder(text) {
+		return "", false
+	}
+	return trimForReport(text), true
+}
+
+func isBlockerPlaceholder(text string) bool {
+	t := strings.ToLower(strings.TrimSpace(text))
+	t = strings.Trim(t, "*`")
+	t = strings.TrimSpace(t)
+	switch t {
+	case "", "none", "none currently", "none currently.", "no blockers", "no blockers.", "ninguno", "ninguno actualmente", "ninguno actualmente.", "sin bloqueadores", "sin bloqueadores.":
 		return true
 	}
-	if strings.Contains(t, "pendiente crítico") || strings.Contains(t, "pendiente critico") {
-		return true
-	}
-	if strings.Contains(t, "bloqueado") || strings.Contains(t, "blocked") {
+	if strings.HasPrefix(t, "<") && strings.HasSuffix(t, ">") {
 		return true
 	}
 	return false

@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"pacto/internal/app"
+	"pacto/internal/cli"
 )
 
 func main() {
@@ -11,5 +11,5 @@ func main() {
 }
 
 func run() int {
-	return app.Execute()
+	return cli.Execute()
 }

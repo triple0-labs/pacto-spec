@@ -18,13 +18,14 @@ func RenderWithLanguage(r model.StatusReport, format string, lang i18n.Language)
 	switch strings.ToLower(format) {
 	case "json":
 		out := struct {
-			GeneratedAt string             `json:"generated_at"`
-			Root        string             `json:"root"`
-			PlansRoot   string             `json:"plans_root,omitempty"`
-			RepoRoot    string             `json:"repo_root,omitempty"`
-			Mode        string             `json:"mode"`
-			Summary     model.Summary      `json:"summary"`
-			Plans       []model.PlanStatus `json:"plans"`
+			GeneratedAt string                `json:"generated_at"`
+			Root        string                `json:"root"`
+			PlansRoot   string                `json:"plans_root,omitempty"`
+			RepoRoot    string                `json:"repo_root,omitempty"`
+			Mode        string                `json:"mode"`
+			Summary     model.Summary         `json:"summary"`
+			Plans       []model.PlanStatus    `json:"plans"`
+			Overlaps    []model.DomainOverlap `json:"overlaps,omitempty"`
 		}{
 			GeneratedAt: r.GeneratedAt.Format(time.RFC3339),
 			Root:        r.Root,
@@ -33,6 +34,7 @@ func RenderWithLanguage(r model.StatusReport, format string, lang i18n.Language)
 			Mode:        r.Mode,
 			Summary:     r.Summary,
 			Plans:       r.Plans,
+			Overlaps:    r.Overlaps,
 		}
 		b, err := json.MarshalIndent(out, "", "  ")
 		if err != nil {
@@ -77,6 +79,13 @@ func renderTable(r model.StatusReport, lang i18n.Language) string {
 		}
 		if p.ParseError != "" {
 			fmt.Fprintf(&b, "  %s: %s\n", i18n.T(lang, "parse_error", "error_parseo"), p.ParseError)
+		}
+	}
+	if len(r.Overlaps) > 0 {
+		fmt.Fprintf(&b, "%s\n", strings.Repeat("-", 130))
+		fmt.Fprintf(&b, "%s:\n", i18n.T(lang, "overlaps", "solapamientos"))
+		for _, overlap := range r.Overlaps {
+			fmt.Fprintf(&b, "  - %s: %s\n", overlap.Domain, strings.Join(overlap.Plans, " | "))
 		}
 	}
 	return strings.TrimRight(b.String(), "\n")

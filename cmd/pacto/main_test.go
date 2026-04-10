@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"pacto/internal/app"
+	"pacto/internal/cli"
 )
 
 func TestRunMatchesSharedRouterExitCodes(t *testing.T) {
@@ -21,7 +21,7 @@ func TestRunMatchesSharedRouterExitCodes(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := app.ExecuteArgs(tc.args)
+			got := cli.ExecuteArgs(tc.args)
 			if got != tc.want {
 				t.Fatalf("ExecuteArgs(%v) = %d, want %d", tc.args, got, tc.want)
 			}

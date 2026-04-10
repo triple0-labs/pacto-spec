@@ -69,12 +69,18 @@ type Summary struct {
 	TotalBlockedTasks int            `json:"total_blocked_tasks"`
 }
 
+type DomainOverlap struct {
+	Domain string   `json:"domain"`
+	Plans  []string `json:"plans"`
+}
+
 type StatusReport struct {
-	GeneratedAt time.Time    `json:"generated_at"`
-	Root        string       `json:"root"`
-	PlansRoot   string       `json:"plans_root,omitempty"`
-	RepoRoot    string       `json:"repo_root,omitempty"`
-	Mode        string       `json:"mode"`
-	Summary     Summary      `json:"summary"`
-	Plans       []PlanStatus `json:"plans"`
+	GeneratedAt time.Time       `json:"generated_at"`
+	Root        string          `json:"root"`
+	PlansRoot   string          `json:"plans_root,omitempty"`
+	RepoRoot    string          `json:"repo_root,omitempty"`
+	Mode        string          `json:"mode"`
+	Summary     Summary         `json:"summary"`
+	Plans       []PlanStatus    `json:"plans"`
+	Overlaps    []DomainOverlap `json:"overlaps,omitempty"`
 }

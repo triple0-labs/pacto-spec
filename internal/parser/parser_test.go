@@ -42,6 +42,45 @@ func TestParsePlanExtractsNextActions(t *testing.T) {
 	}
 }
 
+func TestParsePlanExtractsBlockersFromSection(t *testing.T) {
+	ref := writePlan(t, "Status: In Progress\n\n## Blockers\n- waiting on API access\n")
+	p, err := ParsePlan(ref, "compat")
+	if err != nil {
+		t.Fatalf("ParsePlan returned error: %v", err)
+	}
+	if len(p.BlockerHints) != 1 {
+		t.Fatalf("expected 1 blocker, got %d", len(p.BlockerHints))
+	}
+	if p.BlockerHints[0] != "waiting on API access" {
+		t.Fatalf("blocker=%q", p.BlockerHints[0])
+	}
+}
+
+func TestParsePlanIgnoresEmptyBlockersSectionPlaceholder(t *testing.T) {
+	ref := writePlan(t, "Status: In Progress\n\n## Blockers\n- None currently.\n\n## Next Steps\n1. Ship endpoint\n")
+	p, err := ParsePlan(ref, "compat")
+	if err != nil {
+		t.Fatalf("ParsePlan returned error: %v", err)
+	}
+	if len(p.BlockerHints) != 0 {
+		t.Fatalf("expected no blockers, got %v", p.BlockerHints)
+	}
+}
+
+func TestParsePlanDoesNotTreatGoErrorReturnAsBlocked(t *testing.T) {
+	ref := writePlan(t, "Status: In Progress\n\n## Phase 1: Setup\n- [ ] 1.1 Implement `InitContext(plansRoot string) error`\n")
+	p, err := ParsePlan(ref, "compat")
+	if err != nil {
+		t.Fatalf("ParsePlan returned error: %v", err)
+	}
+	if len(p.Tasks) != 1 {
+		t.Fatalf("expected 1 task, got %d", len(p.Tasks))
+	}
+	if p.Tasks[0].LikelyBlk {
+		t.Fatalf("expected task not to be marked blocked: %+v", p.Tasks[0])
+	}
+}
+
 func TestParsePlanExtractsPhaseTaskRefs(t *testing.T) {
 	ref := writePlan(t, "Status: In Progress\n\n## Phase 1: Setup\n- [ ] 1.1 Define interfaces\n- [ ] 1.2 Add wiring\n")
 	p, err := ParsePlan(ref, "compat")

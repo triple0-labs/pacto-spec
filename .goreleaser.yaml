@@ -20,7 +20,7 @@ builds:
       - amd64
       - arm64
     ldflags:
-      - -s -w -X pacto/internal/app.Version={{.Version}}
+      - -s -w -X pacto/internal/cmdutil.Version={{.Version}}
   - id: pacto-engine
     main: ./cmd/pacto-engine
     binary: pacto-engine
@@ -33,7 +33,7 @@ builds:
       - amd64
       - arm64
     ldflags:
-      - -s -w -X pacto/internal/app.Version={{.Version}}
+      - -s -w -X pacto/internal/cmdutil.Version={{.Version}}
 
 archives:
   - id: default

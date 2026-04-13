@@ -19,6 +19,7 @@ type Config struct {
 	FailOn          string
 	State           string
 	IncludeArchive  bool
+	Verify          bool
 	MaxNextActions  int
 	MaxBlockers     int
 	ClaimsPaths     bool
@@ -37,6 +38,7 @@ func Defaults(_ string) Config {
 		FailOn:          "none",
 		State:           "all",
 		IncludeArchive:  false,
+		Verify:          false,
 		MaxNextActions:  3,
 		MaxBlockers:     3,
 		ClaimsPaths:     true,

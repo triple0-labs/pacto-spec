@@ -50,11 +50,12 @@ type PlanStatus struct {
 	DeclaredStatus string        `json:"declared_status"`
 	DerivedStatus  string        `json:"derived_status"`
 	ProgressPct    *int          `json:"progress_percent,omitempty"`
+	LastUpdatedAt  *time.Time    `json:"last_updated_at,omitempty"`
 	PendingTasks   int           `json:"pending_tasks"`
 	BlockedTasks   int           `json:"blocked_tasks"`
 	Blockers       []string      `json:"blockers"`
 	NextActions    []string      `json:"next_actions"`
-	Verification   string        `json:"verification"`
+	Verification   string        `json:"verification,omitempty"`
 	Confidence     string        `json:"confidence"`
 	Claims         []ClaimResult `json:"claims,omitempty"`
 	ParseWarnings  []string      `json:"parse_warnings,omitempty"`
@@ -64,7 +65,7 @@ type PlanStatus struct {
 type Summary struct {
 	TotalPlans        int            `json:"total_plans"`
 	ByState           map[string]int `json:"by_state"`
-	ByVerification    map[string]int `json:"by_verification"`
+	ByVerification    map[string]int `json:"by_verification,omitempty"`
 	TotalPendingTasks int            `json:"total_pending_tasks"`
 	TotalBlockedTasks int            `json:"total_blocked_tasks"`
 }
@@ -75,12 +76,13 @@ type DomainOverlap struct {
 }
 
 type StatusReport struct {
-	GeneratedAt time.Time       `json:"generated_at"`
-	Root        string          `json:"root"`
-	PlansRoot   string          `json:"plans_root,omitempty"`
-	RepoRoot    string          `json:"repo_root,omitempty"`
-	Mode        string          `json:"mode"`
-	Summary     Summary         `json:"summary"`
-	Plans       []PlanStatus    `json:"plans"`
-	Overlaps    []DomainOverlap `json:"overlaps,omitempty"`
+	GeneratedAt         time.Time       `json:"generated_at"`
+	Root                string          `json:"root"`
+	PlansRoot           string          `json:"plans_root,omitempty"`
+	RepoRoot            string          `json:"repo_root,omitempty"`
+	Mode                string          `json:"mode"`
+	VerificationEnabled bool            `json:"-"`
+	Summary             Summary         `json:"summary"`
+	Plans               []PlanStatus    `json:"plans"`
+	Overlaps            []DomainOverlap `json:"overlaps,omitempty"`
 }

@@ -10,8 +10,9 @@ import (
 
 func TestBuildDerivesBlockedAndVerification(t *testing.T) {
 	in := Input{
-		Root: ".",
-		Mode: "compat",
+		Root:                ".",
+		Mode:                "compat",
+		VerificationEnabled: true,
 		Plans: []parser.ParsedPlan{
 			{
 				Ref:          model.PlanRef{State: "current", Slug: "a"},

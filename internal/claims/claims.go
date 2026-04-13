@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	reBacktick = regexp.MustCompile("`([^`]+)`")
+	reBacktick = regexp.MustCompile("`([^`\n]+)`")
 	reMDLink   = regexp.MustCompile(`\[[^\]]+\]\(([^)]+)\)`)
 	reVerbEP   = regexp.MustCompile(`(?i)\b(GET|POST|PUT|PATCH|DELETE)\s+(/[-A-Za-z0-9_/{}/.:]+)`)
 	reAPIPath  = regexp.MustCompile(`\b(/api/[-A-Za-z0-9_/{}/.:]+)`)
@@ -38,6 +38,9 @@ func Extract(p parser.ParsedPlan, opts Options) []model.ClaimResult {
 	for _, m := range reBacktick.FindAllStringSubmatch(text, -1) {
 		v := strings.TrimSpace(m[1])
 		if v == "" {
+			continue
+		}
+		if strings.Contains(v, "\n") {
 			continue
 		}
 		if opts.Paths && looksLikePath(v) {

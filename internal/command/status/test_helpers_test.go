@@ -24,6 +24,7 @@ func RunStatus(args []string) int {
 	failOn := fs.String("fail-on", "none", "")
 	state := fs.String("state", "all", "")
 	includeArchive := fs.Bool("include-archive", false, "")
+	verify := fs.Bool("verify", false, "")
 	maxNextActions := fs.Int("max-next-actions", 3, "")
 	maxBlockers := fs.Int("max-blockers", 3, "")
 	verbose := fs.Bool("verbose", false, "")
@@ -43,6 +44,7 @@ func RunStatus(args []string) int {
 		FailOn:         *failOn,
 		State:          *state,
 		IncludeArchive: *includeArchive,
+		Verify:         *verify,
 		MaxNextActions: *maxNextActions,
 		MaxBlockers:    *maxBlockers,
 		Verbose:        *verbose,

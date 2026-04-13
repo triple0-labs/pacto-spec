@@ -31,6 +31,7 @@ type ParsedPlan struct {
 	RawText             string
 	DeclaredStatus      string
 	Phases              []model.Phase
+	LastUpdatedAt       *time.Time
 	Tasks               []model.Task
 	BlockerHints        []string
 	NextActions         []string
@@ -63,6 +64,7 @@ func ParsePlan(ref model.PlanRef, mode string) (ParsedPlan, error) {
 		return p, err
 	}
 	p.RawText = text
+	p.LastUpdatedAt = latestPlanUpdate(ref)
 	lines := strings.Split(text, "\n")
 
 	deltas, deltaWarnings, hasDeltaSection, deltaErr := parseStructuredDeltas(lines, "compat")
@@ -434,6 +436,26 @@ func readPlanText(ref model.PlanRef) (string, error) {
 		parts = append(parts, string(b))
 	}
 	return strings.Join(parts, "\n\n"), nil
+}
+
+func latestPlanUpdate(ref model.PlanRef) *time.Time {
+	paths := make([]string, 0, len(ref.PlanDocs)+1)
+	paths = append(paths, ref.Readme)
+	paths = append(paths, ref.PlanDocs...)
+
+	var latest *time.Time
+	for _, path := range paths {
+		info, err := os.Stat(path)
+		if err != nil || info.IsDir() {
+			continue
+		}
+		mod := info.ModTime().UTC()
+		if latest == nil || mod.After(*latest) {
+			ts := mod
+			latest = &ts
+		}
+	}
+	return latest
 }
 
 func looksBlocked(text string) bool {

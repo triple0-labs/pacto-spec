@@ -209,8 +209,8 @@ run_expect "status state filter current" 0 "api-core" "$BIN" status --plans-root
 run_expect "status strict mode" 0 "MODE: strict" "$BIN" status --plans-root "$PLANS" --repo-root "$PROJECT" --mode strict --format table
 run_expect "status fail-on none" 0 "" "$BIN" status --plans-root "$PLANS" --repo-root "$PROJECT" --fail-on none --format table
 run_expect "status fail-on blocked" 1 "" "$BIN" status --plans-root "$PLANS" --repo-root "$PROJECT" --fail-on blocked --format table
-run_expect "status fail-on unverified" 1 "" "$BIN" status --plans-root "$PLANS" --repo-root "$PROJECT" --fail-on unverified --format table
-run_expect "status fail-on partial" 1 "" "$BIN" status --plans-root "$PLANS" --repo-root "$PROJECT" --fail-on partial --format table
+run_expect "status fail-on unverified" 1 "" "$BIN" status --plans-root "$PLANS" --repo-root "$PROJECT" --verify --fail-on unverified --format table
+run_expect "status fail-on partial" 1 "" "$BIN" status --plans-root "$PLANS" --repo-root "$PROJECT" --verify --fail-on partial --format table
 
 print_header "config split roots"
 CFG_DIR="$WORKDIR/cfg"

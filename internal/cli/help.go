@@ -70,15 +70,15 @@ func commandCatalog() []CommandHelp {
 	return []CommandHelp{
 		{
 			Name:        "status",
-			Summary:     "Verify plan status, blockers, and evidence claims.",
-			Usage:       "pacto status [--root <path>] [--repo-root <path>] [--mode compat|strict] [--format table|json] [--fail-on policy]",
-			Description: "Scans plans from plans root, verifies claims against repo root, and renders interactive TUI in terminals. In non-TTY mode, emits table/json report for automation.",
+			Summary:     "Report plan status, blockers, freshness, and optional path verification.",
+			Usage:       "pacto status [--root <path>] [--repo-root <path>] [--mode compat|strict] [--format table|json] [--verify] [--fail-on policy]",
+			Description: "Scans plans from plans root and renders interactive TUI in terminals. In non-TTY mode, emits metadata-first table/json output for automation. Use --verify to check explicit file path claims against repo root.",
 			Examples: []string{
 				"pacto status",
 				"pacto status # from nested directory",
-				"pacto status --root . --repo-root .",
+				"pacto status --root . --repo-root . --format json",
 				"pacto status --mode strict --format table",
-				"pacto status --format json --fail-on partial",
+				"pacto status --format json --verify --fail-on partial",
 			},
 		},
 		{

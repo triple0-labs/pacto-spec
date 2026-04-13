@@ -10,11 +10,12 @@ import (
 
 func TestRenderJSONAndTable(t *testing.T) {
 	rep := model.StatusReport{
-		GeneratedAt: time.Date(2026, 2, 28, 12, 0, 0, 0, time.UTC),
-		PlansRoot:   "/tmp/plans",
-		RepoRoot:    "/tmp/repo",
-		Mode:        "compat",
-		Summary:     model.Summary{TotalPlans: 1},
+		GeneratedAt:         time.Date(2026, 2, 28, 12, 0, 0, 0, time.UTC),
+		PlansRoot:           "/tmp/plans",
+		RepoRoot:            "/tmp/repo",
+		Mode:                "compat",
+		VerificationEnabled: true,
+		Summary:             model.Summary{TotalPlans: 1, ByVerification: map[string]int{"verified": 1}},
 		Plans: []model.PlanStatus{{
 			StateFolder:  "current",
 			Slug:         "sample",

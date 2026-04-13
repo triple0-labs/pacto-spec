@@ -32,6 +32,7 @@ type Options struct {
 	FailOn         string
 	State          string
 	IncludeArchive bool
+	Verify         bool
 	MaxNextActions int
 	MaxBlockers    int
 	Verbose        bool
@@ -85,7 +86,7 @@ func Run(opts Options) int {
 	fmt.Println(out)
 
 	if opts.Verbose {
-		fmt.Fprintf(os.Stderr, "config: mode=%s format=%s fail-on=%s state=%s include-archive=%t root=%s plans-root=%s repo-root=%s\n", cfg.Mode, cfg.Format, cfg.FailOn, cfg.State, cfg.IncludeArchive, cfg.Root, cfg.PlansRoot, cfg.RepoRoot)
+		fmt.Fprintf(os.Stderr, "config: mode=%s format=%s fail-on=%s state=%s include-archive=%t verify=%t root=%s plans-root=%s repo-root=%s\n", cfg.Mode, cfg.Format, cfg.FailOn, cfg.State, cfg.IncludeArchive, cfg.Verify, cfg.Root, cfg.PlansRoot, cfg.RepoRoot)
 	}
 	return exitcode.Evaluate(cfg.FailOn, rep)
 }
@@ -102,7 +103,7 @@ func buildStatusConfig(values Options, provided map[string]bool) (config.Config,
 		return config.Config{}, nil, nil, 2, false
 	}
 
-	applyOverrides(&cfg, provided, values.Root, values.PlansRoot, values.RepoRoot, values.Mode, values.Format, values.FailOn, values.State, values.IncludeArchive, values.MaxNextActions, values.MaxBlockers)
+	applyOverrides(&cfg, provided, values.Root, values.PlansRoot, values.RepoRoot, values.Mode, values.Format, values.FailOn, values.State, values.IncludeArchive, values.Verify, values.MaxNextActions, values.MaxBlockers)
 	cfg = normalizeConfig(cfg)
 
 	runtimeWarnings := make([]string, 0, 2)
@@ -191,7 +192,7 @@ func buildStatusReport(cfg config.Config, cfgWarnings []string) (model.StatusRep
 	warningsByPlan := map[string][]string{}
 	planDomains := map[string][]string{}
 	verifier := verify.New(cfg.RepoRoot, cfg.PlansRoot)
-	claimOpts := claims.Options{Paths: cfg.ClaimsPaths, Symbols: cfg.ClaimsSymbols, Endpoints: cfg.ClaimsEndpoints, TestRefs: cfg.ClaimsTestRefs}
+	claimOpts := claims.Options{Paths: cfg.ClaimsPaths}
 
 	for _, plan := range plans {
 		pp, pErr := parser.ParsePlan(plan, cfg.Mode)
@@ -200,10 +201,13 @@ func buildStatusReport(cfg config.Config, cfgWarnings []string) (model.StatusRep
 		}
 		parsed = append(parsed, pp)
 		key := plan.State + "/" + plan.Slug
-		rawClaims := claims.Extract(pp, claimOpts)
-		verifiedClaims := make([]model.ClaimResult, 0, len(rawClaims))
-		for _, c := range rawClaims {
-			verifiedClaims = append(verifiedClaims, verifier.VerifyClaim(plan, c))
+		verifiedClaims := make([]model.ClaimResult, 0)
+		if cfg.Verify {
+			rawClaims := claims.Extract(pp, claimOpts)
+			verifiedClaims = make([]model.ClaimResult, 0, len(rawClaims))
+			for _, c := range rawClaims {
+				verifiedClaims = append(verifiedClaims, verifier.VerifyClaim(plan, c))
+			}
 		}
 		claimsByPlan[key] = verifiedClaims
 		if len(cfgWarnings) > 0 {
@@ -226,13 +230,14 @@ func buildStatusReport(cfg config.Config, cfgWarnings []string) (model.StatusRep
 	}
 
 	rep := analyze.Build(analyze.Input{
-		Root:      cfg.PlansRoot,
-		PlansRoot: cfg.PlansRoot,
-		RepoRoot:  cfg.RepoRoot,
-		Mode:      cfg.Mode,
-		Plans:     parsed,
-		Claims:    claimsByPlan,
-		Warnings:  warningsByPlan,
+		Root:                cfg.PlansRoot,
+		PlansRoot:           cfg.PlansRoot,
+		RepoRoot:            cfg.RepoRoot,
+		Mode:                cfg.Mode,
+		VerificationEnabled: cfg.Verify,
+		Plans:               parsed,
+		Claims:              claimsByPlan,
+		Warnings:            warningsByPlan,
 	}, analyze.Options{MaxNextActions: cfg.MaxNextActions, MaxBlockers: cfg.MaxBlockers})
 	rep.Overlaps = make([]model.DomainOverlap, 0, len(overlaps))
 	for _, overlap := range overlaps {
@@ -255,7 +260,7 @@ func hasLangArg(args []string) bool {
 	return false
 }
 
-func applyOverrides(cfg *config.Config, provided map[string]bool, root, plansRoot, repoRoot, mode, format, failOn, state string, includeArchive bool, maxNext, maxBlockers int) {
+func applyOverrides(cfg *config.Config, provided map[string]bool, root, plansRoot, repoRoot, mode, format, failOn, state string, includeArchive bool, verify bool, maxNext, maxBlockers int) {
 	if provided["root"] {
 		if abs, err := filepath.Abs(root); err == nil {
 			cfg.Root = abs
@@ -285,6 +290,9 @@ func applyOverrides(cfg *config.Config, provided map[string]bool, root, plansRoo
 	}
 	if provided["include-archive"] {
 		cfg.IncludeArchive = includeArchive
+	}
+	if provided["verify"] {
+		cfg.Verify = verify
 	}
 	if provided["max-next-actions"] {
 		cfg.MaxNextActions = maxNext

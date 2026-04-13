@@ -135,6 +135,29 @@ func TestRenderTemplatesIncludeContractSections(t *testing.T) {
 	}
 }
 
+func TestStatusWorkflowPrefersJSONAndOptionalVerify(t *testing.T) {
+	var status WorkflowSpec
+	for _, wf := range Workflows() {
+		if wf.WorkflowID == "status" {
+			status = wf
+			break
+		}
+	}
+	if status.WorkflowID == "" {
+		t.Fatal("expected status workflow")
+	}
+	if status.Command != "pacto status --format json" {
+		t.Fatalf("unexpected status command: %q", status.Command)
+	}
+	skill := RenderSkill("codex", status)
+	if !strings.Contains(skill, "optional path verification") {
+		t.Fatalf("expected metadata-first status summary, got %q", skill)
+	}
+	if !strings.Contains(skill, "`--verify`") {
+		t.Fatalf("expected verify guidance in rendered skill, got %q", skill)
+	}
+}
+
 func TestGenerateForToolWritesContractAndExecCommand(t *testing.T) {
 	root := t.TempDir()
 	results := GenerateForTool(root, "opencode", false)

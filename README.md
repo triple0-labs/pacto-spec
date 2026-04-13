@@ -76,11 +76,12 @@ pacto init --no-interactive --tools codex,cursor --yes
 # create a plan
 pacto new to-implement improve-auth-flow
 
-# verify status and evidence
+# inspect plan status
 pacto status
 
 # CI-friendly output
-pacto status --format json --fail-on partial
+pacto status --format json
+pacto status --format json --verify --fail-on partial
 pacto doctor --format json --fail-on any
 
 # list and validate local plugins

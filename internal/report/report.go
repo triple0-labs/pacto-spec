@@ -61,17 +61,29 @@ func renderTable(r model.StatusReport, lang i18n.Language) string {
 	fmt.Fprintf(&b, "%s: %s | %s: %s | MODE: %s | %s: %s\n", i18n.T(lang, "PLANS_ROOT", "RAIZ_PLANES"), plansRoot, i18n.T(lang, "REPO_ROOT", "RAIZ_REPO"), repoRoot, r.Mode, i18n.T(lang, "GENERATED", "GENERADO"), r.GeneratedAt.Format(time.RFC3339))
 	fmt.Fprintf(&b, "%s: plans=%d pending=%d blocked=%d\n", i18n.T(lang, "SUMMARY", "RESUMEN"), r.Summary.TotalPlans, r.Summary.TotalPendingTasks, r.Summary.TotalBlockedTasks)
 	fmt.Fprintf(&b, "%s\n", strings.Repeat("-", 130))
-	fmt.Fprintf(&b, "%-14s %-36s %-11s %-8s %-8s %-10s %-12s\n", i18n.T(lang, "STATE", "ESTADO"), i18n.T(lang, "PLAN", "PLAN"), i18n.T(lang, "VERIF", "VERIF"), i18n.T(lang, "PENDING", "PEND"), i18n.T(lang, "BLOCKED", "BLOQ"), i18n.T(lang, "CONF", "CONF"), i18n.T(lang, "DERIVED", "DERIVADO"))
+	if r.VerificationEnabled {
+		fmt.Fprintf(&b, "%-14s %-32s %-11s %-8s %-8s %-10s %-12s %-20s\n", i18n.T(lang, "STATE", "ESTADO"), i18n.T(lang, "PLAN", "PLAN"), i18n.T(lang, "VERIF", "VERIF"), i18n.T(lang, "PENDING", "PEND"), i18n.T(lang, "BLOCKED", "BLOQ"), i18n.T(lang, "CONF", "CONF"), i18n.T(lang, "DERIVED", "DERIVADO"), i18n.T(lang, "UPDATED", "ACTUALIZADO"))
+	} else {
+		fmt.Fprintf(&b, "%-14s %-40s %-8s %-8s %-10s %-12s %-20s\n", i18n.T(lang, "STATE", "ESTADO"), i18n.T(lang, "PLAN", "PLAN"), i18n.T(lang, "PENDING", "PEND"), i18n.T(lang, "BLOCKED", "BLOQ"), i18n.T(lang, "CONF", "CONF"), i18n.T(lang, "DERIVED", "DERIVADO"), i18n.T(lang, "UPDATED", "ACTUALIZADO"))
+	}
 	fmt.Fprintf(&b, "%s\n", strings.Repeat("-", 130))
 	for _, p := range r.Plans {
-		fmt.Fprintf(&b, "%-14s %-36s %-11s %-8d %-8d %-10s %-12s\n", p.StateFolder, shorten(p.Slug, 36), p.Verification, p.PendingTasks, p.BlockedTasks, p.Confidence, shorten(p.DerivedStatus, 12))
+		updated := ""
+		if p.LastUpdatedAt != nil {
+			updated = p.LastUpdatedAt.Format(time.RFC3339)
+		}
+		if r.VerificationEnabled {
+			fmt.Fprintf(&b, "%-14s %-32s %-11s %-8d %-8d %-10s %-12s %-20s\n", p.StateFolder, shorten(p.Slug, 32), p.Verification, p.PendingTasks, p.BlockedTasks, p.Confidence, shorten(p.DerivedStatus, 12), shorten(updated, 20))
+		} else {
+			fmt.Fprintf(&b, "%-14s %-40s %-8d %-8d %-10s %-12s %-20s\n", p.StateFolder, shorten(p.Slug, 40), p.PendingTasks, p.BlockedTasks, p.Confidence, shorten(p.DerivedStatus, 12), shorten(updated, 20))
+		}
 		if len(p.Blockers) > 0 {
 			fmt.Fprintf(&b, "  %s: %s\n", i18n.T(lang, "blockers", "bloqueadores"), strings.Join(p.Blockers, " | "))
 		}
 		if len(p.NextActions) > 0 {
 			fmt.Fprintf(&b, "  %s: %s\n", i18n.T(lang, "next", "siguiente"), strings.Join(p.NextActions, " | "))
 		}
-		if len(p.Claims) > 0 {
+		if r.VerificationEnabled && len(p.Claims) > 0 {
 			fmt.Fprintf(&b, "  %s: %d\n", i18n.T(lang, "claims", "afirmaciones"), len(p.Claims))
 		}
 		if len(p.ParseWarnings) > 0 {

@@ -27,3 +27,13 @@ func TestExtractClaimsDedupesAndClassifies(t *testing.T) {
 		t.Fatalf("expected all claim categories, got %#v", got)
 	}
 }
+
+func TestExtractClaimsIgnoresMultilineInlineCode(t *testing.T) {
+	p := parser.ParsedPlan{
+		RawText: "`src/auth.go\nRunStatus`",
+	}
+	got := Extract(p, Options{Paths: true, Symbols: true, Endpoints: true, TestRefs: true})
+	if len(got) != 0 {
+		t.Fatalf("expected multiline inline code to be ignored, got %#v", got)
+	}
+}

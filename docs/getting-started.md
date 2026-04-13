@@ -73,7 +73,7 @@ pacto status
 For CI automation:
 
 ```bash
-pacto status --format json --fail-on partial
+pacto status --format json --verify --fail-on partial
 ```
 
 ## 4. Execute Planned Work

@@ -15,13 +15,14 @@ type Options struct {
 }
 
 type Input struct {
-	Root      string
-	PlansRoot string
-	RepoRoot  string
-	Mode      string
-	Plans     []parser.ParsedPlan
-	Claims    map[string][]model.ClaimResult
-	Warnings  map[string][]string
+	Root                string
+	PlansRoot           string
+	RepoRoot            string
+	Mode                string
+	VerificationEnabled bool
+	Plans               []parser.ParsedPlan
+	Claims              map[string][]model.ClaimResult
+	Warnings            map[string][]string
 }
 
 func Build(in Input, opts Options) model.StatusReport {
@@ -63,7 +64,10 @@ func Build(in Input, opts Options) model.StatusReport {
 			next = fallbackNextActions(p)
 		}
 
-		verification := classifyVerification(p, claims)
+		verification := ""
+		if in.VerificationEnabled {
+			verification = classifyVerification(p, claims)
+		}
 		confidence := classifyConfidence(p, claims)
 
 		plans = append(plans, model.PlanStatus{
@@ -73,6 +77,7 @@ func Build(in Input, opts Options) model.StatusReport {
 			DeclaredStatus: declared,
 			DerivedStatus:  derived,
 			ProgressPct:    progress,
+			LastUpdatedAt:  p.LastUpdatedAt,
 			PendingTasks:   pending,
 			BlockedTasks:   blocked,
 			Blockers:       truncateSlice(p.BlockerHints, opts.MaxBlockers),
@@ -92,7 +97,7 @@ func Build(in Input, opts Options) model.StatusReport {
 		return plans[i].StateFolder < plans[j].StateFolder
 	})
 
-	summary := summarize(plans)
+	summary := summarize(plans, in.VerificationEnabled)
 	plansRoot := in.PlansRoot
 	if plansRoot == "" {
 		plansRoot = in.Root
@@ -102,24 +107,30 @@ func Build(in Input, opts Options) model.StatusReport {
 		repoRoot = in.Root
 	}
 	return model.StatusReport{
-		GeneratedAt: time.Now().UTC(),
-		Root:        plansRoot,
-		PlansRoot:   plansRoot,
-		RepoRoot:    repoRoot,
-		Mode:        in.Mode,
-		Summary:     summary,
-		Plans:       plans,
+		GeneratedAt:         time.Now().UTC(),
+		Root:                plansRoot,
+		PlansRoot:           plansRoot,
+		RepoRoot:            repoRoot,
+		Mode:                in.Mode,
+		VerificationEnabled: in.VerificationEnabled,
+		Summary:             summary,
+		Plans:               plans,
 	}
 }
 
-func summarize(plans []model.PlanStatus) model.Summary {
+func summarize(plans []model.PlanStatus, verificationEnabled bool) model.Summary {
 	byState := map[string]int{}
-	byVerif := map[string]int{}
+	var byVerif map[string]int
+	if verificationEnabled {
+		byVerif = map[string]int{}
+	}
 	pending := 0
 	blocked := 0
 	for _, p := range plans {
 		byState[p.StateFolder]++
-		byVerif[p.Verification]++
+		if verificationEnabled && p.Verification != "" {
+			byVerif[p.Verification]++
+		}
 		pending += p.PendingTasks
 		blocked += p.BlockedTasks
 	}

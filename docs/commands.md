@@ -6,23 +6,24 @@ Global option:
 
 ## `pacto status`
 
-Verify plan status, blockers, and evidence claims.
+Report plan status, blockers, freshness, and optional path verification.
 
 ```bash
-pacto status [--root <path>] [--repo-root <path>] [--mode compat|strict] [--format table|json]
+pacto status [--root <path>] [--repo-root <path>] [--mode compat|strict] [--format table|json] [--verify]
 ```
 
 Behavior:
 
 - TTY: launches interactive status UI.
-- Non-TTY: renders `table|json` output.
+- Non-TTY: renders metadata-first `table|json` output.
 - In TTY, `--format` is rejected; use non-TTY (pipe/redirection) for structured output.
 - `--mode strict` enforces structured PRD plan contract for active plans (`current`, `to-implement`) and reports warnings for `done/outdated`.
+- `--verify` opt-in checks explicit file path claims against `repo-root`.
 
 Key options:
 
 - `--root`, `--repo-root`
-- `--mode`, `--format`, `--fail-on`
+- `--mode`, `--format`, `--verify`, `--fail-on`
 - `--state`, `--include-archive`
 - `--config`
 - `--max-next-actions`, `--max-blockers`
@@ -33,7 +34,8 @@ Examples:
 ```bash
 pacto status
 pacto status | cat
-pacto status --format json --fail-on partial
+pacto status --format json
+pacto status --format json --verify --fail-on partial
 pacto status --root . --repo-root .
 ```
 

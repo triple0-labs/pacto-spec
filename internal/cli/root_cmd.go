@@ -226,6 +226,7 @@ func newStatusCommand() *cobra.Command {
 			failOn, _ := cmd.Flags().GetString("fail-on")
 			state, _ := cmd.Flags().GetString("state")
 			includeArchive, _ := cmd.Flags().GetBool("include-archive")
+			verify, _ := cmd.Flags().GetBool("verify")
 			maxNextActions, _ := cmd.Flags().GetInt("max-next-actions")
 			maxBlockers, _ := cmd.Flags().GetInt("max-blockers")
 			verbose, _ := cmd.Flags().GetBool("verbose")
@@ -240,10 +241,11 @@ func newStatusCommand() *cobra.Command {
 				FailOn:         failOn,
 				State:          state,
 				IncludeArchive: includeArchive,
+				Verify:         verify,
 				MaxNextActions: maxNextActions,
 				MaxBlockers:    maxBlockers,
 				Verbose:        verbose,
-				Provided:       changedFlags(cmd, []string{"root", "plans-root", "repo-root", "mode", "lang", "format", "config", "fail-on", "state", "include-archive", "max-next-actions", "max-blockers", "verbose"}),
+				Provided:       changedFlags(cmd, []string{"root", "plans-root", "repo-root", "mode", "lang", "format", "config", "fail-on", "state", "include-archive", "verify", "max-next-actions", "max-blockers", "verbose"}),
 			})
 		},
 	}
@@ -256,6 +258,7 @@ func newStatusCommand() *cobra.Command {
 	cmd.Flags().String("fail-on", "none", "Fail policy: none|unverified|partial|blocked")
 	cmd.Flags().String("state", "all", "State filter: current|to-implement|done|outdated|all")
 	cmd.Flags().Bool("include-archive", false, "Include archive plans")
+	cmd.Flags().Bool("verify", false, "Verify explicit file path claims against repo root")
 	cmd.Flags().Int("max-next-actions", 3, "Max next actions per plan")
 	cmd.Flags().Int("max-blockers", 3, "Max blockers per plan")
 	cmd.Flags().Bool("verbose", false, "Print config and debug warnings")

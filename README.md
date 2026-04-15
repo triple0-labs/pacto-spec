@@ -1,18 +1,23 @@
+<div align="center">
 
+<img src="./assets/pacto-logo.png" alt="Pacto logo" width="96" height="96" />
 
+<h1>Pacto</h1>
 
+<p><strong>Spec-driven development (SDD) for teams that treat plans as executable contracts rather than stale documents.</strong></p>
 
-# Pacto
+<p align="center">
+  <a href="https://github.com/triple0-labs/pacto-spec">Repository</a> ·
+  <a href="https://github.com/triple0-labs/pacto-spec/issues">Issues</a>
+</p>
 
-**Spec-driven development (SDD) for teams that treat plans as executable contracts rather than stale documents.**
+<p align="center">
+  <a href="https://github.com/triple0-labs/pacto-spec/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/triple0-labs/pacto-spec/actions/workflows/ci.yml/badge.svg" /></a>
+  <a href="https://github.com/triple0-labs/pacto-spec/releases"><img alt="Release" src="https://img.shields.io/github/v/release/triple0-labs/pacto-spec?style=flat-square" /></a>
+  <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" /></a>
+</p>
 
-[Repository](https://github.com/triple0-labs/pacto-spec) · [Issues](https://github.com/triple0-labs/pacto-spec/issues)
-
-[CI](https://github.com/triple0-labs/pacto-spec/actions/workflows/ci.yml)
-[Release](https://github.com/triple0-labs/pacto-spec/releases)
-[License: MIT](./LICENSE)
-
-
+</div>
 
 Pacto is a small, fast CLI that wires **markdown plan slices**, **explicit work states**, and **evidence-backed verification** into one loop. It is built for brownfield and greenfield repos where AI-assisted coding needs a durable source of truth: what the plan claims should match what the repository can prove.
 

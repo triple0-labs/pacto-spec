@@ -1,18 +1,18 @@
-<div align="center">
 
-<img src="./assets/pacto-logo.svg" alt="Pacto logo" width="72" height="72" />
+
+
 
 # Pacto
 
-**Spec-driven development (SDD) for teams that treat plans as executable contracts — not stale documents.**
+**Spec-driven development (SDD) for teams that treat plans as executable contracts rather than stale documents.**
 
 [Repository](https://github.com/triple0-labs/pacto-spec) · [Issues](https://github.com/triple0-labs/pacto-spec/issues)
 
-[![CI](https://github.com/triple0-labs/pacto-spec/actions/workflows/ci.yml/badge.svg)](https://github.com/triple0-labs/pacto-spec/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/triple0-labs/pacto-spec?style=flat-square)](https://github.com/triple0-labs/pacto-spec/releases)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](./LICENSE)
+[CI](https://github.com/triple0-labs/pacto-spec/actions/workflows/ci.yml)
+[Release](https://github.com/triple0-labs/pacto-spec/releases)
+[License: MIT](./LICENSE)
 
-</div>
+
 
 Pacto is a small, fast CLI that wires **markdown plan slices**, **explicit work states**, and **evidence-backed verification** into one loop. It is built for brownfield and greenfield repos where AI-assisted coding needs a durable source of truth: what the plan claims should match what the repository can prove.
 
@@ -38,6 +38,8 @@ flowchart LR
   E --> B
 ```
 
+
+
 For open-ended discovery before you cut a plan slice, use `pacto explore`.
 
 Verification stays local: no network dependency for core `status` workflows.
@@ -51,13 +53,15 @@ Verification stays local: no network dependency for core `status` workflows.
 
 ## Core commands
 
-| Command | Role |
-|--------|------|
-| `pacto init` | Bootstrap `.pacto/plans` (and optional agent artifacts). |
-| `pacto status` | Inspect plan/evidence state; use `--format json` in scripts. |
-| `pacto new` | Add a plan slice from the template and refresh the index. |
-| `pacto exec` | Record execution progress and evidence in plan docs (no source edits). |
-| `pacto move` | Drive explicit state transitions (`to-implement` → `current` → `done`). |
+
+| Command        | Role                                                                    |
+| -------------- | ----------------------------------------------------------------------- |
+| `pacto init`   | Bootstrap `.pacto/plans` (and optional agent artifacts).                |
+| `pacto status` | Inspect plan/evidence state; use `--format json` in scripts.            |
+| `pacto new`    | Add a plan slice from the template and refresh the index.               |
+| `pacto exec`   | Record execution progress and evidence in plan docs (no source edits).  |
+| `pacto move`   | Drive explicit state transitions (`to-implement` → `current` → `done`). |
+
 
 Typical sequence:
 
@@ -137,16 +141,19 @@ jobs:
 
 ## Documentation
 
-| Doc | Contents |
-|-----|----------|
+
+| Doc                                          | Contents                                 |
+| -------------------------------------------- | ---------------------------------------- |
+| [Documentation index](./docs/README.md)      | Map of all guides and audits             |
 | [Getting started](./docs/getting-started.md) | First-run setup and the default SDD loop |
-| [Concepts](./docs/concepts.md) | States, claims, verification |
-| [Commands](./docs/commands.md) | CLI reference |
-| [Integrations](./docs/integrations.md) | Editors and agent adapters |
-| [Plugins](./docs/plugins.md) | Plugin model and guardrails |
-| [Architecture](./docs/architecture.md) | Layers and extension points |
-| [Contributing](./docs/contributing.md) | How to contribute |
-| [Releasing](./RELEASING.md) | Maintainer release steps |
+| [Concepts](./docs/concepts.md)               | States, claims, verification             |
+| [Commands](./docs/commands.md)               | CLI reference                            |
+| [Integrations](./docs/integrations.md)       | Editors and agent adapters               |
+| [Plugins](./docs/plugins.md)                 | Plugin model and guardrails              |
+| [Architecture](./docs/architecture.md)       | Layers and extension points              |
+| [Contributing](./docs/contributing.md)       | How to contribute                        |
+| [Releasing](./RELEASING.md)                  | Maintainer release steps                 |
+
 
 ## Notes
 
@@ -156,4 +163,4 @@ jobs:
 
 ## Logo
 
-The mark is intentionally minimal (monoline strokes, `currentColor`): use `assets/pacto-logo.svg` in UIs and docs so it inherits light/dark themes.
+The mark is a **minimal raster** (no SVG in-repo): `assets/pacto-logo.png` (512×512, geometric pillars and bridge on white). Use that path in README previews, IDE, and docs. To change the artwork, replace the PNG under `assets/` (or regenerate via Cursor image generation and normalize to 512×512).

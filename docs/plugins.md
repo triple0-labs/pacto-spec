@@ -43,7 +43,7 @@ Linux/macOS are supported in v1 (`/bin/sh` runtime).
 
 ## Agent Guardrails
 
-`agentGuardrails` markdown snippets are appended to generated skill/command artifacts during `pacto install` and `pacto update` in a managed plugin section.
+`agentGuardrails` markdown snippets are appended to generated **Agent Skills** (`SKILL.md` only; Pacto does not emit slash-command or prompt files) during `pacto install` and `pacto update --artifacts` in a managed plugin section.
 
 ## Commands
 

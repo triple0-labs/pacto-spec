@@ -1,6 +1,8 @@
 # Getting Started
 
-This guide covers first-run setup and the default Pacto SDD loop.
+This guide covers first-run setup and the default **spec-driven development (SDD)** loop: initialize a plans workspace, add slices, verify claims, execute and move work, then re-check status.
+
+For terminology (states, evidence, deltas), see [Concepts](./concepts.md). For a printable map of all docs, see the [documentation index](./README.md). A high-level command sequence diagram lives in the [project README](../README.md#how-the-loop-works).
 
 ## Prerequisites
 

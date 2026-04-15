@@ -1,6 +1,8 @@
 # Concepts
 
-Pacto is an SDD tool: plans act as executable specs, and status is validated against repository evidence.
+Pacto is an **SDD (spec-driven development)** tool: plans act as executable specs, and `pacto status` is validated against repository evidence — not assumed from narrative text alone.
+
+For the default workflow in order, see [Getting started](./getting-started.md). For package layering, see [Architecture](./architecture.md).
 
 ## Planning Model
 

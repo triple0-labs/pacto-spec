@@ -5,9 +5,10 @@ This document defines the intended layering and extension points for the `pacto`
 ## Layers
 
 1. CLI orchestration
-- Package: `internal/app`
-- Responsibilities: command routing, flag parsing, root resolution, exit codes, user-facing output coordination.
-- Rule: avoid embedding parsing/persistence logic in command handlers.
+- Packages: `cmd/pacto`, `cmd/pacto-engine`, `internal/cli`
+- Responsibilities: Cobra root command, persistent flags (`--root`, `--lang`, guardrail bypasses), command registration, delegating to `internal/command/*`, exit codes.
+- Command implementations live under `internal/command/<cmd>/` (for example `status`, `init`, `install`).
+- Rule: keep heavy parsing and domain logic out of thin wiring; handlers should coordinate and delegate.
 
 2. Domain workflows
 - Packages: `internal/discovery`, `internal/parser`, `internal/claims`, `internal/verify`, `internal/analyze`, `internal/report`.

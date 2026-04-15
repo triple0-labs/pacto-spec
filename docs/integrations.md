@@ -1,7 +1,7 @@
 # Integrations
 
 `pacto install` generates managed Agent Skill artifacts for supported AI tools.
-`pacto update --artifacts` refreshes those managed artifacts.
+`pacto update --artifacts` refreshes those managed artifacts (use the global `--root` flag to point at the target repository if you are not running from its root).
 `pacto update` without `--artifacts` updates the pacto binary and does not modify generated skill files.
 `pacto doctor` audits artifact drift and legacy patterns.
 

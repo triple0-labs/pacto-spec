@@ -4,6 +4,14 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Added
+
+- `assets/pacto-logo.png`: 512×512 minimalist raster mark (PNG-only branding; previous SVG removed).
+
+### Documentation
+
+- Refreshed user docs: added a [`docs/README.md`](docs/README.md) index, corrected [architecture](./docs/architecture.md) package names, aligned [commands](./docs/commands.md) with global flags (`--root`, self-update vs `--artifacts`), and tightened [integrations](./docs/integrations.md) / [plugins](./docs/plugins.md) wording around skills-only artifacts.
+
 ### Changed
 
 - **Breaking:** `pacto install` / `pacto update --artifacts` no longer generate slash-command or Codex prompt files (e.g. `.cursor/commands/`, `~/.codex/prompts/`). Only Agent Skills (`SKILL.md`) are written.

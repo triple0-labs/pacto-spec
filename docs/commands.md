@@ -1,8 +1,13 @@
 # Commands
 
-Global option:
+## Global options (root command)
 
-- `--lang <en|es>`: override output language for current command. Workspace default is persisted by `pacto init`.
+These apply to all subcommands:
+
+- `--lang <en|es>`: override output language for this invocation. The workspace default is set by `pacto init` (`.pacto/config.yaml`).
+- `--no-color`: disable color (also respects `NO_COLOR`).
+- `--root <path>`: project root for tool detection, plans discovery, and artifact paths. When omitted, Pacto walks up from the current directory.
+- `--allow-guardrail <id[,id...]>`: bypass named plugin guardrails for one run (see [Plugins](./plugins.md)).
 
 ## `pacto status`
 
@@ -44,7 +49,7 @@ pacto status --root . --repo-root .
 Audit generated integration artifacts for drift and legacy patterns.
 
 ```bash
-pacto doctor [--root <path>] [--tools <all|none|csv>] [--format table|json] [--fail-on none|drift|legacy|any]
+pacto doctor [--root <path>] [--tools <all|none|csv>] [--format table|json] [--fail-on none|drift|legacy|any] [--verbose]
 ```
 
 Notes:
@@ -93,8 +98,8 @@ Notes:
 
 - Canonical workflow contract is `<plans-root>/PACTO.md`.
 - `--with-agents` only adds/updates an optional managed hand-off block in root `AGENTS.md`.
-- In agent-driven `pacto-init` workflows, run a short interview (problem, technologies, install targets) and create/update a basic project `prd.md`.
-- `pacto init` writes `.pacto/config.yaml` with detected/selected technologies, tools, and problem statement.
+- In TTY mode, `pacto init` runs interactive onboarding (technologies, tools, problem framing) unless `--no-interactive` is set; it updates a managed section in `prd.md` and writes `.pacto/config.yaml`.
+- Use `--no-install` to skip `pacto install` (generated skills) during init.
 
 ## `pacto explore`
 
@@ -114,9 +119,11 @@ Install managed Pacto Agent Skills for supported AI tools (skills only; no comma
 pacto install [--tools <all|none|csv>] [--force]
 ```
 
+Uses the global `[--root](#global-options-root-command)` flag to choose which repository receives generated skills (defaults to discovery from the current directory).
+
 ## `pacto update`
 
-Update pacto binary by default. Use legacy artifact refresh with `--artifacts`.
+Update pacto binary by default. Use artifact refresh with `--artifacts` to regenerate skills.
 
 ```bash
 pacto update [--check] [--yes] [--version <vX.Y.Z>] [--repo <owner/repo>]
@@ -125,8 +132,8 @@ pacto update --artifacts [--tools <all|none|csv>] [--force]
 
 Notes:
 
-- `pacto update` (without `--artifacts`) targets the pacto binary only.
-- To refresh generated skills, run `pacto update --artifacts`.
+- `pacto update` (without `--artifacts`) updates the `pacto` binary only (release assets from GitHub).
+- `pacto update --artifacts` refreshes managed skills; combine with global `--root` to target a project directory other than the default discovery path.
 
 ## `pacto exec`
 
@@ -182,3 +189,4 @@ Notes:
 - Only plugins listed in `.pacto/config.yaml` under `plugins.enabled` are active.
 - Supported commands enforce active plugin CLI guardrails by default (`status`, `new`, `move`, `exec`, `install`, `update`, `init`, and `explore` create/update paths).
 - Use `--allow-guardrail <id[,id...]>` to bypass specific guardrails for a single run.
+

@@ -1,14 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
-  <title id="title">Pacto</title>
-  <desc id="desc">Minimal monoline mark: two aligned pillars joined by a bridge, suggesting agreement and a spec between parties.</desc>
-  <g fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
-    <!-- Left pillar -->
-    <path d="M18 14v36"/>
-    <!-- Right pillar -->
-    <path d="M46 14v36"/>
-    <!-- Bridge / shared baseline (the pact) -->
-    <path d="M18 26h28"/>
-    <!-- Upper span: spec layer -->
-    <path d="M24 18h16"/>
-  </g>
-</svg>

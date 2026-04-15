@@ -4,7 +4,7 @@ description: Agent contract for the Pacto init workflow.
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=codex/skill/pacto-init workflow=init contract=v1 template_sha256=f043a8851a1a2269d3e1d615be1b8dd6f565db1dbf0dfd0790c2a1a2f4840caf generated_by=pacto generated_at=2026-04-15T16:21:09Z -->
+<!-- pacto:managed:meta artifact=agents/skill/pacto-init workflow=init contract=v1 template_sha256=230bf1ee55dca4831522c8ab3f21a6330308d70d58adf170ff56f3b9cb6fc77b generated_by=pacto generated_at=2026-04-15T23:09:48Z -->
 # Pacto Init Skill
 
 Use this skill as an agent contract for the init workflow in Pacto projects.
@@ -30,7 +30,7 @@ Use once per project to create canonical `.pacto/plans` workspace scaffolding.
 
 ## Execution Contract
 
-- Tool target: codex
+- Tool target: Cursor Agent and Codex (project skills under .agents/skills/)
 - Recommended command: pacto init
 
 ## Output Contract

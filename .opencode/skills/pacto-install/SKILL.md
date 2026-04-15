@@ -5,18 +5,18 @@ compatibility: opencode
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=opencode/skill/pacto-install workflow=install contract=v1 template_sha256=ee428a6542102487737572684125b237837c3e60e093dd23d8054ad3947c606f generated_by=pacto generated_at=2026-04-08T06:15:23Z -->
+<!-- pacto:managed:meta artifact=opencode/skill/pacto-install workflow=install contract=v1 template_sha256=d22ca91cd64274e0ad4dd5329ac458bd0b2ddea5b05ca4604d03c1e0d35a30a0 generated_by=pacto generated_at=2026-04-15T21:57:09Z -->
 # Pacto Install Skill
 
 Use this skill as an agent contract for the install workflow in Pacto projects.
 
 ## Objective
 
-Install managed Pacto skills and command prompts for supported tools.
+Install managed Pacto Agent Skills for supported tools.
 
 ## When To Use
 
-Use to bootstrap Pacto-generated skills/prompts for compatible AI tools.
+Use to bootstrap Pacto-generated skills for compatible AI tools.
 
 ## Input Contract
 
@@ -33,13 +33,13 @@ Use to bootstrap Pacto-generated skills/prompts for compatible AI tools.
 - Recommended command: pacto install [--tools <all|none|csv>] [--force]
 
 ## Output Contract
-- Generates managed skill and command files per workflow and selected tool.
+- Generates managed skill files per workflow and selected tool.
 - Returns per-file outcome summary: created, updated, skipped, failed.
 
 ## Validation Checklist
 - Confirm selected/detected tools match user intent.
 - Check warnings for unmanaged file skips.
-- Confirm generated artifacts are wrapped with managed markers.
+- Confirm generated skills are wrapped with managed markers.
 
 ## Failure Modes and Handling
 - No tools detected when `--tools` is omitted.

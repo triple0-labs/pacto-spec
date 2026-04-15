@@ -108,7 +108,7 @@ pacto explore --show <slug>
 
 ## `pacto install`
 
-Install managed Pacto skills and command prompts.
+Install managed Pacto Agent Skills for supported AI tools (skills only; no command or prompt files).
 
 ```bash
 pacto install [--tools <all|none|csv>] [--force]
@@ -126,7 +126,7 @@ pacto update --artifacts [--tools <all|none|csv>] [--force]
 Notes:
 
 - `pacto update` (without `--artifacts`) targets the pacto binary only.
-- To refresh generated skills/commands, run `pacto update --artifacts`.
+- To refresh generated skills, run `pacto update --artifacts`.
 
 ## `pacto exec`
 

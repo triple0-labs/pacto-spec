@@ -5,18 +5,18 @@ compatibility: opencode
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=opencode/skill/pacto-status workflow=status contract=v1 template_sha256=b19890ba4f4d9d9090c1d06c070e14637936714ca714d9559b8481445ac1942a generated_by=pacto generated_at=2026-04-08T06:15:23Z -->
+<!-- pacto:managed:meta artifact=opencode/skill/pacto-status workflow=status contract=v1 template_sha256=be567686830e070aa3ca8a71c0ecd3d50fe88edd8276ee4cc13a094967334735 generated_by=pacto generated_at=2026-04-15T21:57:09Z -->
 # Pacto Status Skill
 
 Use this skill as an agent contract for the status workflow in Pacto projects.
 
 ## Objective
 
-Verify plan status, blockers, and evidence claims.
+Report plan status, blockers, freshness, and optional path verification.
 
 ## When To Use
 
-Use when you need a consolidated status report for plans and claim verification against repo evidence.
+Use when you need a consolidated metadata-first status report for plans. Add `--verify` only when explicit file path claims need repo verification.
 
 ## Input Contract
 
@@ -25,29 +25,30 @@ Use when you need a consolidated status report for plans and claim verification 
 
 ### Optional Inputs
 - `--root <path>` to pin project root used for `.pacto/plans` discovery.
-- `--repo-root <path>` to pin evidence verification root.
-- `--format table|json`, `--fail-on`, `--state`, `--include-archive`.
+- `--repo-root <path>` to pin optional path verification root.
+- `--format table|json`, `--verify`, `--fail-on`, `--state`, `--include-archive`.
 - `--mode compat|strict`, `--config`, `--max-next-actions`, `--max-blockers`, `--verbose`.
 
 ## Execution Contract
 
 - Tool target: opencode
-- Recommended command: pacto status --format table
+- Recommended command: pacto status --format json
 
 ## Output Contract
-- Produces `table` or `json` report with state summary, blockers, next actions, and verification outcomes.
-- Verification classifications are `verified`, `partial`, or `unverified`.
+- Produces metadata-first `table` or `json` report with state summary, freshness, blockers, and next actions.
+- When `--verify` is enabled, augments output with explicit file path claim verification results.
 - Exit code follows `--fail-on` policy for CI automation.
 
 ## Validation Checklist
 - Confirm resolved roots are correct for the user's intent.
 - Confirm report includes expected plans/states.
-- If CI use case, ensure `--format json` and explicit `--fail-on` are set.
+- For agent or CI use cases, prefer `--format json`.
+- Only enable `--verify` when path verification is intentionally required.
 
 ## Failure Modes and Handling
 - Root resolution failure when no valid plans root is discoverable.
 - Invalid config/flags or unsupported flag values.
-- Partial verification due to missing or stale repository evidence.
+- Path verification findings may be incomplete when `--verify` is omitted by design.
 
 ## Implementation Status
 

@@ -6,6 +6,11 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
+- **Breaking:** `pacto install` / `pacto update --artifacts` no longer generate slash-command or Codex prompt files (e.g. `.cursor/commands/`, `~/.codex/prompts/`). Only Agent Skills (`SKILL.md`) are written.
+- Cursor workflow skills are written to `.agents/skills/pacto-*/SKILL.md` (with YAML frontmatter), alongside Codex, so both tools share one project skill tree per workflow. Claude Code continues to use `.claude/skills/` per Anthropic’s Agent Skills model (not `.agents/`).
+- Claude-generated skills now include YAML `name` / `description` frontmatter to match [Anthropic’s Skill structure](https://platform.claude.com/docs/en/agents-and-tools/agent-skills/overview).
+- `pacto doctor` reports legacy `.cursor/skills/pacto-*` skills, leftover `pacto-*.md` command files, and legacy Codex prompt files under `~/.codex/prompts/` for optional removal.
+
 - Removed `bin/pacto-feature-matrix.sh` and the `make feature-matrix` target. Regression coverage for the CLI and command workflows is consolidated in `go test ./...`, with additional tests for `status` (YAML config load, `--fail-on`, `--mode strict`, `--state`), `new` validation, and `pacto new` usage when state/slug are missing.
 
 ## 0.1.22 - 2026-04-08

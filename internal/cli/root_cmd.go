@@ -268,7 +268,7 @@ func newStatusCommand() *cobra.Command {
 func newInstallCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install",
-		Short: "Install managed skills and command prompts.",
+		Short: "Install managed Agent Skills for supported AI tools.",
 		Run: func(cmd *cobra.Command, args []string) {
 			root, _ := cmd.Flags().GetString("root")
 			tools, _ := cmd.Flags().GetString("tools")

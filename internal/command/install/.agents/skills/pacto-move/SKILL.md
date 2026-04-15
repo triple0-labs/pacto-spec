@@ -4,7 +4,7 @@ description: Agent contract for the Pacto move workflow.
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=codex/skill/pacto-move workflow=move contract=v1 template_sha256=204c58b450708c5d35557a82cc8521f037bfe3ebb748af6945b24a995e46c787 generated_by=pacto generated_at=2026-04-15T16:21:09Z -->
+<!-- pacto:managed:meta artifact=agents/skill/pacto-move workflow=move contract=v1 template_sha256=fac1e847fe1596881acfe9128d561cf4e7f04dda83e327831fc0fe67c9aa099f generated_by=pacto generated_at=2026-04-15T23:09:48Z -->
 # Pacto Move Skill
 
 Use this skill as an agent contract for the move workflow in Pacto projects.
@@ -31,7 +31,7 @@ Use for explicit state transitions such as `to-implement -> current` or `current
 
 ## Execution Contract
 
-- Tool target: codex
+- Tool target: Cursor Agent and Codex (project skills under .agents/skills/)
 - Recommended command: pacto move <from-state> <slug> <to-state> [--root <path>] [--reason <text>] [--force]
 
 ## Output Contract

@@ -5,7 +5,7 @@ compatibility: opencode
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=opencode/skill/pacto-init workflow=init contract=v1 template_sha256=bff47ad5343e224ec0bf553b5493b67bb9004c1d430a5d9666588b8a0b371fe4 generated_by=pacto generated_at=2026-04-08T06:15:23Z -->
+<!-- pacto:managed:meta artifact=opencode/skill/pacto-init workflow=init contract=v1 template_sha256=bff47ad5343e224ec0bf553b5493b67bb9004c1d430a5d9666588b8a0b371fe4 generated_by=pacto generated_at=2026-04-15T21:57:09Z -->
 # Pacto Init Skill
 
 Use this skill as an agent contract for the init workflow in Pacto projects.

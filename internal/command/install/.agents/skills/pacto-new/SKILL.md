@@ -4,7 +4,7 @@ description: Agent contract for the Pacto new workflow.
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=codex/skill/pacto-new workflow=new contract=v1 template_sha256=f7a040d2b1037760dd875b47ce75105e6af73a97b37b4f8ddee601dc0b2c5a0a generated_by=pacto generated_at=2026-04-15T16:21:09Z -->
+<!-- pacto:managed:meta artifact=agents/skill/pacto-new workflow=new contract=v1 template_sha256=6e69345dc3e061db54c9f3b212b5c1f2d1a1f50df4cb96e851e4d25ba63da1cf generated_by=pacto generated_at=2026-04-15T23:09:48Z -->
 # Pacto New Skill
 
 Use this skill as an agent contract for the new workflow in Pacto projects.
@@ -30,7 +30,7 @@ Use when a new plan slice must be created in one of the canonical states.
 
 ## Execution Contract
 
-- Tool target: codex
+- Tool target: Cursor Agent and Codex (project skills under .agents/skills/)
 - Recommended command: pacto new to-implement my-plan-slug
 
 ## Output Contract

@@ -31,7 +31,7 @@ func TestAnalyzeDriftReportsOKForFreshArtifacts(t *testing.T) {
 func TestAnalyzeDriftDetectsMissingArtifact(t *testing.T) {
 	root := t.TempDir()
 	_ = GenerateForTool(root, "cursor", false)
-	target := filepath.Join(root, ".cursor", "commands", "pacto-status.md")
+	target := filepath.Join(root, ".agents", "skills", "pacto-status", "SKILL.md")
 	if err := os.Remove(target); err != nil {
 		t.Fatal(err)
 	}
@@ -47,7 +47,7 @@ func TestAnalyzeDriftDetectsMissingArtifact(t *testing.T) {
 func TestAnalyzeDriftDetectsUnmanagedFile(t *testing.T) {
 	root := t.TempDir()
 	_ = GenerateForTool(root, "cursor", false)
-	target := filepath.Join(root, ".cursor", "commands", "pacto-status.md")
+	target := filepath.Join(root, ".agents", "skills", "pacto-status", "SKILL.md")
 	if err := os.WriteFile(target, []byte("custom file"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +63,7 @@ func TestAnalyzeDriftDetectsUnmanagedFile(t *testing.T) {
 func TestAnalyzeDriftDetectsLegacyManagedWithoutMetadata(t *testing.T) {
 	root := t.TempDir()
 	_ = GenerateForTool(root, "cursor", false)
-	target := filepath.Join(root, ".cursor", "commands", "pacto-status.md")
+	target := filepath.Join(root, ".agents", "skills", "pacto-status", "SKILL.md")
 	legacy := ManagedStart + "\nlegacy body\n" + ManagedEnd + "\n"
 	if err := os.WriteFile(target, []byte(legacy), 0o644); err != nil {
 		t.Fatal(err)

@@ -4,7 +4,7 @@ description: Agent contract for the Pacto explore workflow.
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=codex/skill/pacto-explore workflow=explore contract=v1 template_sha256=e179a4f92c1dc0b231d5b7fcf5dc7daf4a1fda0d03b67e88fa5ceb77d0877a51 generated_by=pacto generated_at=2026-04-15T16:21:09Z -->
+<!-- pacto:managed:meta artifact=agents/skill/pacto-explore workflow=explore contract=v1 template_sha256=fdf3e3eba7d7b922d21e42d3eaf903e090b2bc4009795738bd35521b290fc23c generated_by=pacto generated_at=2026-04-15T23:09:48Z -->
 # Pacto Explore Skill
 
 Use this skill as an agent contract for the explore workflow in Pacto projects.
@@ -29,7 +29,7 @@ Use for ideation and notes when work is not ready for a formal plan slice.
 
 ## Execution Contract
 
-- Tool target: codex
+- Tool target: Cursor Agent and Codex (project skills under .agents/skills/)
 - Recommended command: pacto explore <slug> [--title <title>] [--note <note>]
 
 ## Output Contract

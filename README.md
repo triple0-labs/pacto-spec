@@ -1,14 +1,22 @@
-<h1 align="center">Pacto</h1>
+<div align="center">
 
-<p align="center">Spec-driven development (SDD) planning and verification for AI-assisted engineering.</p>
+<img src="./assets/pacto-logo.svg" alt="Pacto logo" width="72" height="72" />
 
-<p align="center">
-  <a href="https://github.com/triple0-labs/pacto-spec/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/triple0-labs/pacto-spec/actions/workflows/ci.yml/badge.svg" /></a>
-  <a href="https://github.com/triple0-labs/pacto-spec/releases"><img alt="Releases" src="https://img.shields.io/github/v/release/triple0-labs/pacto-spec?style=flat-square" /></a>
-  <a href="./LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" /></a>
-</p>
+# Pacto
 
-Our philosophy:
+**Spec-driven development (SDD) for teams that treat plans as executable contracts — not stale documents.**
+
+[Repository](https://github.com/triple0-labs/pacto-spec) · [Issues](https://github.com/triple0-labs/pacto-spec/issues)
+
+[![CI](https://github.com/triple0-labs/pacto-spec/actions/workflows/ci.yml/badge.svg)](https://github.com/triple0-labs/pacto-spec/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/triple0-labs/pacto-spec?style=flat-square)](https://github.com/triple0-labs/pacto-spec/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](./LICENSE)
+
+</div>
+
+Pacto is a small, fast CLI that wires **markdown plan slices**, **explicit work states**, and **evidence-backed verification** into one loop. It is built for brownfield and greenfield repos where AI-assisted coding needs a durable source of truth: what the plan claims should match what the repository can prove.
+
+## Philosophy
 
 ```text
 -> specs before code
@@ -17,96 +25,100 @@ Our philosophy:
 -> practical for brownfield and greenfield
 ```
 
+## How the loop works
+
+Plans live under `.pacto/plans/`. The canonical contract file is `<plans-root>/PACTO.md`. `pacto status` reads plan claims (paths, symbols, endpoints, tests) and checks them against the tree — so “done” is grounded in the repo, not in prose alone.
+
+```mermaid
+flowchart LR
+  A["pacto init"] --> B["pacto status"]
+  B --> C["pacto new"]
+  C --> D["pacto exec"]
+  D --> E["pacto move"]
+  E --> B
+```
+
+For open-ended discovery before you cut a plan slice, use `pacto explore`.
+
+Verification stays local: no network dependency for core `status` workflows.
+
 ## Why Pacto
 
-Pacto keeps AI-assisted work anchored in executable specs:
+- **Plan slices before implementation** — define work in `to-implement` / `current` / `done` (and `outdated` when superseded).
+- **Progress you can trust** — `pacto status` reconciles plan claims with repository evidence.
+- **Automation-friendly** — table or JSON output for terminals and CI.
+- **Tooling without lock-in** — optional integrations (e.g. Codex, Cursor, Claude, OpenCode) via adapters; `AGENTS.md` is an optional hand-off layer when you generate it.
 
-- Define plan slices before implementation.
-- Track progress through explicit states (`to-implement`, `current`, `done`, `outdated`).
-- Verify plan claims against repository evidence.
-- Render interactive status in TTY and emit table/JSON in non-TTY for automation.
+## Core commands
 
-## Core Workflow
+| Command | Role |
+|--------|------|
+| `pacto init` | Bootstrap `.pacto/plans` (and optional agent artifacts). |
+| `pacto status` | Inspect plan/evidence state; use `--format json` in scripts. |
+| `pacto new` | Add a plan slice from the template and refresh the index. |
+| `pacto exec` | Record execution progress and evidence in plan docs (no source edits). |
+| `pacto move` | Drive explicit state transitions (`to-implement` → `current` → `done`). |
+
+Typical sequence:
 
 ```text
 pacto init  ->  pacto status  ->  pacto new  ->  pacto exec  ->  pacto move  ->  pacto status
 ```
 
-- `pacto init`: bootstrap `.pacto/plans` workspace.
-- `pacto status`: inspect current plan/evidence state before acting.
-- `pacto new`: create a plan slice from template and update the index.
-- `pacto exec`: update execution progress/evidence in plan docs.
-- `pacto move`: perform explicit state transitions (`to-implement -> current -> done`).
-
-Primary source of truth is `<plans-root>/PACTO.md` and plan artifacts.
-`AGENTS.md` (when generated via `pacto init --with-agents`) is only a hand-off layer for compatible assistants.
-
-Optional ideation flow:
-
-```text
-pacto explore
-```
+Optional ideation: `pacto explore`.
 
 ## Install
 
-### Option 1: curl (recommended)
+### curl (recommended)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/triple0-labs/pacto-spec/main/install.sh | bash
 ```
 
-### Option 2: Go
+### Go (from source)
 
 ```bash
 go install ./cmd/pacto
 ```
 
-## Quick Start
+## Quick start
 
 ```bash
 pacto help
 pacto version
 
-# initialize project workspace
 pacto init
-
-# non-interactive setup with explicit profile
 pacto init --no-interactive --tools codex,cursor --yes
 
-# create a plan
 pacto new to-implement improve-auth-flow
-
-# inspect plan status
 pacto status
 
-# CI-friendly output
 pacto status --format json
 pacto status --format json --verify --fail-on partial
 pacto doctor --format json --fail-on any
 
-# list and validate local plugins
 pacto plugin list-available
 pacto plugin install git-guardrails
 pacto plugin list
 pacto plugin validate
 ```
 
-## Drift Check
+## Drift and hygiene
 
-Use `pacto doctor` to detect stale generated artifacts and legacy integration patterns:
+Catch stale generated artifacts or outdated integration patterns:
 
 ```bash
 pacto doctor --format table
 pacto doctor --format json --fail-on any
 ```
 
-Recommended remediation when drift is reported:
+If drift is reported:
 
 ```bash
 pacto update --artifacts
 ```
 
-## CI Snippet
+## CI example
 
 ```yaml
 name: pacto-artifact-drift
@@ -123,18 +135,25 @@ jobs:
       - run: ./bin/pacto doctor --format json --fail-on any
 ```
 
-## Docs
+## Documentation
 
-- [Getting Started](./docs/getting-started.md)
-- [Concepts](./docs/concepts.md)
-- [Commands](./docs/commands.md)
-- [Integrations](./docs/integrations.md)
-- [Plugins](./docs/plugins.md)
-- [Contributing](./docs/contributing.md)
-- [Releasing](./RELEASING.md)
+| Doc | Contents |
+|-----|----------|
+| [Getting started](./docs/getting-started.md) | First-run setup and the default SDD loop |
+| [Concepts](./docs/concepts.md) | States, claims, verification |
+| [Commands](./docs/commands.md) | CLI reference |
+| [Integrations](./docs/integrations.md) | Editors and agent adapters |
+| [Plugins](./docs/plugins.md) | Plugin model and guardrails |
+| [Architecture](./docs/architecture.md) | Layers and extension points |
+| [Contributing](./docs/contributing.md) | How to contribute |
+| [Releasing](./RELEASING.md) | Maintainer release steps |
 
 ## Notes
 
-- CLI supports `--lang en|es`; `pacto init` persists workspace language in `.pacto/config.yaml`.
-- `pacto exec` updates execution artifacts in plan docs (no source-code edits).
-- `.pacto/plans/` files are workspace artifacts/templates; canonical product docs are in `docs/`.
+- Use `--lang en|es`; `pacto init` persists workspace language in `.pacto/config.yaml`.
+- `pacto exec` updates execution artifacts in plan docs only — it does not edit application source.
+- Files under `.pacto/plans/` are workspace artifacts; product documentation lives under `docs/`.
+
+## Logo
+
+The mark is intentionally minimal (monoline strokes, `currentColor`): use `assets/pacto-logo.svg` in UIs and docs so it inherits light/dark themes.

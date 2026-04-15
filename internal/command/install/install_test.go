@@ -35,10 +35,8 @@ func TestRunInstallExplicitToolCreatesArtifacts(t *testing.T) {
 		t.Fatalf("expected summary in stdout, got %q", stdout)
 	}
 
-	assertExists(t, filepath.Join(root, ".cursor", "skills", "pacto-status", "SKILL.md"))
-	assertExists(t, filepath.Join(root, ".cursor", "commands", "pacto-status.md"))
-	assertExists(t, filepath.Join(root, ".cursor", "skills", "pacto-new", "SKILL.md"))
-	assertExists(t, filepath.Join(root, ".cursor", "commands", "pacto-new.md"))
+	assertExists(t, filepath.Join(root, ".agents", "skills", "pacto-status", "SKILL.md"))
+	assertExists(t, filepath.Join(root, ".agents", "skills", "pacto-new", "SKILL.md"))
 }
 
 func TestRunInstallAutoDetectsOpenCode(t *testing.T) {
@@ -59,7 +57,6 @@ func TestRunInstallAutoDetectsOpenCode(t *testing.T) {
 		t.Fatalf("RunInstall returned %d", code)
 	}
 	assertExists(t, filepath.Join(root, ".opencode", "skills", "pacto-status", "SKILL.md"))
-	assertExists(t, filepath.Join(root, ".opencode", "commands", "pacto-status.md"))
 }
 
 func TestRunInstallCodexWritesAgentsSkillsAndPrompts(t *testing.T) {
@@ -81,15 +78,14 @@ func TestRunInstallCodexWritesAgentsSkillsAndPrompts(t *testing.T) {
 	}
 
 	assertExists(t, filepath.Join(root, ".agents", "skills", "pacto-status", "SKILL.md"))
-	assertExists(t, filepath.Join(codexHome, "prompts", "pacto-status.md"))
 }
 
 func TestRunUpdateSkipsUnmanagedWithoutForce(t *testing.T) {
 	root := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(root, ".cursor", "commands"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, ".agents", "skills", "pacto-status"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	path := filepath.Join(root, ".cursor", "commands", "pacto-status.md")
+	path := filepath.Join(root, ".agents", "skills", "pacto-status", "SKILL.md")
 	if err := os.WriteFile(path, []byte("custom\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -143,8 +139,8 @@ func TestRunUpdateArtifactsHonorsRootFlag(t *testing.T) {
 		t.Fatalf("expected update summary in stdout, got %q", stdout)
 	}
 
-	assertExists(t, filepath.Join(targetRoot, ".cursor", "commands", "pacto-status.md"))
-	if _, err := os.Stat(filepath.Join(callerRoot, ".cursor", "commands", "pacto-status.md")); !os.IsNotExist(err) {
+	assertExists(t, filepath.Join(targetRoot, ".agents", "skills", "pacto-status", "SKILL.md"))
+	if _, err := os.Stat(filepath.Join(callerRoot, ".agents", "skills", "pacto-status", "SKILL.md")); !os.IsNotExist(err) {
 		t.Fatalf("expected caller cwd to remain untouched, got err=%v", err)
 	}
 }
@@ -180,8 +176,8 @@ func TestRunUpdateArtifactsForwardsRootFlagFromDifferentCWD(t *testing.T) {
 		t.Fatalf("expected update summary in stdout, got %q", stdout)
 	}
 
-	assertExists(t, filepath.Join(targetRoot, ".cursor", "commands", "pacto-status.md"))
-	if _, err := os.Stat(filepath.Join(callerRoot, ".cursor", "commands", "pacto-status.md")); !os.IsNotExist(err) {
+	assertExists(t, filepath.Join(targetRoot, ".agents", "skills", "pacto-status", "SKILL.md"))
+	if _, err := os.Stat(filepath.Join(callerRoot, ".agents", "skills", "pacto-status", "SKILL.md")); !os.IsNotExist(err) {
 		t.Fatalf("expected caller cwd to remain untouched, got err=%v", err)
 	}
 }
@@ -379,7 +375,6 @@ func TestRunUpdateDefaultAlsoUpdatesArtifacts(t *testing.T) {
 		t.Fatalf("expected artifact creation summary in stdout, got %q", stdout)
 	}
 	assertExists(t, filepath.Join(root, ".claude", "skills", "pacto-status", "SKILL.md"))
-	assertExists(t, filepath.Join(root, ".claude", "commands", "pacto-status.md"))
 }
 
 func buildTarGz(t *testing.T, files map[string][]byte) []byte {

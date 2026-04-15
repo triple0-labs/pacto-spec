@@ -1,7 +1,7 @@
 {
   "name": "@triple0-labs/pacto-spec",
   "version": "0.1.21",
-  "description": "Wrapper package for the Pacto CLI release binaries",
+  "description": "Spec-driven development CLI: markdown plan slices, evidence-backed status, and optional agent-tool integrations — published as an npm installer over official release binaries.",
   "license": "MIT",
   "repository": {
     "type": "git",

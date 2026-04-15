@@ -10,6 +10,18 @@ import (
 	"pacto/internal/plugins"
 )
 
+func codexHomeDir() string {
+	home := strings.TrimSpace(os.Getenv("CODEX_HOME"))
+	if home == "" {
+		u, err := os.UserHomeDir()
+		if err != nil {
+			return ""
+		}
+		home = filepath.Join(u, ".codex")
+	}
+	return home
+}
+
 func AnalyzeDrift(projectRoot string, tools []string) ([]DriftRecord, error) {
 	root := strings.TrimSpace(projectRoot)
 	if root == "" {
@@ -19,6 +31,7 @@ func AnalyzeDrift(projectRoot string, tools []string) ([]DriftRecord, error) {
 	activePlugins, _ := plugins.LoadActive(root)
 
 	records := make([]DriftRecord, 0)
+	seenSkillPath := map[string]bool{}
 	for _, toolID := range dedupe(tools) {
 		adapter, ok := GetAdapter(toolID)
 		if !ok {
@@ -32,31 +45,14 @@ func AnalyzeDrift(projectRoot string, tools []string) ([]DriftRecord, error) {
 		}
 
 		for _, wf := range Workflows() {
-			sections := collectPluginSections(activePlugins, toolID, wf.WorkflowID)
 			skillPath, err := adapter.SkillFilePath(root, wf.WorkflowID)
 			if err == nil {
-				skillBody := RenderSkill(toolID, wf, sections...)
-				skillMeta := ManagedMetadata{
-					Artifact:    fmt.Sprintf("%s/skill/pacto-%s", toolID, wf.WorkflowID),
-					Workflow:    wf.WorkflowID,
-					Contract:    ContractVersion,
-					TemplateSHA: TemplateChecksum(skillBody),
-					GeneratedBy: "pacto",
+				if seenSkillPath[skillPath] {
+					continue
 				}
+				seenSkillPath[skillPath] = true
+				skillBody, skillMeta := skillBodyAndMetadata(activePlugins, toolID, wf)
 				records = append(records, inspectManagedArtifact(toolID, "skill", wf.WorkflowID, skillPath, skillBody, skillMeta))
-			}
-
-			commandPath, err := adapter.CommandFilePath(root, wf.CommandID)
-			if err == nil {
-				commandBody := RenderCommand(toolID, wf, sections...)
-				commandMeta := ManagedMetadata{
-					Artifact:    fmt.Sprintf("%s/command/%s", toolID, filepath.Base(commandPath)),
-					Workflow:    wf.WorkflowID,
-					Contract:    ContractVersion,
-					TemplateSHA: TemplateChecksum(commandBody),
-					GeneratedBy: "pacto",
-				}
-				records = append(records, inspectManagedArtifact(toolID, "command", wf.WorkflowID, commandPath, commandBody, commandMeta))
 			}
 		}
 
@@ -175,9 +171,33 @@ func detectLegacyPatterns(projectRoot, toolID string) []DriftRecord {
 				RecommendedFix: "remove legacy .codex/skills pacto-* entries and use .agents/skills for Codex",
 			})
 		}
+		legacyCodexPrompts, _ := filepath.Glob(filepath.Join(codexHomeDir(), "prompts", "pacto-*.md"))
+		for _, p := range legacyCodexPrompts {
+			records = append(records, DriftRecord{
+				Tool:           toolID,
+				Kind:           "command",
+				Path:           p,
+				Status:         DriftLegacyPattern,
+				Reason:         "legacy Codex prompt file (commands are no longer generated)",
+				RecommendedFix: "remove if unused; workflows are under .agents/skills as Agent Skills",
+			})
+		}
+	}
+	if toolID == "cursor" {
+		legacyCursorSkills, _ := filepath.Glob(filepath.Join(projectRoot, ".cursor", "skills", "pacto-*", "SKILL.md"))
+		for _, p := range legacyCursorSkills {
+			records = append(records, DriftRecord{
+				Tool:           toolID,
+				Kind:           "skill",
+				Path:           p,
+				Status:         DriftLegacyPattern,
+				Reason:         "legacy .cursor/skills path detected",
+				RecommendedFix: "remove legacy .cursor/skills pacto-* entries; project skills live under .agents/skills",
+			})
+		}
 	}
 	if !dirExists(base) {
-		return records
+		return dedupeLegacyRecords(records)
 	}
 
 	legacyCommands, _ := filepath.Glob(filepath.Join(base, "commands", "pa-*.md"))
@@ -188,7 +208,18 @@ func detectLegacyPatterns(projectRoot, toolID string) []DriftRecord {
 			Path:           p,
 			Status:         DriftLegacyPattern,
 			Reason:         "legacy pa-* command file detected",
-			RecommendedFix: "remove or replace with pacto-* command artifacts",
+			RecommendedFix: "remove if unused; Pacto no longer generates command prompts",
+		})
+	}
+	deprecatedPactoCmds, _ := filepath.Glob(filepath.Join(base, "commands", "pacto-*.md"))
+	for _, p := range deprecatedPactoCmds {
+		records = append(records, DriftRecord{
+			Tool:           toolID,
+			Kind:           "command",
+			Path:           p,
+			Status:         DriftLegacyPattern,
+			Reason:         "legacy pacto command file (commands are no longer generated)",
+			RecommendedFix: "remove if unused; use skills under .agents/skills (Cursor/Codex) or tool-specific skills directories",
 		})
 	}
 	pactoPlanPath := filepath.Join(base, "commands", "pacto-plan.md")
@@ -199,7 +230,7 @@ func detectLegacyPatterns(projectRoot, toolID string) []DriftRecord {
 			Path:           pactoPlanPath,
 			Status:         DriftLegacyPattern,
 			Reason:         "legacy pacto-plan compatibility wrapper detected",
-			RecommendedFix: "remove if no longer needed; prefer pacto-* command files",
+			RecommendedFix: "remove if no longer needed; prefer workflows in skills under .agents/skills or tool-specific skill dirs",
 		})
 	}
 
@@ -233,12 +264,8 @@ func detectLegacyPatterns(projectRoot, toolID string) []DriftRecord {
 }
 
 func legacyArtifactCandidates(base string) []string {
-	paths := make([]string, 0)
-	cmdFiles, _ := filepath.Glob(filepath.Join(base, "commands", "pacto-*.md"))
-	paths = append(paths, cmdFiles...)
 	skillFiles, _ := filepath.Glob(filepath.Join(base, "skills", "pacto-*", "SKILL.md"))
-	paths = append(paths, skillFiles...)
-	return paths
+	return skillFiles
 }
 
 func dedupeLegacyRecords(records []DriftRecord) []DriftRecord {

@@ -85,7 +85,7 @@ func commandCatalog() []CommandHelp {
 			Name:        "doctor",
 			Summary:     "Audit managed tool artifacts for drift and legacy patterns.",
 			Usage:       "pacto doctor [--root <path>] [--tools <all|none|csv>] [--format table|json] [--fail-on none|drift|legacy|any] [--verbose]",
-			Description: "Checks generated skill/command artifacts for missing files, unmanaged files, metadata mismatches, stale managed content, and known legacy patterns. Use `pacto update --artifacts` to refresh managed artifacts.",
+			Description: "Checks generated skill artifacts for missing files, unmanaged files, metadata mismatches, stale managed content, and known legacy patterns (including deprecated command prompts). Use `pacto update --artifacts` to refresh managed artifacts.",
 			Examples: []string{
 				"pacto doctor",
 				"pacto doctor --tools cursor --format table",
@@ -132,9 +132,9 @@ func commandCatalog() []CommandHelp {
 		},
 		{
 			Name:        "install",
-			Summary:     "Install Pacto skills and command prompts for AI tools.",
+			Summary:     "Install Pacto Agent Skills for supported AI tools.",
 			Usage:       "pacto install [--tools <all|none|csv>] [--force]",
-			Description: "Generates managed Pacto skills and command files for supported tools (codex,cursor,claude,opencode). If --tools is omitted, tools are auto-detected from project directories.",
+			Description: "Generates managed Pacto skills (under .agents/skills for Cursor and Codex, and tool-specific skill directories for Claude and OpenCode). Command/prompt files are not generated. If --tools is omitted, tools are auto-detected from project directories.",
 			Examples: []string{
 				"pacto install",
 				"pacto install --tools codex,cursor",

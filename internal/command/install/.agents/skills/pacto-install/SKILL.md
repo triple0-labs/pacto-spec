@@ -4,18 +4,18 @@ description: Agent contract for the Pacto install workflow.
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=codex/skill/pacto-install workflow=install contract=v1 template_sha256=e14b26bac11a37ca83ce8954de30b61d6131d59043817cd5406322f5253fd06f generated_by=pacto generated_at=2026-04-15T16:21:09Z -->
+<!-- pacto:managed:meta artifact=agents/skill/pacto-install workflow=install contract=v1 template_sha256=91f704219e538bfc2c1395772826edd05f74c4dbad7bc0fc7d37b4dc5643f3a2 generated_by=pacto generated_at=2026-04-15T23:09:48Z -->
 # Pacto Install Skill
 
 Use this skill as an agent contract for the install workflow in Pacto projects.
 
 ## Objective
 
-Install managed Pacto skills and command prompts for supported tools.
+Install managed Pacto Agent Skills for supported tools.
 
 ## When To Use
 
-Use to bootstrap Pacto-generated skills/prompts for compatible AI tools.
+Use to bootstrap Pacto-generated skills for compatible AI tools.
 
 ## Input Contract
 
@@ -28,17 +28,17 @@ Use to bootstrap Pacto-generated skills/prompts for compatible AI tools.
 
 ## Execution Contract
 
-- Tool target: codex
+- Tool target: Cursor Agent and Codex (project skills under .agents/skills/)
 - Recommended command: pacto install [--tools <all|none|csv>] [--force]
 
 ## Output Contract
-- Generates managed skill and command files per workflow and selected tool.
+- Generates managed skill files per workflow and selected tool.
 - Returns per-file outcome summary: created, updated, skipped, failed.
 
 ## Validation Checklist
 - Confirm selected/detected tools match user intent.
 - Check warnings for unmanaged file skips.
-- Confirm generated artifacts are wrapped with managed markers.
+- Confirm generated skills are wrapped with managed markers.
 
 ## Failure Modes and Handling
 - No tools detected when `--tools` is omitted.

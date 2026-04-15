@@ -5,7 +5,7 @@ compatibility: opencode
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=opencode/skill/pacto-explore workflow=explore contract=v1 template_sha256=afb31242881c3eefa90ef55673d94e379ab3f25237e7233f99668eb32afefcde generated_by=pacto generated_at=2026-04-08T06:15:23Z -->
+<!-- pacto:managed:meta artifact=opencode/skill/pacto-explore workflow=explore contract=v1 template_sha256=afb31242881c3eefa90ef55673d94e379ab3f25237e7233f99668eb32afefcde generated_by=pacto generated_at=2026-04-15T21:57:09Z -->
 # Pacto Explore Skill
 
 Use this skill as an agent contract for the explore workflow in Pacto projects.

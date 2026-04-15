@@ -48,7 +48,7 @@ func Workflows() []WorkflowSpec {
 			Title:      "Pacto Doctor",
 			Summary:    "Audit managed integration artifacts for drift and legacy patterns.",
 			Command:    "pacto doctor [--root <path>] [--tools <all|none|csv>] [--format table|json] [--fail-on none|drift|legacy|any]",
-			WhenToUse:  "Use when generated skills/commands might be stale after manual edits or CLI/template upgrades.",
+			WhenToUse:  "Use when generated skills might be stale after manual edits or CLI/template upgrades.",
 			RequiredInputs: []string{
 				"None when tool auto-detection succeeds.",
 			},
@@ -185,9 +185,9 @@ func Workflows() []WorkflowSpec {
 			WorkflowID: "install",
 			CommandID:  "pacto-install",
 			Title:      "Pacto Install",
-			Summary:    "Install managed Pacto skills and command prompts for supported tools.",
+			Summary:    "Install managed Pacto Agent Skills for supported tools.",
 			Command:    "pacto install [--tools <all|none|csv>] [--force]",
-			WhenToUse:  "Use to bootstrap Pacto-generated skills/prompts for compatible AI tools.",
+			WhenToUse:  "Use to bootstrap Pacto-generated skills for compatible AI tools.",
 			RequiredInputs: []string{
 				"Either detectable tool directories or explicit `--tools` selection.",
 			},
@@ -196,13 +196,13 @@ func Workflows() []WorkflowSpec {
 				"`--force` to overwrite unmanaged existing files.",
 			},
 			OutputContract: []string{
-				"Generates managed skill and command files per workflow and selected tool.",
+				"Generates managed skill files per workflow and selected tool.",
 				"Returns per-file outcome summary: created, updated, skipped, failed.",
 			},
 			ValidationChecklist: []string{
 				"Confirm selected/detected tools match user intent.",
 				"Check warnings for unmanaged file skips.",
-				"Confirm generated artifacts are wrapped with managed markers.",
+				"Confirm generated skills are wrapped with managed markers.",
 			},
 			FailureModes: []string{
 				"No tools detected when `--tools` is omitted.",
@@ -227,14 +227,14 @@ func Workflows() []WorkflowSpec {
 				"`--force` to overwrite unmanaged files when needed.",
 			},
 			OutputContract: []string{
-				"Updates managed blocks in skill and command artifacts in place.",
+				"Updates managed blocks in generated skills in place.",
 				"Reports created/updated/skipped/failed counts.",
 				"Preserves unmanaged files unless `--force` is set.",
 			},
 			ValidationChecklist: []string{
 				"Confirm managed marker replacement happened for existing files.",
 				"Review skipped unmanaged warnings and decide if force is appropriate.",
-				"Spot-check one skill and one command artifact for expected template updates.",
+				"Spot-check at least one skill for expected template updates.",
 			},
 			FailureModes: []string{
 				"Unsupported or invalid tool selection.",
@@ -315,7 +315,18 @@ func Workflows() []WorkflowSpec {
 	}
 }
 
-func RenderSkill(toolID string, wf WorkflowSpec, pluginGuardrails ...string) string {
+// SkillToolTargetForIntegration returns the value for the Execution Contract "Tool target" line.
+// Cursor and Codex share project skills under .agents/skills/, so the line is unified for both.
+func SkillToolTargetForIntegration(toolID string) string {
+	switch toolID {
+	case "cursor", "codex":
+		return "Cursor Agent and Codex (project skills under .agents/skills/)"
+	default:
+		return toolID
+	}
+}
+
+func RenderSkill(executionTarget string, wf WorkflowSpec, pluginGuardrails ...string) string {
 	base := fmt.Sprintf(`# %s Skill
 
 Use this skill as an agent contract for the %s workflow in Pacto projects.
@@ -354,46 +365,7 @@ Use this skill as an agent contract for the %s workflow in Pacto projects.
 
 - Status: **%s**
 - Fallback: %s
-`, wf.Title, wf.WorkflowID, wf.Summary, wf.WhenToUse, asBullets(wf.RequiredInputs), asBullets(wf.OptionalInputs), toolID, wf.Command, asBullets(wf.OutputContract), asBullets(wf.ValidationChecklist), asBullets(wf.FailureModes), implementationStatusLabel(wf.Implemented), wf.FallbackAction)
-	return appendPluginGuardrails(base, pluginGuardrails)
-}
-
-func RenderCommand(toolID string, wf WorkflowSpec, pluginGuardrails ...string) string {
-	base := fmt.Sprintf(`# %s
-
-Agent contract for %s.
-
-## Objective
-
-%s
-
-## Input Contract
-
-### Required Inputs
-%s
-
-### Optional Inputs
-%s
-
-## Execution Contract
-
-- Tool target: %s
-- Recommended command: %s
-
-## Output Contract
-%s
-
-## Validation Checklist
-%s
-
-## Failure Modes and Handling
-%s
-
-## Implementation Status
-
-- Status: **%s**
-- Fallback: %s
-`, wf.CommandID, wf.WorkflowID, wf.Summary, asBullets(wf.RequiredInputs), asBullets(wf.OptionalInputs), toolID, wf.Command, asBullets(wf.OutputContract), asBullets(wf.ValidationChecklist), asBullets(wf.FailureModes), implementationStatusLabel(wf.Implemented), wf.FallbackAction)
+`, wf.Title, wf.WorkflowID, wf.Summary, wf.WhenToUse, asBullets(wf.RequiredInputs), asBullets(wf.OptionalInputs), executionTarget, wf.Command, asBullets(wf.OutputContract), asBullets(wf.ValidationChecklist), asBullets(wf.FailureModes), implementationStatusLabel(wf.Implemented), wf.FallbackAction)
 	return appendPluginGuardrails(base, pluginGuardrails)
 }
 

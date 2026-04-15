@@ -2,11 +2,59 @@ package integrations
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"pacto/internal/plugins"
 )
+
+func agentsSkillTool(toolID string) bool {
+	return toolID == "cursor" || toolID == "codex"
+}
+
+func skillPluginSections(active []plugins.Plugin, toolID, workflowID string) []string {
+	if agentsSkillTool(toolID) {
+		return mergePluginSectionStrings(
+			collectPluginSections(active, "cursor", workflowID),
+			collectPluginSections(active, "codex", workflowID),
+		)
+	}
+	return collectPluginSections(active, toolID, workflowID)
+}
+
+func mergePluginSectionStrings(a, b []string) []string {
+	seen := map[string]bool{}
+	out := make([]string, 0, len(a)+len(b))
+	for _, s := range append(append([]string{}, a...), b...) {
+		t := strings.TrimSpace(s)
+		if t == "" || seen[t] {
+			continue
+		}
+		seen[t] = true
+		out = append(out, s)
+	}
+	return out
+}
+
+func skillArtifactName(toolID, workflowID string) string {
+	if agentsSkillTool(toolID) {
+		return fmt.Sprintf("agents/skill/pacto-%s", workflowID)
+	}
+	return fmt.Sprintf("%s/skill/pacto-%s", toolID, workflowID)
+}
+
+func skillBodyAndMetadata(active []plugins.Plugin, toolID string, wf WorkflowSpec) (body string, meta ManagedMetadata) {
+	sections := skillPluginSections(active, toolID, wf.WorkflowID)
+	target := SkillToolTargetForIntegration(toolID)
+	body = RenderSkill(target, wf, sections...)
+	meta = ManagedMetadata{
+		Artifact:    skillArtifactName(toolID, wf.WorkflowID),
+		Workflow:    wf.WorkflowID,
+		Contract:    ContractVersion,
+		TemplateSHA: TemplateChecksum(body),
+		GeneratedBy: "pacto",
+	}
+	return body, meta
+}
 
 func GenerateForTool(projectRoot, toolID string, force bool) []ArtifactResult {
 	results := make([]ArtifactResult, 0)
@@ -17,39 +65,15 @@ func GenerateForTool(projectRoot, toolID string, force bool) []ArtifactResult {
 	activePlugins, _ := plugins.LoadActive(projectRoot)
 
 	for _, wf := range Workflows() {
-		pluginSections := collectPluginSections(activePlugins, toolID, wf.WorkflowID)
 		skillPath, err := adapter.SkillFilePath(projectRoot, wf.WorkflowID)
 		if err != nil {
 			results = append(results, ArtifactResult{Tool: toolID, Kind: "skill", WorkflowID: wf.WorkflowID, Err: err})
-		} else {
-			body := RenderSkill(toolID, wf, pluginSections...)
-			prefix := skillFrontmatter(toolID, wf)
-			meta := ManagedMetadata{
-				Artifact:    fmt.Sprintf("%s/skill/pacto-%s", toolID, wf.WorkflowID),
-				Workflow:    wf.WorkflowID,
-				Contract:    ContractVersion,
-				TemplateSHA: TemplateChecksum(body),
-				GeneratedBy: "pacto",
-			}
-			wr, werr := WriteManagedWithPrefix(skillPath, body, meta, force, prefix)
-			results = append(results, ArtifactResult{Tool: toolID, Kind: "skill", WorkflowID: wf.WorkflowID, Path: skillPath, Outcome: wr.Outcome, Reason: wr.Reason, Err: werr})
-		}
-
-		commandPath, err := adapter.CommandFilePath(projectRoot, wf.CommandID)
-		if err != nil {
-			results = append(results, ArtifactResult{Tool: toolID, Kind: "command", WorkflowID: wf.WorkflowID, Err: err})
 			continue
 		}
-		body := RenderCommand(toolID, wf, pluginSections...)
-		meta := ManagedMetadata{
-			Artifact:    fmt.Sprintf("%s/command/%s", toolID, filepath.Base(commandPath)),
-			Workflow:    wf.WorkflowID,
-			Contract:    ContractVersion,
-			TemplateSHA: TemplateChecksum(body),
-			GeneratedBy: "pacto",
-		}
-		wr, werr := WriteManaged(commandPath, body, meta, force)
-		results = append(results, ArtifactResult{Tool: toolID, Kind: "command", WorkflowID: wf.WorkflowID, Path: commandPath, Outcome: wr.Outcome, Reason: wr.Reason, Err: werr})
+		body, meta := skillBodyAndMetadata(activePlugins, toolID, wf)
+		prefix := skillFrontmatter(toolID, wf)
+		wr, werr := WriteManagedWithPrefix(skillPath, body, meta, force, prefix)
+		results = append(results, ArtifactResult{Tool: toolID, Kind: "skill", WorkflowID: wf.WorkflowID, Path: skillPath, Outcome: wr.Outcome, Reason: wr.Reason, Err: werr})
 	}
 
 	return results
@@ -74,7 +98,7 @@ func collectPluginSections(active []plugins.Plugin, toolID, workflowID string) [
 
 func skillFrontmatter(toolID string, wf WorkflowSpec) string {
 	switch toolID {
-	case "codex":
+	case "codex", "cursor", "claude":
 		return fmt.Sprintf("---\nname: pacto-%s\ndescription: Agent contract for the Pacto %s workflow.\n---", wf.WorkflowID, wf.WorkflowID)
 	case "opencode":
 		return fmt.Sprintf("---\nname: pacto-%s\ndescription: Agent contract for the Pacto %s workflow.\ncompatibility: opencode\n---", wf.WorkflowID, wf.WorkflowID)

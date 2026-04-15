@@ -5,7 +5,7 @@ compatibility: opencode
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=opencode/skill/pacto-new workflow=new contract=v1 template_sha256=b616ce65ac742887b8cd5b61a161791fc99c773324c740bffcab442273e27a55 generated_by=pacto generated_at=2026-04-08T06:15:23Z -->
+<!-- pacto:managed:meta artifact=opencode/skill/pacto-new workflow=new contract=v1 template_sha256=b616ce65ac742887b8cd5b61a161791fc99c773324c740bffcab442273e27a55 generated_by=pacto generated_at=2026-04-15T21:57:09Z -->
 # Pacto New Skill
 
 Use this skill as an agent contract for the new workflow in Pacto projects.

@@ -5,7 +5,7 @@ compatibility: opencode
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=opencode/skill/pacto-move workflow=move contract=v1 template_sha256=e7cdcfddd7353f721ca7298abe8b535284fd8da22049b564502cdb2ba515e4b9 generated_by=pacto generated_at=2026-04-08T06:15:23Z -->
+<!-- pacto:managed:meta artifact=opencode/skill/pacto-move workflow=move contract=v1 template_sha256=e7cdcfddd7353f721ca7298abe8b535284fd8da22049b564502cdb2ba515e4b9 generated_by=pacto generated_at=2026-04-15T21:57:09Z -->
 # Pacto Move Skill
 
 Use this skill as an agent contract for the move workflow in Pacto projects.

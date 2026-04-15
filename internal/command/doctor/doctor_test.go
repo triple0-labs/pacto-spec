@@ -46,7 +46,7 @@ func TestRunDoctorFailOnAny(t *testing.T) {
 	if code := RunInstall([]string{"--tools", "cursor"}); code != 0 {
 		t.Fatalf("RunInstall returned %d", code)
 	}
-	if err := os.Remove(filepath.Join(root, ".cursor", "commands", "pacto-status.md")); err != nil {
+	if err := os.Remove(filepath.Join(root, ".agents", "skills", "pacto-status", "SKILL.md")); err != nil {
 		t.Fatal(err)
 	}
 	if code := RunDoctor([]string{"--tools", "cursor", "--fail-on", "any"}); code != 1 {

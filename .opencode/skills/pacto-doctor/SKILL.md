@@ -5,7 +5,7 @@ compatibility: opencode
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=opencode/skill/pacto-doctor workflow=doctor contract=v1 template_sha256=c4f13078b3405f7314748163fec25331922b0807b2879a123394cb6ffe6f35cd generated_by=pacto generated_at=2026-04-08T06:15:23Z -->
+<!-- pacto:managed:meta artifact=opencode/skill/pacto-doctor workflow=doctor contract=v1 template_sha256=22d46c42f2c09a2031040681250166762bd254b1721058cfc6bce7498dd7d568 generated_by=pacto generated_at=2026-04-15T21:57:09Z -->
 # Pacto Doctor Skill
 
 Use this skill as an agent contract for the doctor workflow in Pacto projects.
@@ -16,7 +16,7 @@ Audit managed integration artifacts for drift and legacy patterns.
 
 ## When To Use
 
-Use when generated skills/commands might be stale after manual edits or CLI/template upgrades.
+Use when generated skills might be stale after manual edits or CLI/template upgrades.
 
 ## Input Contract
 

@@ -4,7 +4,7 @@ description: Agent contract for the Pacto doctor workflow.
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=codex/skill/pacto-doctor workflow=doctor contract=v1 template_sha256=1f69145613cda8f88f58292938fb7175cfd2deda83a050de232b3096c37a5949 generated_by=pacto generated_at=2026-04-15T16:21:09Z -->
+<!-- pacto:managed:meta artifact=agents/skill/pacto-doctor workflow=doctor contract=v1 template_sha256=838be0384fdfef8e02d34cd770fe1e798e09a896a655c5934ef070b1d76a949c generated_by=pacto generated_at=2026-04-15T23:09:48Z -->
 # Pacto Doctor Skill
 
 Use this skill as an agent contract for the doctor workflow in Pacto projects.
@@ -15,7 +15,7 @@ Audit managed integration artifacts for drift and legacy patterns.
 
 ## When To Use
 
-Use when generated skills/commands might be stale after manual edits or CLI/template upgrades.
+Use when generated skills might be stale after manual edits or CLI/template upgrades.
 
 ## Input Contract
 
@@ -30,7 +30,7 @@ Use when generated skills/commands might be stale after manual edits or CLI/temp
 
 ## Execution Contract
 
-- Tool target: codex
+- Tool target: Cursor Agent and Codex (project skills under .agents/skills/)
 - Recommended command: pacto doctor [--root <path>] [--tools <all|none|csv>] [--format table|json] [--fail-on none|drift|legacy|any]
 
 ## Output Contract

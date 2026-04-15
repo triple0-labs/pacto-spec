@@ -5,7 +5,7 @@ compatibility: opencode
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=opencode/skill/pacto-exec workflow=exec contract=v1 template_sha256=cbe6eb19abca5cdfcf1a7458acf754c50908cc0b326c189212765d54d7e7a393 generated_by=pacto generated_at=2026-04-08T06:15:23Z -->
+<!-- pacto:managed:meta artifact=opencode/skill/pacto-exec workflow=exec contract=v1 template_sha256=cbe6eb19abca5cdfcf1a7458acf754c50908cc0b326c189212765d54d7e7a393 generated_by=pacto generated_at=2026-04-15T21:57:09Z -->
 # Pacto Exec Skill
 
 Use this skill as an agent contract for the exec workflow in Pacto projects.

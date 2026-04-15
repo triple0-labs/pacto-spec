@@ -104,19 +104,26 @@ func TestGetAdapterPaths(t *testing.T) {
 	if want := filepath.Join(root, ".opencode", "skills", "pacto-status", "SKILL.md"); skill != want {
 		t.Fatalf("skill path mismatch: got %q want %q", skill, want)
 	}
-	cmd, err := a.CommandFilePath(root, "pacto-status")
+}
+
+func TestGetAdapterCursorSkillsUseAgentsPath(t *testing.T) {
+	root := t.TempDir()
+	a, ok := GetAdapter("cursor")
+	if !ok {
+		t.Fatal("expected cursor adapter")
+	}
+	skill, err := a.SkillFilePath(root, "status")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if want := filepath.Join(root, ".opencode", "commands", "pacto-status.md"); cmd != want {
-		t.Fatalf("command path mismatch: got %q want %q", cmd, want)
+	if want := filepath.Join(root, ".agents", "skills", "pacto-status", "SKILL.md"); skill != want {
+		t.Fatalf("cursor skill path mismatch: got %q want %q", skill, want)
 	}
 }
 
 func TestRenderTemplatesIncludeContractSections(t *testing.T) {
 	for _, wf := range Workflows() {
-		skill := RenderSkill("codex", wf)
-		command := RenderCommand("codex", wf)
+		skill := RenderSkill(SkillToolTargetForIntegration("codex"), wf)
 
 		for _, section := range []string{
 			"## Input Contract",
@@ -127,9 +134,6 @@ func TestRenderTemplatesIncludeContractSections(t *testing.T) {
 		} {
 			if !strings.Contains(skill, section) {
 				t.Fatalf("skill template for %s missing section %q", wf.WorkflowID, section)
-			}
-			if !strings.Contains(command, section) {
-				t.Fatalf("command template for %s missing section %q", wf.WorkflowID, section)
 			}
 		}
 	}
@@ -149,7 +153,7 @@ func TestStatusWorkflowPrefersJSONAndOptionalVerify(t *testing.T) {
 	if status.Command != "pacto status --format json" {
 		t.Fatalf("unexpected status command: %q", status.Command)
 	}
-	skill := RenderSkill("codex", status)
+	skill := RenderSkill(SkillToolTargetForIntegration("codex"), status)
 	if !strings.Contains(skill, "optional path verification") {
 		t.Fatalf("expected metadata-first status summary, got %q", skill)
 	}
@@ -158,7 +162,7 @@ func TestStatusWorkflowPrefersJSONAndOptionalVerify(t *testing.T) {
 	}
 }
 
-func TestGenerateForToolWritesContractAndExecCommand(t *testing.T) {
+func TestGenerateForToolWritesSkillsOnly(t *testing.T) {
 	root := t.TempDir()
 	results := GenerateForTool(root, "opencode", false)
 	if len(results) == 0 {
@@ -167,6 +171,9 @@ func TestGenerateForToolWritesContractAndExecCommand(t *testing.T) {
 	for _, r := range results {
 		if r.Err != nil {
 			t.Fatalf("unexpected generation error for %s/%s: %v", r.Kind, r.WorkflowID, r.Err)
+		}
+		if r.Kind != "skill" {
+			t.Fatalf("expected only skill results, got kind %q", r.Kind)
 		}
 	}
 
@@ -180,23 +187,24 @@ func TestGenerateForToolWritesContractAndExecCommand(t *testing.T) {
 		"## Input Contract",
 		"## Output Contract",
 		"## Validation Checklist",
+		"## Implementation Status",
 	} {
 		if !strings.Contains(statusContent, section) {
 			t.Fatalf("status skill missing %q", section)
 		}
 	}
+	if !strings.Contains(statusContent, "Status: **Implemented**") {
+		t.Fatalf("status skill should be marked implemented, got: %q", statusContent)
+	}
 
-	execCommand := filepath.Join(root, ".opencode", "commands", "pacto-exec.md")
-	b, err = os.ReadFile(execCommand)
+	execWorkflow := filepath.Join(root, ".opencode", "skills", "pacto-exec", "SKILL.md")
+	b, err = os.ReadFile(execWorkflow)
 	if err != nil {
-		t.Fatalf("read exec command: %v", err)
+		t.Fatalf("read exec skill: %v", err)
 	}
 	execContent := string(b)
 	if !strings.Contains(execContent, "## Implementation Status") {
-		t.Fatalf("exec command should include implementation status section, got: %q", execContent)
-	}
-	if !strings.Contains(execContent, "Status: **Implemented**") {
-		t.Fatalf("exec command should be marked implemented, got: %q", execContent)
+		t.Fatalf("exec skill should include implementation status section, got: %q", execContent)
 	}
 }
 
@@ -224,6 +232,30 @@ func TestGenerateForToolIncludesPluginGuardrailsWhenActive(t *testing.T) {
 	}
 	if !strings.Contains(content, "Always run pacto status first") {
 		t.Fatalf("expected plugin markdown content, got: %q", content)
+	}
+}
+
+func TestGenerateForToolClaudeSkillsHaveFrontmatter(t *testing.T) {
+	root := t.TempDir()
+
+	results := GenerateForTool(root, "claude", false)
+	for _, r := range results {
+		if r.Err != nil {
+			t.Fatalf("unexpected generation error for %s/%s: %v", r.Kind, r.WorkflowID, r.Err)
+		}
+	}
+
+	skillPath := filepath.Join(root, ".claude", "skills", "pacto-doctor", "SKILL.md")
+	b, err := os.ReadFile(skillPath)
+	if err != nil {
+		t.Fatalf("read claude skill: %v", err)
+	}
+	content := string(b)
+	if !strings.HasPrefix(content, "---\nname: pacto-doctor\n") {
+		t.Fatalf("expected claude skill frontmatter prefix, got: %q", content)
+	}
+	if !strings.Contains(content, "<!-- pacto:managed:start -->") {
+		t.Fatalf("expected managed block in claude skill, got: %q", content)
 	}
 }
 

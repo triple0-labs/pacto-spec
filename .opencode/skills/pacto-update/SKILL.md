@@ -5,7 +5,7 @@ compatibility: opencode
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=opencode/skill/pacto-update workflow=update contract=v1 template_sha256=c06e08e4dd272cdc31c5a15c2f0b109b3a582091564779ce6c2ae48716dba020 generated_by=pacto generated_at=2026-04-08T06:15:23Z -->
+<!-- pacto:managed:meta artifact=opencode/skill/pacto-update workflow=update contract=v1 template_sha256=9174cfaba0fc1699e30a16fdcdf4568215586ce7a1151d2081fd0c6e324dc089 generated_by=pacto generated_at=2026-04-15T21:57:09Z -->
 # Pacto Update Skill
 
 Use this skill as an agent contract for the update workflow in Pacto projects.
@@ -33,14 +33,14 @@ Use after upgrading Pacto to refresh managed blocks in generated artifacts.
 - Recommended command: pacto update --artifacts [--tools <all|none|csv>] [--force]
 
 ## Output Contract
-- Updates managed blocks in skill and command artifacts in place.
+- Updates managed blocks in generated skills in place.
 - Reports created/updated/skipped/failed counts.
 - Preserves unmanaged files unless `--force` is set.
 
 ## Validation Checklist
 - Confirm managed marker replacement happened for existing files.
 - Review skipped unmanaged warnings and decide if force is appropriate.
-- Spot-check one skill and one command artifact for expected template updates.
+- Spot-check at least one skill for expected template updates.
 
 ## Failure Modes and Handling
 - Unsupported or invalid tool selection.

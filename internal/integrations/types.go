@@ -5,7 +5,6 @@ import "fmt"
 type Adapter interface {
 	ToolID() string
 	SkillFilePath(projectRoot, workflowID string) (string, error)
-	CommandFilePath(projectRoot, commandID string) (string, error)
 }
 
 type WorkflowSpec struct {

@@ -165,7 +165,3 @@ jobs:
 - Use `--lang en|es`; `pacto init` persists workspace language in `.pacto/config.yaml`.
 - `pacto exec` updates execution artifacts in plan docs only — it does not edit application source.
 - Files under `.pacto/plans/` are workspace artifacts; product documentation lives under `docs/`.
-
-## Logo
-
-The mark is a **minimal raster** (no SVG in-repo): `assets/pacto-logo.png` (512×512, geometric pillars and bridge on white). Use that path in README previews, IDE, and docs. To change the artwork, replace the PNG under `assets/` (or regenerate via Cursor image generation and normalize to 512×512).

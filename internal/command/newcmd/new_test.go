@@ -122,3 +122,51 @@ func TestRunNewSpecIncludesDomainsAffected(t *testing.T) {
 		t.Fatalf("expected domains affected scaffold, got %q", text)
 	}
 }
+
+func TestRunNewRejectsInvalidState(t *testing.T) {
+	root := t.TempDir()
+	if code := RunInit([]string{"--root", root, "--no-interactive", "--no-install"}); code != 0 {
+		t.Fatalf("RunInit returned %d", code)
+	}
+	_, stderr := captureOutput(t, func() {
+		if code := RunNew([]string{"not-a-state", "my-plan", "--root", root}); code != 2 {
+			t.Fatalf("RunNew returned %d, want 2", code)
+		}
+	})
+	if !strings.Contains(stderr, "invalid state") {
+		t.Fatalf("expected invalid state message, got %q", stderr)
+	}
+}
+
+func TestRunNewRejectsInvalidSlug(t *testing.T) {
+	root := t.TempDir()
+	if code := RunInit([]string{"--root", root, "--no-interactive", "--no-install"}); code != 0 {
+		t.Fatalf("RunInit returned %d", code)
+	}
+	_, stderr := captureOutput(t, func() {
+		if code := RunNew([]string{"current", "BadSlug", "--root", root}); code != 2 {
+			t.Fatalf("RunNew returned %d, want 2", code)
+		}
+	})
+	if !strings.Contains(stderr, "invalid slug") {
+		t.Fatalf("expected invalid slug message, got %q", stderr)
+	}
+}
+
+func TestRunNewRejectsDuplicatePlan(t *testing.T) {
+	root := t.TempDir()
+	if code := RunInit([]string{"--root", root, "--no-interactive", "--no-install"}); code != 0 {
+		t.Fatalf("RunInit returned %d", code)
+	}
+	if code := RunNew([]string{"current", "dup-plan", "--root", root, "--title", "One"}); code != 0 {
+		t.Fatalf("RunNew returned %d", code)
+	}
+	_, stderr := captureOutput(t, func() {
+		if code := RunNew([]string{"current", "dup-plan", "--root", root, "--title", "Two"}); code != 2 {
+			t.Fatalf("RunNew returned %d, want 2", code)
+		}
+	})
+	if !strings.Contains(stderr, "plan already exists") {
+		t.Fatalf("expected duplicate plan message, got %q", stderr)
+	}
+}

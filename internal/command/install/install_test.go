@@ -298,6 +298,90 @@ func TestRunUpdateDefaultInstallsBinary(t *testing.T) {
 	}
 }
 
+func TestRunUpdateDefaultAlsoUpdatesArtifacts(t *testing.T) {
+	root := t.TempDir()
+	exePath := filepath.Join(root, "pacto")
+	if err := os.WriteFile(exePath, []byte("old-binary"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// Create a .claude dir so artifact detection finds it.
+	if err := os.MkdirAll(filepath.Join(root, ".claude"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// Isolate codex detection to avoid writing to the real ~/.codex.
+	t.Setenv("CODEX_HOME", filepath.Join(root, "_codex_home"))
+
+	newBinary := []byte("new-binary")
+	archive := buildTarGz(t, map[string][]byte{"pacto": newBinary})
+	artifact := "pacto_1.2.3_linux_amd64.tar.gz"
+	sum := sha256.Sum256(archive)
+	checksums := fmt.Sprintf("%s  %s\n", hex.EncodeToString(sum[:]), artifact)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/repos/test/repo/releases/latest":
+			_, _ = w.Write([]byte(`{"tag_name":"v1.2.3"}`))
+		case "/test/repo/releases/download/v1.2.3/" + artifact:
+			_, _ = w.Write(archive)
+		case "/test/repo/releases/download/v1.2.3/checksums.txt":
+			_, _ = w.Write([]byte(checksums))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer ts.Close()
+
+	oldAPI := selfUpdateAPIBase
+	oldDL := selfUpdateDownloadBase
+	oldHTTP := selfUpdateHTTPClient
+	oldExe := selfUpdateExecutablePath
+	oldOS := selfUpdateGOOS
+	oldArch := selfUpdateGOARCH
+	oldVersion := Version
+	selfUpdateAPIBase = ts.URL
+	selfUpdateDownloadBase = ts.URL
+	selfUpdateHTTPClient = ts.Client()
+	selfUpdateExecutablePath = func() (string, error) { return exePath, nil }
+	selfUpdateGOOS = "linux"
+	selfUpdateGOARCH = "amd64"
+	Version = "0.1.0"
+	defer func() {
+		selfUpdateAPIBase = oldAPI
+		selfUpdateDownloadBase = oldDL
+		selfUpdateHTTPClient = oldHTTP
+		selfUpdateExecutablePath = oldExe
+		selfUpdateGOOS = oldOS
+		selfUpdateGOARCH = oldArch
+		Version = oldVersion
+	}()
+
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(oldWD) }()
+	if err := os.Chdir(root); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout, stderr := captureOutput(t, func() {
+		if code := RunUpdate([]string{"--yes", "--repo", "test/repo"}); code != 0 {
+			t.Fatalf("RunUpdate returned %d", code)
+		}
+	})
+	if strings.TrimSpace(stderr) != "" {
+		t.Fatalf("unexpected stderr: %q", stderr)
+	}
+	if !strings.Contains(stdout, "Updated pacto") {
+		t.Fatalf("expected binary update output, got %q", stdout)
+	}
+	if !strings.Contains(stdout, "Created:") {
+		t.Fatalf("expected artifact creation summary in stdout, got %q", stdout)
+	}
+	assertExists(t, filepath.Join(root, ".claude", "skills", "pacto-status", "SKILL.md"))
+	assertExists(t, filepath.Join(root, ".claude", "commands", "pacto-status.md"))
+}
+
 func buildTarGz(t *testing.T, files map[string][]byte) []byte {
 	t.Helper()
 	var buf bytes.Buffer

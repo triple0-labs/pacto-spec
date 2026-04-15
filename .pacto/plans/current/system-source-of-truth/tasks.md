@@ -27,14 +27,14 @@
 - [ ] 2.1 Add `## Domains Affected` section to `defaultSpecTemplate` in `internal/command/newcmd/new.go`
 - [ ] 2.2 Add `## Dominios Afectados` section to Spanish spec template
 - [ ] 2.3 Update `internal/command/newcmd/new_test.go` — verify new section present in generated spec
-- [ ] 2.4 Update feature matrix — verify new section present in generated spec
+- [ ] 2.4 Verify new section present in generated spec (`go test` / `new_test.go`)
 
 ## Phase 3: Init Integration
 
 - [ ] 3.1 Call `context.InitContext` from `RunInit` after creating plans structure
 - [ ] 3.2 Ensure idempotent init preserves existing `.pacto/context/README.md` and existing domain docs
 - [ ] 3.3 Update `internal/command/initcmd/init_test.go` — verify context workspace created
-- [ ] 3.4 Update feature matrix — verify context workspace after init
+- [ ] 3.4 Verify context workspace after init (`go test` / `init_test.go`)
 
 ## Phase 4: Move Done Integration
 
@@ -44,7 +44,7 @@
 - [ ] 4.4 Print Tier 2 enrichment prompt to stdout after successful move-to-done, including affected domain doc paths
 - [ ] 4.5 Handle missing/malformed domains section gracefully
 - [ ] 4.6 Write integration tests: `TestMoveDoneCreatesDomainDocs`, `TestMoveDonePrintsEnrichmentPrompt`
-- [ ] 4.7 Update feature matrix — verify domain extraction after move done
+- [ ] 4.7 Verify domain extraction after move done (`go test` / `move_test.go`)
 
 ## Phase 5: Status Overlap Detection
 
@@ -53,12 +53,12 @@
 - [ ] 5.3 Add overlap warnings to table format output
 - [ ] 5.4 Add `"overlaps"` field to JSON format output
 - [ ] 5.5 Write integration tests: `TestStatusShowsOverlapWarning`, `TestStatusOverlapsInJSON`
-- [ ] 5.6 Update feature matrix — verify overlap warning in status output
+- [ ] 5.6 Verify overlap warning in status output (`go test` / `status_test.go`)
 
 ## Phase 6: Regression and Polish
 
 - [ ] 6.1 Run `go test ./...` — all existing tests pass
-- [ ] 6.2 Run feature matrix — all assertions pass
+- [ ] 6.2 Run `go test ./...` — all tests pass
 - [ ] 6.3 Write `TestFullLifecycleIntegration` end-to-end test
 - [ ] 6.4 Verify Spanish template works end-to-end (init --lang es → new → move done → domain docs created)
 - [ ] 6.5 Verify existing plans without domains don't break status or move

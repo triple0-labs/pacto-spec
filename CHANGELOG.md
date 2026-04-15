@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## Unreleased
+
+### Changed
+
+- Removed `bin/pacto-feature-matrix.sh` and the `make feature-matrix` target. Regression coverage for the CLI and command workflows is consolidated in `go test ./...`, with additional tests for `status` (YAML config load, `--fail-on`, `--mode strict`, `--state`), `new` validation, and `pacto new` usage when state/slug are missing.
+
 ## 0.1.22 - 2026-04-08
 
 ### Added

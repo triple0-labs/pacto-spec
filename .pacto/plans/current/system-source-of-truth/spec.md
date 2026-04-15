@@ -64,6 +64,6 @@ We need a lightweight, markdown-first shared understanding that makes plan confl
 - AC-005: Plans without `## Domains Affected` are handled gracefully — no crash, no false overlap warnings.
 - AC-006: Overlap warnings include the plan names and domain for easy identification.
 - AC-007: Existing Go unit tests continue passing (no regression in move, status, new, init).
-- AC-008: Feature matrix script continues passing after template changes.
+- AC-008: `go test ./...` continues passing after template changes (no separate bash feature matrix).
 - AC-009: All new logic is covered by Go unit tests (domain extraction, domain-doc initialization/update, overlap detection, domain slug normalization).
 - AC-010: Go integration tests cover the full command sequences: init → new → fill spec → move done → verify `.pacto/context/domains/<domain>.md`.

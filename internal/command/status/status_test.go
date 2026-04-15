@@ -307,3 +307,252 @@ func TestRunStatusExplicitFormatInTTYRendersTable(t *testing.T) {
 		t.Fatalf("expected table output, got %q", stdout)
 	}
 }
+
+func TestRunStatusLoadsEngineYAMLConfigSplitRoots(t *testing.T) {
+	workdir := t.TempDir()
+	project := filepath.Join(workdir, "project")
+	plansRoot := filepath.Join(project, ".pacto", "plans")
+	planDir := filepath.Join(plansRoot, "current", "sample")
+	for _, st := range []string{"current", "to-implement", "done", "outdated"} {
+		if err := os.MkdirAll(filepath.Join(plansRoot, st), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.MkdirAll(planDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(planDir, "README.md"), []byte("# sample\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(planDir, "PLAN_SAMPLE.md"), []byte("Status: In Progress\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfgDir := filepath.Join(workdir, "cfg")
+	if err := os.MkdirAll(cfgDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	enginePath := filepath.Join(cfgDir, "engine.yaml")
+	// Prefer root + repo_root (non-deprecated) while still exercising YAML load + split resolution.
+	engine := "root: ../project\nrepo_root: ../project\nformat: json\n"
+	if err := os.WriteFile(enginePath, []byte(engine), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout, stderr := captureOutput(t, func() {
+		code := RunStatus([]string{"--config", enginePath, "--format", "json"})
+		if code != 0 {
+			t.Fatalf("RunStatus returned %d, want 0", code)
+		}
+	})
+	if stderr != "" {
+		t.Fatalf("unexpected stderr: %q", stderr)
+	}
+	if !strings.Contains(stdout, `"plans_root"`) || !strings.Contains(stdout, `"repo_root"`) {
+		t.Fatalf("expected plans_root and repo_root in output, got %q", stdout)
+	}
+}
+
+func TestRunStatusLoadsLegacyRootConfig(t *testing.T) {
+	workdir := t.TempDir()
+	project := filepath.Join(workdir, "project")
+	plansRoot := filepath.Join(project, ".pacto", "plans")
+	planDir := filepath.Join(plansRoot, "current", "sample")
+	for _, st := range []string{"current", "to-implement", "done", "outdated"} {
+		if err := os.MkdirAll(filepath.Join(plansRoot, st), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.MkdirAll(planDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(planDir, "README.md"), []byte("# sample\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(planDir, "PLAN_SAMPLE.md"), []byte("Status: In Progress\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfgDir := filepath.Join(workdir, "cfg")
+	if err := os.MkdirAll(cfgDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	legacyPath := filepath.Join(cfgDir, "legacy.yaml")
+	legacy := "root: ../project\nformat: json\n"
+	if err := os.WriteFile(legacyPath, []byte(legacy), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout, stderr := captureOutput(t, func() {
+		code := RunStatus([]string{"--config", legacyPath, "--format", "json"})
+		if code != 0 {
+			t.Fatalf("RunStatus returned %d, want 0", code)
+		}
+	})
+	if stderr != "" {
+		t.Fatalf("unexpected stderr: %q", stderr)
+	}
+	if !strings.Contains(stdout, `"plans_root"`) {
+		t.Fatalf("expected plans_root in output, got %q", stdout)
+	}
+}
+
+func TestRunStatusFailOnBlockedExitsOne(t *testing.T) {
+	workspace := t.TempDir()
+	plansRoot := filepath.Join(workspace, ".pacto", "plans")
+	planDir := filepath.Join(plansRoot, "current", "blocked-plan")
+	for _, st := range []string{"current", "to-implement", "done", "outdated"} {
+		if err := os.MkdirAll(filepath.Join(plansRoot, st), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.MkdirAll(planDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(planDir, "README.md"), []byte("# blocked\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	tasks := "# Tasks\n\n## Phase 1\n\n- [ ] 1.1 Work\n\n## Blockers\n\n- Waiting on vendor API access\n"
+	if err := os.WriteFile(filepath.Join(planDir, "tasks.md"), []byte(tasks), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	code := 0
+	captureOutput(t, func() {
+		code = RunStatus([]string{"--root", workspace, "--repo-root", workspace, "--format", "json", "--fail-on", "blocked"})
+	})
+	if code != 1 {
+		t.Fatalf("RunStatus returned %d, want 1", code)
+	}
+}
+
+func TestRunStatusFailOnUnverifiedExitsOne(t *testing.T) {
+	workspace := t.TempDir()
+	plansRoot := filepath.Join(workspace, ".pacto", "plans")
+	planDir := filepath.Join(plansRoot, "current", "unverified-plan")
+	for _, st := range []string{"current", "to-implement", "done", "outdated"} {
+		if err := os.MkdirAll(filepath.Join(plansRoot, st), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.MkdirAll(planDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(planDir, "README.md"), []byte("# u\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(planDir, "PLAN_SAMPLE.md"), []byte("Status: In Progress\n- `src/does-not-exist.go`\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(workspace, "src"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	code := 0
+	captureOutput(t, func() {
+		code = RunStatus([]string{"--root", workspace, "--repo-root", workspace, "--format", "json", "--verify", "--fail-on", "unverified"})
+	})
+	if code != 1 {
+		t.Fatalf("RunStatus returned %d, want 1", code)
+	}
+}
+
+func TestRunStatusFailOnPartialExitsOne(t *testing.T) {
+	workspace := t.TempDir()
+	plansRoot := filepath.Join(workspace, ".pacto", "plans")
+	planDir := filepath.Join(plansRoot, "current", "partial-plan")
+	for _, st := range []string{"current", "to-implement", "done", "outdated"} {
+		if err := os.MkdirAll(filepath.Join(plansRoot, st), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.MkdirAll(planDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(planDir, "README.md"), []byte("# p\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(planDir, "PLAN_SAMPLE.md"), []byte("Status: In Progress\n- `src/missing-for-partial.go`\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(workspace, "src"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	code := 0
+	captureOutput(t, func() {
+		code = RunStatus([]string{"--root", workspace, "--repo-root", workspace, "--format", "json", "--verify", "--fail-on", "partial"})
+	})
+	if code != 1 {
+		t.Fatalf("RunStatus returned %d, want 1", code)
+	}
+}
+
+func TestRunStatusStrictModeTableShowsModeLine(t *testing.T) {
+	workspace := t.TempDir()
+	plansRoot := filepath.Join(workspace, ".pacto", "plans")
+	planDir := filepath.Join(plansRoot, "current", "sample")
+	for _, st := range []string{"current", "to-implement", "done", "outdated"} {
+		if err := os.MkdirAll(filepath.Join(plansRoot, st), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.MkdirAll(planDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(planDir, "README.md"), []byte("# sample\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(planDir, "PLAN_SAMPLE.md"), []byte("Status: In Progress\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	stdout, _ := captureOutput(t, func() {
+		code := RunStatus([]string{"--root", workspace, "--repo-root", workspace, "--format", "table", "--mode", "strict"})
+		if code != 0 {
+			t.Fatalf("RunStatus returned %d, want 0", code)
+		}
+	})
+	if !strings.Contains(stdout, "MODE: strict") {
+		t.Fatalf("expected MODE: strict in table output, got %q", stdout)
+	}
+}
+
+func TestRunStatusStateFilterCurrent(t *testing.T) {
+	workspace := t.TempDir()
+	plansRoot := filepath.Join(workspace, ".pacto", "plans")
+	for _, st := range []string{"current", "to-implement", "done", "outdated"} {
+		if err := os.MkdirAll(filepath.Join(plansRoot, st), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, slug := range []string{"in-current", "in-todo"} {
+		st := "current"
+		if slug == "in-todo" {
+			st = "to-implement"
+		}
+		dir := filepath.Join(plansRoot, st, slug)
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("# x\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "PLAN_SAMPLE.md"), []byte("Status: In Progress\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	stdout, _ := captureOutput(t, func() {
+		code := RunStatus([]string{"--root", workspace, "--repo-root", workspace, "--format", "json", "--state", "current"})
+		if code != 0 {
+			t.Fatalf("RunStatus returned %d, want 0", code)
+		}
+	})
+	if !strings.Contains(stdout, "in-current") {
+		t.Fatalf("expected current plan slug in output, got %q", stdout)
+	}
+	if strings.Contains(stdout, "in-todo") {
+		t.Fatalf("did not expect to-implement plan when filtering state=current, got %q", stdout)
+	}
+}

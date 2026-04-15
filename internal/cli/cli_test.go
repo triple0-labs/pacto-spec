@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	explorecmd "pacto/internal/command/explore"
+	initcmd "pacto/internal/command/initcmd"
 	statuscmd "pacto/internal/command/status"
 )
 
@@ -73,6 +74,25 @@ func TestRunExecRequiresArgs(t *testing.T) {
 	})
 	if !strings.Contains(stderr, "exec requires <state> <slug>") && !strings.Contains(stdout, "Usage:") {
 		t.Fatalf("expected missing args message, got stdout:%q stderr:%q", stdout, stderr)
+	}
+}
+
+func TestRunNewMissingArgsShowsUsage(t *testing.T) {
+	workspace := t.TempDir()
+	_, _ = captureOutput(t, func() {
+		if code := initcmd.Run(initcmd.Options{Root: workspace, NoInteractive: true, NoInstall: true}); code != 0 {
+			t.Fatalf("RunInit returned %d", code)
+		}
+	})
+	plansRoot := filepath.Join(workspace, ".pacto", "plans")
+	stdout, stderr := captureOutput(t, func() {
+		code := ExecuteArgs([]string{"new", "--root", plansRoot})
+		if code == 0 {
+			t.Fatalf("ExecuteArgs returned 0, want non-zero")
+		}
+	})
+	if !strings.Contains(stderr, "Usage:") && !strings.Contains(stdout, "Usage:") {
+		t.Fatalf("expected usage for missing new args, got stdout:%q stderr:%q", stdout, stderr)
 	}
 }
 

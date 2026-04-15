@@ -26,7 +26,7 @@
 
 5. Decision: `context/` lives inside `.pacto/` alongside `plans/`, with `README.md` as overview and `domains/` as the source-of-truth subtree | Rationale: git-versioned through `.pacto/`, consistent with pacto's layout, discoverable by agents reading `.pacto/`, and flexible enough to evolve beyond domains later.
 
-6. Decision: Testing in three layers — Go unit, Go integration, bash feature matrix | Rationale: Unit tests cover pure logic (domain parsing, merge, overlap detection). Integration tests cover cross-command state (init → new → fill → move → verify). Feature matrix covers CLI contract (flags, output, exit codes). The feature matrix alone is insufficient because bash can't easily assert file contents or state accumulation across commands.
+6. Decision: Testing in three layers — Go unit, Go integration, optional thin CLI tests | Rationale: Unit tests cover pure logic (domain parsing, merge, overlap detection). Integration tests cover cross-command state (init → new → fill → move → verify). A small set of `cli.ExecuteArgs` tests in `internal/cli` and `cmd/pacto` covers routing, global flags, and exit codes without maintaining a separate bash harness.
 
 ## File Layout
 
@@ -197,18 +197,9 @@ Extended/added tests in existing test files:
 | `TestMoveDoneNoDomainsGraceful` | Move plan without domains section | succeeds, context unchanged |
 | `TestFullLifecycleIntegration` | init → new → fill domains → status (no overlap) → new overlapping plan → status (overlap) → move done → check domain docs | end-to-end state accumulation |
 
-### Layer 3: Feature Matrix Updates (`bin/pacto-feature-matrix.sh`)
+### Layer 3: CLI smoke (Go)
 
-Add new sections to the existing script:
-
-| Assertion | What It Checks |
-|-----------|---------------|
-| `context workspace exists after init` | `.pacto/context/README.md` and `domains/` are created |
-| `spec.md has Domains Affected section` | New plan spec includes the section |
-| `pacto status shows overlap` | Two plans with shared domain trigger warning |
-| `pacto move done creates domain docs` | `.pacto/context/domains/<domain>.md` appears after move |
-| `pacto move done prints enrichment prompt` | stdout mentions reviewing design.md and affected domain docs |
-| `idempotent domain docs on second move` | Moving second plan with same domain does not create duplicate files |
+Where needed, add or extend tests under `internal/cli/` and `cmd/pacto` using `cli.ExecuteArgs`. Domain, init, move, and overlap behavior remain covered by Layers 1–2 (`internal/context`, `internal/command/*`); do not duplicate full command matrices in the CLI package.
 
 ## Out of Scope
 

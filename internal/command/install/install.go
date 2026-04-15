@@ -150,7 +150,44 @@ func RunUpdateWithOptions(opts UpdateOptions) int {
 		Check:   opts.CheckOnly,
 		Yes:     opts.Yes,
 	}
-	return runSelfUpdate(selfOpts)
+	if exitCode := runSelfUpdate(selfOpts); exitCode != 0 {
+		return exitCode
+	}
+	if !opts.CheckOnly {
+		runManagedArtifacts(opts.Root, opts.Tools)
+	}
+	return 0
+}
+
+// runManagedArtifacts refreshes managed skill and command files for all
+// detected tools. It is best-effort: if no tools are detected the call is
+// silently skipped so it never fails a plain "pacto update" invocation.
+func runManagedArtifacts(root, tools string) {
+	projectRoot := strings.TrimSpace(root)
+	if projectRoot == "" {
+		abs, err := filepath.Abs(".")
+		if err != nil {
+			return
+		}
+		projectRoot = cleanAbs(abs)
+	} else {
+		projectRoot = cleanAbs(projectRoot)
+	}
+
+	toolsArg := strings.TrimSpace(tools)
+	if toolsArg == "" {
+		detected, err := integrations.DetectTools(projectRoot)
+		if err != nil || len(detected) == 0 {
+			return
+		}
+		toolsArg = strings.Join(detected, ",")
+	}
+
+	RunInstallWithOptions(ToolArtifactsOptions{
+		Command: "update",
+		Root:    root,
+		Tools:   toolsArg,
+	})
 }
 
 type selfUpdateOptions struct {

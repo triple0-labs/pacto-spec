@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,6 +17,7 @@ import (
 	"runtime"
 	"strings"
 
+	"pacto/internal/app/installtools"
 	"pacto/internal/integrations"
 	"pacto/internal/ui"
 )
@@ -51,83 +53,47 @@ type UpdateOptions struct {
 }
 
 func RunInstallWithOptions(opts ToolArtifactsOptions) int {
-	projectRoot := strings.TrimSpace(opts.Root)
-	if projectRoot == "" {
-		abs, err := filepath.Abs(".")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "resolve cwd: %v\n", err)
+	res, err := installtools.Install(installtools.Input{
+		Root:  opts.Root,
+		Tools: opts.Tools,
+		Force: opts.Force,
+	})
+	lang := effectiveLanguage(res.ProjectRoot)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		if errors.Is(err, installtools.ErrInvalid) {
 			return 2
 		}
-		projectRoot = abs
-	}
-	projectRoot = cleanAbs(projectRoot)
-
-	lang := effectiveLanguage(projectRoot)
-	if _, err := os.Stat(projectRoot); err != nil {
-		fmt.Fprintf(os.Stderr, "resolve root: %v\n", err)
-		return 2
+		return 3
 	}
 
-	var tools []string
-	if strings.TrimSpace(opts.Tools) != "" {
-		parsed, err := integrations.ParseToolsArg(opts.Tools)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%v\n", err)
-			return 2
-		}
-		tools = parsed
-	} else {
-		detected, err := integrations.DetectTools(projectRoot)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s: %v\n", tr(lang, "detect tools", "detectar herramientas"), err)
-			return 2
-		}
-		if len(detected) == 0 {
-			fmt.Fprintf(os.Stderr, "%s --tools (%s)\n", tr(lang, "no tools detected. Use", "no se detectaron herramientas. Usa"), strings.Join(integrations.SupportedTools(), ","))
-			return 2
-		}
-		tools = detected
-	}
-
-	if len(tools) == 0 {
+	if res.NoOp {
 		fmt.Println(ui.Dim(tr(lang, "No tools selected; nothing to do.", "No se seleccionaron herramientas; nada por hacer.")))
 		return 0
 	}
 
-	fmt.Println(ui.ActionHeader(tr(lang, "Running "+opts.Command, "Ejecutando "+opts.Command), strings.Join(tools, ", ")))
-	created := 0
-	updated := 0
-	skipped := 0
-	failed := 0
-
-	for _, toolID := range tools {
-		results := integrations.GenerateForTool(projectRoot, toolID, opts.Force)
-		for _, r := range results {
-			if r.Err != nil {
-				failed++
-				fmt.Fprintf(os.Stderr, "%s: tool=%s kind=%s workflow=%s: %v\n", tr(lang, "error", "error"), r.Tool, r.Kind, r.WorkflowID, r.Err)
-				continue
-			}
-			switch r.Outcome {
-			case integrations.OutcomeCreated:
-				created++
-				fmt.Println(pathLine("created", r.Path))
-			case integrations.OutcomeUpdated:
-				updated++
-				fmt.Println(pathLine("updated", r.Path))
-			case integrations.OutcomeSkipped:
-				skipped++
-				if r.Reason == "unmanaged_exists" {
-					fmt.Fprintf(os.Stderr, "%s: %s: %s\n", tr(lang, "warning", "advertencia"), tr(lang, "skipped unmanaged file (use --force)", "archivo no gestionado omitido (usa --force)"), displayPath(r.Path))
-				} else {
-					fmt.Println(pathLine("skipped", r.Path))
-				}
+	fmt.Println(ui.ActionHeader(tr(lang, "Running "+opts.Command, "Ejecutando "+opts.Command), strings.Join(res.Tools, ", ")))
+	for _, r := range res.Items {
+		if r.Err != nil {
+			fmt.Fprintf(os.Stderr, "%s: tool=%s kind=%s workflow=%s: %v\n", tr(lang, "error", "error"), r.Tool, r.Kind, r.WorkflowID, r.Err)
+			continue
+		}
+		switch r.Outcome {
+		case integrations.OutcomeCreated:
+			fmt.Println(pathLine("created", r.Path))
+		case integrations.OutcomeUpdated:
+			fmt.Println(pathLine("updated", r.Path))
+		case integrations.OutcomeSkipped:
+			if r.Reason == "unmanaged_exists" {
+				fmt.Fprintf(os.Stderr, "%s: %s: %s\n", tr(lang, "warning", "advertencia"), tr(lang, "skipped unmanaged file (use --force)", "archivo no gestionado omitido (usa --force)"), displayPath(r.Path))
+			} else {
+				fmt.Println(pathLine("skipped", r.Path))
 			}
 		}
 	}
 
-	fmt.Printf("%s: %d  %s: %d  %s: %d  %s: %d\n", tr(lang, "Created", "Creado"), created, tr(lang, "Updated", "Actualizado"), updated, tr(lang, "Skipped", "Omitido"), skipped, tr(lang, "Failed", "Fallido"), failed)
-	if failed > 0 {
+	fmt.Printf("%s: %d  %s: %d  %s: %d  %s: %d\n", tr(lang, "Created", "Creado"), res.Created, tr(lang, "Updated", "Actualizado"), res.Updated, tr(lang, "Skipped", "Omitido"), res.Skipped, tr(lang, "Failed", "Fallido"), res.Failed)
+	if res.Failed > 0 {
 		return 3
 	}
 	return 0

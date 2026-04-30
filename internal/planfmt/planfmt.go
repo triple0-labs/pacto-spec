@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"pacto/internal/specsbaseline"
 )
 
 type Issue struct {
@@ -127,6 +129,48 @@ func Validate(content string) []Issue {
 	}
 	if reLegacyTaskID.MatchString(content) {
 		issues = append(issues, Issue{Code: "legacy_task_id", Message: "legacy task IDs (T1/T2) are not allowed in strict mode"})
+	}
+	issues = append(issues, validateRequirementsGrammar(content)...)
+	return issues
+}
+
+// validateRequirementsGrammar enforces the Requirement / Scenario grammar
+// from the specsbaseline package: every Requirement must declare at least
+// one Scenario; Scenarios live one heading level deeper; names are unique.
+// Plans without a `## Requirements` or `## Capability:` block produce no
+// issues (legacy plans).
+func validateRequirementsGrammar(content string) []Issue {
+	var issues []Issue
+	if reqs, err := specsbaseline.ParseRequirementsText(content); err != nil {
+		issues = append(issues, Issue{Code: "requirements_grammar", Message: err.Error()})
+	} else {
+		for _, r := range reqs {
+			if len(r.Scenarios) == 0 {
+				issues = append(issues, Issue{
+					Code:    "requirement_missing_scenario",
+					Message: "Requirement '" + r.Name + "' has no Scenario",
+				})
+			}
+		}
+	}
+	if caps, err := specsbaseline.ParseDeltasText(content); err != nil {
+		issues = append(issues, Issue{Code: "capability_grammar", Message: err.Error()})
+	} else {
+		for _, c := range caps {
+			for _, d := range c.Deltas {
+				if d.Op == specsbaseline.DeltaRemoved || d.Op == specsbaseline.DeltaRenamed {
+					continue
+				}
+				for _, r := range d.Requirements {
+					if len(r.Scenarios) == 0 {
+						issues = append(issues, Issue{
+							Code:    "requirement_missing_scenario",
+							Message: "Capability '" + c.Slug + "' " + string(d.Op) + " Requirement '" + r.Name + "' has no Scenario",
+						})
+					}
+				}
+			}
+		}
 	}
 	return issues
 }

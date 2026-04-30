@@ -23,6 +23,15 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- **Capability baseline + Requirements grammar:** Pacto now maintains a persistent capability baseline at `.pacto/specs/<slug>/spec.md` and understands a parseable Requirement / Scenario grammar inside plan `spec.md` files.
+  - New package `internal/specsbaseline` parses both the plan-local form (`## Requirements` → `### Requirement: <name>` → `#### Scenario: <name>`) and the delta form (`## Capability: <slug>` → `### ADDED|MODIFIED|REMOVED|RENAMED Requirements` → `#### Requirement: <name>` → `##### Scenario: <name>`). EN + ES keywords (`Requirement|Requisito`, `Scenario|Escenario`, `Capability|Capacidad`, `Requirements|Requisitos`, `Capabilities|Capacidades`).
+  - Stable IDs auto-assigned per parse order (`R-NNN`, `S-NNN`) with optional `<!-- id: ... -->` override.
+  - `pacto init` creates `.pacto/specs/` + `README.md` (idempotent; never overwrites user content).
+  - `pacto new` plan template now ships with a `## Capabilities` block and a `## Requirements` block populated with one example Requirement + Scenario, in both EN and ES.
+  - `pacto move <state> <slug> done` reads any `## Capability:` blocks from the plan's `spec.md` and merges the deltas into the matching baseline file. Merge is **pre-validated**: collisions (ADDED already exists, MODIFIED/REMOVED target missing, RENAMED missing `- to:` line, unknown delta op) abort the move *before* the plan folder is renamed. Files are written atomically (temp + rename per capability).
+  - `pacto status` reports per-Requirement coverage: each Requirement shows `tasks=N evidence=M`, and Requirements with zero `R-NNN` references in `tasks.md` are flagged `[uncovered]`. JSON output gains a `requirements` array per plan (struct: `id`, `name`, `tasks`, `evidence`, `uncovered`).
+  - `pacto status --mode strict` (and `planfmt.Validate`) emit new issue codes: `requirements_grammar`, `capability_grammar`, `requirement_missing_scenario`.
+  - Documentation: new "Capability Baseline and Requirements" section in [`docs/concepts.md`](docs/concepts.md), refreshed `## pacto move` and `## pacto status` entries in [`docs/commands.md`](docs/commands.md), and a "Capability Baseline" block in [`plans/PACTO.md`](plans/PACTO.md).
 - `assets/pacto-logo.png`: 512×512 minimalist raster mark (PNG-only branding; previous SVG removed).
 
 ### Documentation

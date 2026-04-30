@@ -10,6 +10,7 @@ import (
 	"pacto/internal/app/move"
 	"pacto/internal/cmdutil"
 	plancontext "pacto/internal/context"
+	"pacto/internal/specsbaseline"
 	"pacto/internal/ui"
 	"pacto/internal/workspace"
 )
@@ -38,6 +39,29 @@ func Run(opts Options, pos []string) int {
 
 	lang := cmdutil.EffectiveLanguage(filepath.Dir(plansRoot))
 
+	// Pre-flight baseline merge for `move done`: validate deltas against the
+	// current baseline before renaming the plan folder. If validation fails,
+	// abort early so the plan stays in its source state and the user can fix
+	// the spec.
+	var pendingMerge []specsbaseline.MergeFile
+	if toState == "done" {
+		srcSpec := filepath.Join(plansRoot, fromState, slug, "spec.md")
+		caps, err := specsbaseline.ParseDeltas(srcSpec)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "move error: parse capability deltas: %v\n", err)
+			return 3
+		}
+		if len(caps) > 0 {
+			specsDir := specsbaseline.SpecsDirFromPlansRoot(plansRoot)
+			files, err := specsbaseline.PlanMerge(specsDir, slug, caps)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "move error: baseline merge would fail: %v\n", err)
+				return 3
+			}
+			pendingMerge = files
+		}
+	}
+
 	readmePath, err := move.MovePlan(plansRoot, fromState, slug, toState, opts.Force, opts.Reason, lang)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "move error: %v\n", err)
@@ -46,6 +70,20 @@ func Run(opts Options, pos []string) int {
 
 	fmt.Println(ui.ActionHeader(move.Tr(lang, "Moved Plan", "Plan movido"), fmt.Sprintf("%s/%s -> %s/%s", fromState, slug, toState, slug)))
 	fmt.Println(cmdutil.PathLine("updated", readmePath))
+
+	if len(pendingMerge) > 0 {
+		if err := specsbaseline.CommitMerge(pendingMerge); err != nil {
+			fmt.Fprintf(os.Stderr, "move error: write baseline: %v\n", err)
+			return 3
+		}
+		for _, f := range pendingMerge {
+			action := "updated"
+			if !f.Existed {
+				action = "created"
+			}
+			fmt.Println(cmdutil.PathLine(action, f.Path))
+		}
+	}
 
 	if toState == "done" {
 		planDir := filepath.Join(plansRoot, toState, slug)

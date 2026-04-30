@@ -24,6 +24,7 @@ Behavior:
 - In TTY, `--format` is rejected; use non-TTY (pipe/redirection) for structured output.
 - `--mode strict` enforces structured PRD plan contract for active plans (`current`, `to-implement`) and reports warnings for `done/outdated`.
 - `--verify` opt-in checks explicit file path claims against `repo-root`.
+- Reports per-Requirement coverage when a plan declares structured Requirements (`### Requirement: <name>` blocks). Each Requirement shows `tasks=N evidence=M`; Requirements with zero task references are flagged `[uncovered]`. JSON output adds a `requirements` array per plan.
 
 Key options:
 
@@ -166,6 +167,8 @@ Move plan slice between states explicitly.
 ```bash
 pacto move <from-state> <slug> <to-state> [--root <path>] [--reason <text>] [--force]
 ```
+
+When the destination is `done`, Pacto reads any `## Capability: <slug>` blocks from the plan's `spec.md` and merges their `### ADDED|MODIFIED|REMOVED|RENAMED Requirements` deltas into the matching `.pacto/specs/<slug>/spec.md` baseline file. Merge is pre-validated: if any delta would collide (e.g. ADDED Requirement that already exists, MODIFIED target missing) the move is aborted before the plan folder is renamed. Files are written atomically (temp + rename) per capability.
 
 ## `pacto plugin`
 

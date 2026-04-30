@@ -22,6 +22,7 @@ import (
 	plancontext "pacto/internal/context"
 	"pacto/internal/integrations"
 	"pacto/internal/onboarding"
+	"pacto/internal/specsbaseline"
 )
 
 const (
@@ -88,6 +89,28 @@ func Apply(in Input) (Result, error) {
 			res.Skipped = append(res.Skipped, contextDomains)
 		} else {
 			res.Created = append(res.Created, contextDomains)
+		}
+	}
+
+	specsDir := specsbaseline.SpecsDirFromPlansRoot(res.PlansRoot)
+	specsReadme := filepath.Join(specsDir, "README.md")
+	specsReadmeExisted := pathExists(specsReadme)
+	specsDirExisted := pathExists(specsDir)
+	if err := specsbaseline.InitBaseline(res.PlansRoot); err != nil {
+		return res, fmt.Errorf("init specs baseline: %w", err)
+	}
+	if pathExists(specsDir) {
+		if specsDirExisted {
+			// already known; only record README transitions below
+		} else {
+			res.Created = append(res.Created, specsDir)
+		}
+	}
+	if pathExists(specsReadme) {
+		if specsReadmeExisted {
+			res.Skipped = append(res.Skipped, specsReadme)
+		} else {
+			res.Created = append(res.Created, specsReadme)
 		}
 	}
 

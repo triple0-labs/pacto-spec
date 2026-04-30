@@ -174,3 +174,45 @@ func TestCreate_TitleDefaultsFromSlug(t *testing.T) {
 		t.Fatalf("expected derived title, got: %s", readme)
 	}
 }
+
+func TestCreate_SpecHasCapabilitiesAndRequirements_EN(t *testing.T) {
+	root := setupWorkspace(t)
+	res, err := Create(Input{
+		Root: root, RootProvided: true,
+		State: "current", Slug: "caps-en",
+		Lang: i18n.English,
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	spec, err := os.ReadFile(filepath.Join(res.PlanDir, "spec.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"## Capabilities", "## Requirements", "### Requirement:", "#### Scenario:"} {
+		if !strings.Contains(string(spec), want) {
+			t.Fatalf("spec missing %q; got:\n%s", want, spec)
+		}
+	}
+}
+
+func TestCreate_SpecHasCapabilitiesAndRequirements_ES(t *testing.T) {
+	root := setupWorkspace(t)
+	res, err := Create(Input{
+		Root: root, RootProvided: true,
+		State: "current", Slug: "caps-es",
+		Lang: i18n.Spanish,
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	spec, err := os.ReadFile(filepath.Join(res.PlanDir, "spec.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"## Capacidades", "## Requisitos", "### Requisito:", "#### Escenario:"} {
+		if !strings.Contains(string(spec), want) {
+			t.Fatalf("spec missing %q; got:\n%s", want, spec)
+		}
+	}
+}

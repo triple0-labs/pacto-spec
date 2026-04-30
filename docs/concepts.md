@@ -75,6 +75,50 @@ Pacto creates the folder and stubs when a plan first declares that domain in `##
 
 `pacto status` detects when two active plans declare the same domain and surfaces a warning.
 
+## Capability Baseline and Requirements
+
+Alongside the free-form domain notes, Pacto maintains a structured **capability baseline** under `.pacto/specs/`:
+
+```text
+.pacto/specs/
+├── README.md
+└── auth/
+    └── spec.md       ← `### Requirement:` blocks with nested `#### Scenario:`
+```
+
+Each baseline `spec.md` answers "what does this capability do today?" with addressable units:
+
+- `### Requirement: <name>` — the smallest verifiable behaviour (auto-assigned `R-NNN` IDs)
+- `#### Scenario: <name>` — concrete `WHEN`/`THEN` example for that requirement (`S-NNN`)
+
+Plans express changes against the baseline using delta blocks inside their own `spec.md`:
+
+```markdown
+## Capabilities
+
+- New Capabilities: [auth]
+- Modified Capabilities: [billing]
+
+## Capability: auth
+
+### ADDED Requirements
+
+#### Requirement: User can sign in with OAuth
+The system SHALL allow users to authenticate via Google OAuth.
+
+##### Scenario: Successful sign in
+- WHEN the user completes the OAuth flow
+- THEN the system creates a session
+```
+
+Supported delta ops: `ADDED`, `MODIFIED`, `REMOVED`, `RENAMED` (use `- to: <new name>` inside the body).
+
+On `pacto move done`, Pacto pre-validates every delta against the current baseline and only renames the plan folder if the merge would succeed. Then it folds the deltas in atomically (temp file + rename per capability), creating `.pacto/specs/<slug>/spec.md` if the capability is new.
+
+`pacto status` reports per-Requirement coverage: how many tasks reference `R-NNN` in `tasks.md` and how many evidence lines mention it. Requirements with zero task references are flagged `uncovered`.
+
+Spanish keywords `Capacidad`, `Requisito`, `Escenario`, `Capacidades`, `Requisitos` are accepted alongside their English forms.
+
 ## Workspace vs Product Docs
 
 - `docs/`: canonical product/user documentation.

@@ -7,6 +7,7 @@ package status
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -18,6 +19,7 @@ import (
 	"pacto/internal/domain/claim"
 	"pacto/internal/domain/report"
 	"pacto/internal/parser"
+	"pacto/internal/specsbaseline"
 	"pacto/internal/verify"
 )
 
@@ -118,7 +120,87 @@ func BuildReport(in Input) (report.StatusReport, error) {
 			Plans:  plans,
 		})
 	}
+
+	// Attach per-Requirement coverage to each plan in the report. Plans that
+	// do not declare a `## Requirements` or `## Capability:` block produce no
+	// entries (legacy plans).
+	for i := range rep.Plans {
+		ps := &rep.Plans[i]
+		key := ps.StateFolder + "/" + ps.Slug
+		var planDir string
+		for _, p := range plans {
+			if p.State+"/"+p.Slug == key {
+				planDir = p.Dir
+				break
+			}
+		}
+		if planDir == "" {
+			continue
+		}
+		ps.Requirements = computeRequirementCoverage(planDir)
+	}
+
 	return rep, nil
+}
+
+// computeRequirementCoverage parses Requirements from the plan's spec.md
+// (both `## Requirements` and `## Capability:` blocks) and counts task /
+// evidence references per Requirement ID in tasks.md.
+func computeRequirementCoverage(planDir string) []report.RequirementCoverage {
+	specPath := filepath.Join(planDir, "spec.md")
+	reqs, _ := specsbaseline.ParseRequirements(specPath)
+	caps, _ := specsbaseline.ParseDeltas(specPath)
+	for _, c := range caps {
+		for _, d := range c.Deltas {
+			reqs = append(reqs, d.Requirements...)
+		}
+	}
+	if len(reqs) == 0 {
+		return nil
+	}
+	tasksText := readFileSafe(filepath.Join(planDir, "tasks.md"))
+	out := make([]report.RequirementCoverage, 0, len(reqs))
+	for _, r := range reqs {
+		taskCount := strings.Count(tasksText, r.ID)
+		evidenceCount := countEvidenceRefs(tasksText, r.ID)
+		out = append(out, report.RequirementCoverage{
+			ID:        r.ID,
+			Name:      r.Name,
+			Tasks:     taskCount,
+			Evidence:  evidenceCount,
+			Uncovered: taskCount == 0,
+		})
+	}
+	return out
+}
+
+// countEvidenceRefs counts occurrences of reqID inside the `## Evidence`
+// section of the given text. Returns 0 if no Evidence section exists.
+func countEvidenceRefs(text, reqID string) int {
+	lines := strings.Split(text, "\n")
+	in := false
+	count := 0
+	for _, line := range lines {
+		t := strings.TrimSpace(line)
+		if strings.HasPrefix(t, "## ") {
+			low := strings.ToLower(strings.TrimPrefix(t, "## "))
+			in = low == "evidence" || low == "evidencia"
+			continue
+		}
+		if !in {
+			continue
+		}
+		count += strings.Count(line, reqID)
+	}
+	return count
+}
+
+func readFileSafe(path string) string {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return ""
+	}
+	return string(b)
 }
 
 func appendUnique(items []string, item string) []string {

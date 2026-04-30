@@ -43,7 +43,7 @@ Each plan lives at:
 Minimum files per plan:
 
 - `README.md` (human summary and links)
-- `spec.md` (problem, scenarios, acceptance criteria)
+- `spec.md` (problem, scenarios, acceptance criteria, optional `## Capability:` deltas)
 - `design.md` (technical context and decisions)
 - `tasks.md` (phase tasks, evidence, blockers, next steps)
 
@@ -52,6 +52,47 @@ Slug rules:
 - lowercase
 - starts with `[a-z0-9]`
 - contains only `[a-z0-9-]`
+
+## Capability Baseline
+
+Pacto maintains a persistent capability baseline at `<plans-root>/../specs/<slug>/spec.md`. Each baseline `spec.md` declares Requirements:
+
+```markdown
+## Requirements
+
+### Requirement: <name>
+The system SHALL <behaviour>.
+
+#### Scenario: <name>
+- WHEN <trigger>
+- THEN <observable outcome>
+```
+
+A plan proposes changes to the baseline using delta blocks inside its own `spec.md`:
+
+```markdown
+## Capability: <slug>
+
+### ADDED Requirements
+#### Requirement: <name>
+...
+##### Scenario: <name>
+- WHEN ...
+- THEN ...
+
+### MODIFIED Requirements
+#### Requirement: <existing name>
+...
+
+### REMOVED Requirements
+#### Requirement: <existing name>
+
+### RENAMED Requirements
+#### Requirement: <old name>
+- to: <new name>
+```
+
+On `pacto move done`, deltas are pre-validated against the baseline and merged atomically. Spanish keywords (`Capacidad`, `Requisito`, `Escenario`, `Capacidades`, `Requisitos`) are accepted alongside English.
 
 ## Command Behavior
 

@@ -86,6 +86,22 @@ func renderTable(r report.StatusReport, lang i18n.Language) string {
 		if r.VerificationEnabled && len(p.Claims) > 0 {
 			fmt.Fprintf(&b, "  %s: %d\n", i18n.T(lang, "claims", "afirmaciones"), len(p.Claims))
 		}
+		if len(p.Requirements) > 0 {
+			covered := 0
+			for _, r := range p.Requirements {
+				if !r.Uncovered {
+					covered++
+				}
+			}
+			fmt.Fprintf(&b, "  %s: %d/%d\n", i18n.T(lang, "requirements", "requisitos"), covered, len(p.Requirements))
+			for _, rq := range p.Requirements {
+				marker := ""
+				if rq.Uncovered {
+					marker = " " + i18n.T(lang, "[uncovered]", "[sin cobertura]")
+				}
+				fmt.Fprintf(&b, "    - %s %s tasks=%d evidence=%d%s\n", rq.ID, shorten(rq.Name, 40), rq.Tasks, rq.Evidence, marker)
+			}
+		}
 		if len(p.ParseWarnings) > 0 {
 			fmt.Fprintf(&b, "  %s: %s\n", i18n.T(lang, "warnings", "advertencias"), strings.Join(p.ParseWarnings, " | "))
 		}

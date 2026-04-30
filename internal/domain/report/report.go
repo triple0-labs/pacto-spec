@@ -13,22 +13,33 @@ import (
 
 // PlanStatus is the per-plan view aggregated from parsing + verification.
 type PlanStatus struct {
-	StateFolder    string         `json:"state_folder"`
-	Slug           string         `json:"slug"`
-	Readme         string         `json:"readme"`
-	DeclaredStatus string         `json:"declared_status"`
-	DerivedStatus  string         `json:"derived_status"`
-	ProgressPct    *int           `json:"progress_percent,omitempty"`
-	LastUpdatedAt  *time.Time     `json:"last_updated_at,omitempty"`
-	PendingTasks   int            `json:"pending_tasks"`
-	BlockedTasks   int            `json:"blocked_tasks"`
-	Blockers       []string       `json:"blockers"`
-	NextActions    []string       `json:"next_actions"`
-	Verification   string         `json:"verification,omitempty"`
-	Confidence     string         `json:"confidence"`
-	Claims         []claim.Result `json:"claims,omitempty"`
-	ParseWarnings  []string       `json:"parse_warnings,omitempty"`
-	ParseError     string         `json:"parse_error,omitempty"`
+	StateFolder    string                `json:"state_folder"`
+	Slug           string                `json:"slug"`
+	Readme         string                `json:"readme"`
+	DeclaredStatus string                `json:"declared_status"`
+	DerivedStatus  string                `json:"derived_status"`
+	ProgressPct    *int                  `json:"progress_percent,omitempty"`
+	LastUpdatedAt  *time.Time            `json:"last_updated_at,omitempty"`
+	PendingTasks   int                   `json:"pending_tasks"`
+	BlockedTasks   int                   `json:"blocked_tasks"`
+	Blockers       []string              `json:"blockers"`
+	NextActions    []string              `json:"next_actions"`
+	Verification   string                `json:"verification,omitempty"`
+	Confidence     string                `json:"confidence"`
+	Claims         []claim.Result        `json:"claims,omitempty"`
+	Requirements   []RequirementCoverage `json:"requirements,omitempty"`
+	ParseWarnings  []string              `json:"parse_warnings,omitempty"`
+	ParseError     string                `json:"parse_error,omitempty"`
+}
+
+// RequirementCoverage is the per-Requirement coverage view computed from
+// the plan's spec.md and tasks.md.
+type RequirementCoverage struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Tasks     int    `json:"tasks"`
+	Evidence  int    `json:"evidence"`
+	Uncovered bool   `json:"uncovered"`
 }
 
 // Summary aggregates counts across all discovered plans.

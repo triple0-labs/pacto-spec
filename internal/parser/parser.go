@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"pacto/internal/model"
+	"pacto/internal/domain/plan"
 	"pacto/internal/planfmt"
 )
 
@@ -27,12 +27,12 @@ type ParsedDelta struct {
 }
 
 type ParsedPlan struct {
-	Ref                 model.PlanRef
+	Ref                 plan.PlanRef
 	RawText             string
 	DeclaredStatus      string
-	Phases              []model.Phase
+	Phases              []plan.Phase
 	LastUpdatedAt       *time.Time
-	Tasks               []model.Task
+	Tasks               []plan.Task
 	BlockerHints        []string
 	NextActions         []string
 	HasCheckpoint       bool
@@ -57,7 +57,7 @@ var (
 	reDeltaID        = regexp.MustCompile(`^D-[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}$`)
 )
 
-func ParsePlan(ref model.PlanRef, mode string) (ParsedPlan, error) {
+func ParsePlan(ref plan.PlanRef, mode string) (ParsedPlan, error) {
 	p := ParsedPlan{Ref: ref}
 	text, err := readPlanText(ref)
 	if err != nil {
@@ -110,13 +110,13 @@ func ParsePlan(ref model.PlanRef, mode string) (ParsedPlan, error) {
 
 		if m := rePhaseRow.FindStringSubmatch(t); len(m) == 6 {
 			prog, _ := strconv.Atoi(strings.TrimSpace(m[5]))
-			p.Phases = append(p.Phases, model.Phase{Name: strings.TrimSpace(m[1]), RawState: strings.TrimSpace(m[4]), Progress: prog})
+			p.Phases = append(p.Phases, plan.Phase{Name: strings.TrimSpace(m[1]), RawState: strings.TrimSpace(m[4]), Progress: prog})
 		}
 
 		if m := reCheckbox.FindStringSubmatch(line); len(m) == 3 {
 			done := strings.EqualFold(strings.TrimSpace(m[1]), "x")
 			text := strings.TrimSpace(m[2])
-			task := model.Task{Text: text, Completed: done, LikelyBlk: looksBlocked(text)}
+			task := plan.Task{Text: text, Completed: done, LikelyBlk: looksBlocked(text)}
 			if currentPhase > 0 {
 				if phase, number, ok := extractStepRef(text); ok && phase == currentPhase {
 					task.StepRef = fmt.Sprintf("%d.%d", phase, number)
@@ -151,7 +151,7 @@ func ParsePlan(ref model.PlanRef, mode string) (ParsedPlan, error) {
 	extractNextActions(lines, &p)
 	if len(p.Phases) == 0 {
 		if pct := extractTotalProgress(text); pct >= 0 {
-			p.Phases = append(p.Phases, model.Phase{Name: "total", RawState: "derived", Progress: pct})
+			p.Phases = append(p.Phases, plan.Phase{Name: "total", RawState: "derived", Progress: pct})
 		}
 	}
 
@@ -421,7 +421,7 @@ func extractStepRef(text string) (int, int, bool) {
 	return phase, number, true
 }
 
-func readPlanText(ref model.PlanRef) (string, error) {
+func readPlanText(ref plan.PlanRef) (string, error) {
 	parts := make([]string, 0, len(ref.PlanDocs)+1)
 	readme, err := os.ReadFile(ref.Readme)
 	if err != nil {
@@ -438,7 +438,7 @@ func readPlanText(ref model.PlanRef) (string, error) {
 	return strings.Join(parts, "\n\n"), nil
 }
 
-func latestPlanUpdate(ref model.PlanRef) *time.Time {
+func latestPlanUpdate(ref plan.PlanRef) *time.Time {
 	paths := make([]string, 0, len(ref.PlanDocs)+1)
 	paths = append(paths, ref.Readme)
 	paths = append(paths, ref.PlanDocs...)

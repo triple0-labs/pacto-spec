@@ -4,7 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"pacto/internal/model"
+	"pacto/internal/domain/claim"
+	"pacto/internal/domain/plan"
 	"pacto/internal/parser"
 )
 
@@ -15,14 +16,14 @@ func TestBuildDerivesBlockedAndVerification(t *testing.T) {
 		VerificationEnabled: true,
 		Plans: []parser.ParsedPlan{
 			{
-				Ref:          model.PlanRef{State: "current", Slug: "a"},
-				Tasks:        []model.Task{{Text: "blocked by env", Completed: false, LikelyBlk: true}},
+				Ref:          plan.PlanRef{State: "current", Slug: "a"},
+				Tasks:        []plan.Task{{Text: "blocked by env", Completed: false, LikelyBlk: true}},
 				BlockerHints: []string{"blocked by env"},
 			},
 		},
-		Claims: map[string][]model.ClaimResult{
+		Claims: map[string][]claim.Result{
 			"current/a": {
-				{ClaimType: model.ClaimPath, SourceText: "x", Result: "unverified"},
+				{ClaimType: claim.Path, SourceText: "x", Result: "unverified"},
 			},
 		},
 	}
@@ -46,11 +47,11 @@ func TestBuildUsesFallbackNextActions(t *testing.T) {
 		Mode: "compat",
 		Plans: []parser.ParsedPlan{
 			{
-				Ref:   model.PlanRef{State: "to-implement", Slug: "b"},
-				Tasks: []model.Task{{Text: "first task", Completed: false}},
+				Ref:   plan.PlanRef{State: "to-implement", Slug: "b"},
+				Tasks: []plan.Task{{Text: "first task", Completed: false}},
 			},
 		},
-		Claims: map[string][]model.ClaimResult{},
+		Claims: map[string][]claim.Result{},
 	}
 
 	rep := Build(in, Options{MaxNextActions: 3, MaxBlockers: 3})
@@ -70,12 +71,12 @@ func TestBuildDeltaSignalDoesNotOverrideDerivedStatus(t *testing.T) {
 		Mode: "compat",
 		Plans: []parser.ParsedPlan{
 			{
-				Ref:                 model.PlanRef{State: "to-implement", Slug: "c"},
+				Ref:                 plan.PlanRef{State: "to-implement", Slug: "c"},
 				HasStructuredDeltas: true,
 				LatestDeltaTime:     &dt,
 			},
 		},
-		Claims: map[string][]model.ClaimResult{},
+		Claims: map[string][]claim.Result{},
 	}
 
 	rep := Build(in, Options{MaxNextActions: 3, MaxBlockers: 3})

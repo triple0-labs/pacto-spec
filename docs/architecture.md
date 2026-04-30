@@ -2,27 +2,35 @@
 
 This document defines the intended layering and extension points for the `pacto` CLI.
 
+A light DDD layering is being adopted incrementally. Dependencies point inward:
+`cli/tui` → `app` (use cases) → `domain` (pure types and rules); `infra`
+(adapters: filesystem, markdown, yaml, exec, integrations, plugins) implements
+ports declared by `app`.
+
 ## Layers
 
-1. CLI orchestration
-- Packages: `cmd/pacto`, `cmd/pacto-engine`, `internal/cli`
-- Responsibilities: Cobra root command, persistent flags (`--root`, `--lang`, guardrail bypasses), command registration, delegating to `internal/command/*`, exit codes.
-- Command implementations live under `internal/command/<cmd>/` (for example `status`, `init`, `install`).
-- Rule: keep heavy parsing and domain logic out of thin wiring; handlers should coordinate and delegate.
+1. CLI orchestration (presentation)
+- Packages: `cmd/pacto`, `cmd/pacto-engine`, `internal/cli`, `internal/command/<cmd>/`.
+- Responsibilities: Cobra root command, persistent flags (`--root`, `--lang`, guardrail bypasses), command registration, delegating to use cases, exit codes.
+- Rule: thin wiring only — keep heavy parsing and domain logic out.
 
-2. Domain workflows
-- Packages: `internal/discovery`, `internal/parser`, `internal/claims`, `internal/verify`, `internal/analyze`, `internal/report`.
+2. Domain (pure)
+- Packages: `internal/domain/plan`, `internal/domain/claim`, `internal/domain/report`.
+- Responsibilities: core types (PlanRef, Phase, Task, Claim/Result, StatusReport DTOs) and validation rules. Stdlib-only; no I/O.
+
+3. Domain workflows
+- Packages: `internal/discovery`, `internal/parser`, `internal/claims`, `internal/verify`, `internal/analyze`, `internal/render`.
 - Responsibilities: discover plan artifacts, derive status signals, verify claims, compute report model, render report formats.
 
-3. Persistence and config
+4. Persistence and config
 - Packages: `internal/config`, `internal/onboarding`, `internal/yamlutil`.
 - Responsibilities: load and normalize configuration, persist onboarding workspace state, merge managed sections while preserving unrelated user data.
 
-4. Integrations and plugins
+5. Integrations and plugins
 - Packages: `internal/integrations`, `internal/plugins`.
 - Responsibilities: adapter-based generation of managed artifacts, plugin discovery/validation, guardrail enforcement.
 
-5. UI
+6. UI
 - Packages: `internal/ui`, `internal/tui/*`.
 - Responsibilities: terminal styles and interactive displays only.
 

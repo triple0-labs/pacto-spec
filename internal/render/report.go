@@ -1,4 +1,4 @@
-package report
+package render
 
 import (
 	"encoding/json"
@@ -6,26 +6,26 @@ import (
 	"strings"
 	"time"
 
+	"pacto/internal/domain/report"
 	"pacto/internal/i18n"
-	"pacto/internal/model"
 )
 
-func Render(r model.StatusReport, format string) (string, error) {
+func Render(r report.StatusReport, format string) (string, error) {
 	return RenderWithLanguage(r, format, i18n.English)
 }
 
-func RenderWithLanguage(r model.StatusReport, format string, lang i18n.Language) (string, error) {
+func RenderWithLanguage(r report.StatusReport, format string, lang i18n.Language) (string, error) {
 	switch strings.ToLower(format) {
 	case "json":
 		out := struct {
-			GeneratedAt string                `json:"generated_at"`
-			Root        string                `json:"root"`
-			PlansRoot   string                `json:"plans_root,omitempty"`
-			RepoRoot    string                `json:"repo_root,omitempty"`
-			Mode        string                `json:"mode"`
-			Summary     model.Summary         `json:"summary"`
-			Plans       []model.PlanStatus    `json:"plans"`
-			Overlaps    []model.DomainOverlap `json:"overlaps,omitempty"`
+			GeneratedAt string                 `json:"generated_at"`
+			Root        string                 `json:"root"`
+			PlansRoot   string                 `json:"plans_root,omitempty"`
+			RepoRoot    string                 `json:"repo_root,omitempty"`
+			Mode        string                 `json:"mode"`
+			Summary     report.Summary         `json:"summary"`
+			Plans       []report.PlanStatus    `json:"plans"`
+			Overlaps    []report.DomainOverlap `json:"overlaps,omitempty"`
 		}{
 			GeneratedAt: r.GeneratedAt.Format(time.RFC3339),
 			Root:        r.Root,
@@ -48,7 +48,7 @@ func RenderWithLanguage(r model.StatusReport, format string, lang i18n.Language)
 	}
 }
 
-func renderTable(r model.StatusReport, lang i18n.Language) string {
+func renderTable(r report.StatusReport, lang i18n.Language) string {
 	var b strings.Builder
 	plansRoot := r.PlansRoot
 	if plansRoot == "" {

@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"pacto/internal/model"
+	"pacto/internal/domain/claim"
 	"pacto/internal/parser"
 )
 
@@ -22,15 +22,15 @@ type Options struct {
 	TestRefs  bool
 }
 
-func Extract(p parser.ParsedPlan, opts Options) []model.ClaimResult {
-	claims := make([]model.ClaimResult, 0)
+func Extract(p parser.ParsedPlan, opts Options) []claim.Result {
+	claims := make([]claim.Result, 0)
 	text := p.RawText
 
 	if opts.Paths {
 		for _, m := range reMDLink.FindAllStringSubmatch(text, -1) {
 			v := strings.TrimSpace(m[1])
 			if looksLikePath(v) {
-				claims = append(claims, model.ClaimResult{ClaimType: model.ClaimPath, SourceText: v, Evidence: "markdown_link"})
+				claims = append(claims, claim.Result{ClaimType: claim.Path, SourceText: v, Evidence: "markdown_link"})
 			}
 		}
 	}
@@ -44,33 +44,33 @@ func Extract(p parser.ParsedPlan, opts Options) []model.ClaimResult {
 			continue
 		}
 		if opts.Paths && looksLikePath(v) {
-			claims = append(claims, model.ClaimResult{ClaimType: model.ClaimPath, SourceText: v, Evidence: "inline_code"})
+			claims = append(claims, claim.Result{ClaimType: claim.Path, SourceText: v, Evidence: "inline_code"})
 			continue
 		}
 		if opts.TestRefs && looksLikeTestRef(v) {
-			claims = append(claims, model.ClaimResult{ClaimType: model.ClaimTestRef, SourceText: v, Evidence: "inline_code"})
+			claims = append(claims, claim.Result{ClaimType: claim.TestRef, SourceText: v, Evidence: "inline_code"})
 			continue
 		}
 		if opts.Symbols && looksLikeSymbol(v) {
-			claims = append(claims, model.ClaimResult{ClaimType: model.ClaimSymbol, SourceText: v, Evidence: "inline_code"})
+			claims = append(claims, claim.Result{ClaimType: claim.Symbol, SourceText: v, Evidence: "inline_code"})
 		}
 	}
 
 	if opts.Endpoints {
 		for _, m := range reVerbEP.FindAllStringSubmatch(text, -1) {
-			claims = append(claims, model.ClaimResult{ClaimType: model.ClaimEndpoint, SourceText: strings.ToUpper(m[1]) + " " + m[2], Evidence: "verb_endpoint"})
+			claims = append(claims, claim.Result{ClaimType: claim.Endpoint, SourceText: strings.ToUpper(m[1]) + " " + m[2], Evidence: "verb_endpoint"})
 		}
 		for _, m := range reAPIPath.FindAllStringSubmatch(text, -1) {
-			claims = append(claims, model.ClaimResult{ClaimType: model.ClaimEndpoint, SourceText: m[1], Evidence: "api_path"})
+			claims = append(claims, claim.Result{ClaimType: claim.Endpoint, SourceText: m[1], Evidence: "api_path"})
 		}
 	}
 
 	return dedupe(claims)
 }
 
-func dedupe(in []model.ClaimResult) []model.ClaimResult {
+func dedupe(in []claim.Result) []claim.Result {
 	seen := map[string]struct{}{}
-	out := make([]model.ClaimResult, 0, len(in))
+	out := make([]claim.Result, 0, len(in))
 	for _, c := range in {
 		k := string(c.ClaimType) + "::" + c.SourceText
 		if _, ok := seen[k]; ok {

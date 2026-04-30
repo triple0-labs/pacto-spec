@@ -5,7 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"pacto/internal/model"
+	"pacto/internal/domain/claim"
+	"pacto/internal/domain/report"
 	"pacto/internal/parser"
 )
 
@@ -21,12 +22,12 @@ type Input struct {
 	Mode                string
 	VerificationEnabled bool
 	Plans               []parser.ParsedPlan
-	Claims              map[string][]model.ClaimResult
+	Claims              map[string][]claim.Result
 	Warnings            map[string][]string
 }
 
-func Build(in Input, opts Options) model.StatusReport {
-	plans := make([]model.PlanStatus, 0, len(in.Plans))
+func Build(in Input, opts Options) report.StatusReport {
+	plans := make([]report.PlanStatus, 0, len(in.Plans))
 	for _, p := range in.Plans {
 		planKey := p.Ref.State + "/" + p.Ref.Slug
 		claims := in.Claims[planKey]
@@ -70,7 +71,7 @@ func Build(in Input, opts Options) model.StatusReport {
 		}
 		confidence := classifyConfidence(p, claims)
 
-		plans = append(plans, model.PlanStatus{
+		plans = append(plans, report.PlanStatus{
 			StateFolder:    p.Ref.State,
 			Slug:           p.Ref.Slug,
 			Readme:         p.Ref.Readme,
@@ -106,7 +107,7 @@ func Build(in Input, opts Options) model.StatusReport {
 	if repoRoot == "" {
 		repoRoot = in.Root
 	}
-	return model.StatusReport{
+	return report.StatusReport{
 		GeneratedAt:         time.Now().UTC(),
 		Root:                plansRoot,
 		PlansRoot:           plansRoot,
@@ -118,7 +119,7 @@ func Build(in Input, opts Options) model.StatusReport {
 	}
 }
 
-func summarize(plans []model.PlanStatus, verificationEnabled bool) model.Summary {
+func summarize(plans []report.PlanStatus, verificationEnabled bool) report.Summary {
 	byState := map[string]int{}
 	var byVerif map[string]int
 	if verificationEnabled {
@@ -134,7 +135,7 @@ func summarize(plans []model.PlanStatus, verificationEnabled bool) model.Summary
 		pending += p.PendingTasks
 		blocked += p.BlockedTasks
 	}
-	return model.Summary{TotalPlans: len(plans), ByState: byState, ByVerification: byVerif, TotalPendingTasks: pending, TotalBlockedTasks: blocked}
+	return report.Summary{TotalPlans: len(plans), ByState: byState, ByVerification: byVerif, TotalPendingTasks: pending, TotalBlockedTasks: blocked}
 }
 
 func deriveFromSignals(p parser.ParsedPlan, blocked int) string {
@@ -176,7 +177,7 @@ func deriveProgress(p parser.ParsedPlan) *int {
 	return &avg
 }
 
-func classifyVerification(p parser.ParsedPlan, claims []model.ClaimResult) string {
+func classifyVerification(p parser.ParsedPlan, claims []claim.Result) string {
 	verified := 0
 	unverified := 0
 	for _, c := range claims {
@@ -205,7 +206,7 @@ func classifyVerification(p parser.ParsedPlan, claims []model.ClaimResult) strin
 	return "unverified"
 }
 
-func classifyConfidence(p parser.ParsedPlan, claims []model.ClaimResult) string {
+func classifyConfidence(p parser.ParsedPlan, claims []claim.Result) string {
 	signals := 0
 	if p.DeclaredStatus != "" {
 		signals++

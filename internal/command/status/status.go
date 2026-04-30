@@ -12,11 +12,12 @@ import (
 	"pacto/internal/config"
 	plancontext "pacto/internal/context"
 	"pacto/internal/discovery"
+	"pacto/internal/domain/claim"
+	"pacto/internal/domain/report"
 	"pacto/internal/exitcode"
 	"pacto/internal/i18n"
-	"pacto/internal/model"
 	"pacto/internal/parser"
-	"pacto/internal/report"
+	"pacto/internal/render"
 	statusui "pacto/internal/tui/status"
 	"pacto/internal/verify"
 )
@@ -78,7 +79,7 @@ func Run(opts Options) int {
 		return 0
 	}
 
-	out, err := report.RenderWithLanguage(rep, cfg.Format, lang)
+	out, err := render.RenderWithLanguage(rep, cfg.Format, lang)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "render report: %v\n", err)
 		return 3
@@ -180,15 +181,15 @@ func resolveStatusRoots(cfg config.Config, provided map[string]bool, cwdAbs stri
 	return plansRoot, repoRoot, nil
 }
 
-func buildStatusReport(cfg config.Config, cfgWarnings []string) (model.StatusReport, int, bool) {
+func buildStatusReport(cfg config.Config, cfgWarnings []string) (report.StatusReport, int, bool) {
 	plans, err := discovery.FindPlans(cfg.PlansRoot, discovery.Options{StateFilter: cfg.State, IncludeArchive: cfg.IncludeArchive})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "discover plans: %v\n", err)
-		return model.StatusReport{}, 3, false
+		return report.StatusReport{}, 3, false
 	}
 
 	parsed := make([]parser.ParsedPlan, 0, len(plans))
-	claimsByPlan := map[string][]model.ClaimResult{}
+	claimsByPlan := map[string][]claim.Result{}
 	warningsByPlan := map[string][]string{}
 	planDomains := map[string][]string{}
 	verifier := verify.New(cfg.RepoRoot, cfg.PlansRoot)
@@ -201,10 +202,10 @@ func buildStatusReport(cfg config.Config, cfgWarnings []string) (model.StatusRep
 		}
 		parsed = append(parsed, pp)
 		key := plan.State + "/" + plan.Slug
-		verifiedClaims := make([]model.ClaimResult, 0)
+		verifiedClaims := make([]claim.Result, 0)
 		if cfg.Verify {
 			rawClaims := claims.Extract(pp, claimOpts)
-			verifiedClaims = make([]model.ClaimResult, 0, len(rawClaims))
+			verifiedClaims = make([]claim.Result, 0, len(rawClaims))
 			for _, c := range rawClaims {
 				verifiedClaims = append(verifiedClaims, verifier.VerifyClaim(plan, c))
 			}
@@ -239,11 +240,11 @@ func buildStatusReport(cfg config.Config, cfgWarnings []string) (model.StatusRep
 		Claims:              claimsByPlan,
 		Warnings:            warningsByPlan,
 	}, analyze.Options{MaxNextActions: cfg.MaxNextActions, MaxBlockers: cfg.MaxBlockers})
-	rep.Overlaps = make([]model.DomainOverlap, 0, len(overlaps))
+	rep.Overlaps = make([]report.DomainOverlap, 0, len(overlaps))
 	for _, overlap := range overlaps {
 		plans := append([]string{}, overlap.Plans...)
 		sort.Strings(plans)
-		rep.Overlaps = append(rep.Overlaps, model.DomainOverlap{
+		rep.Overlaps = append(rep.Overlaps, report.DomainOverlap{
 			Domain: overlap.Domain,
 			Plans:  plans,
 		})

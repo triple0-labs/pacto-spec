@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+### Changed
+
+- **Internal refactor (no behavior change):** introduced `internal/domain/{plan,claim,report}` as pure domain packages and split out the former `internal/model` umbrella package. Renamed `internal/report` → `internal/render` to disambiguate the renderer from domain DTOs. Removed empty `internal/resolve` package. First step of a light DDD layering (cli → app → domain ← infra). See [`docs/architecture.md`](./docs/architecture.md).
+
 ### Added
 
 - `assets/pacto-logo.png`: 512×512 minimalist raster mark (PNG-only branding; previous SVG removed).

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"pacto/internal/model"
+	"pacto/internal/domain/plan"
 )
 
 var defaultStates = []string{"current", "to-implement", "done", "outdated"}
@@ -17,9 +17,9 @@ type Options struct {
 	IncludeArchive bool
 }
 
-func FindPlans(root string, opts Options) ([]model.PlanRef, error) {
+func FindPlans(root string, opts Options) ([]plan.PlanRef, error) {
 	states := selectedStates(opts)
-	res := make([]model.PlanRef, 0)
+	res := make([]plan.PlanRef, 0)
 	for _, st := range states {
 		plans, err := collectState(root, st)
 		if err != nil {
@@ -56,7 +56,7 @@ func selectedStates(opts Options) []string {
 	return append([]string{}, defaultStates...)
 }
 
-func collectState(root, st string) ([]model.PlanRef, error) {
+func collectState(root, st string) ([]plan.PlanRef, error) {
 	stateDir := filepath.Join(root, st)
 	ents, err := os.ReadDir(stateDir)
 	if err != nil {
@@ -66,7 +66,7 @@ func collectState(root, st string) ([]model.PlanRef, error) {
 		return nil, fmt.Errorf("read state dir %s: %w", stateDir, err)
 	}
 
-	res := make([]model.PlanRef, 0)
+	res := make([]plan.PlanRef, 0)
 	for _, e := range ents {
 		if !e.IsDir() {
 			continue
@@ -89,7 +89,7 @@ func collectState(root, st string) ([]model.PlanRef, error) {
 			planDocs = filtered
 		}
 		sort.Strings(planDocs)
-		res = append(res, model.PlanRef{State: st, Slug: e.Name(), Dir: d, Readme: readme, PlanDocs: planDocs})
+		res = append(res, plan.PlanRef{State: st, Slug: e.Name(), Dir: d, Readme: readme, PlanDocs: planDocs})
 	}
 	return res, nil
 }

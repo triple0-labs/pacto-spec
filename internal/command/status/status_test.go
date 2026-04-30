@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
+	"pacto/internal/domain/report"
 	"pacto/internal/i18n"
-	"pacto/internal/model"
 )
 
 func TestRunStatusSplitRootsMetadataFirstByDefault(t *testing.T) {
@@ -286,7 +286,7 @@ func TestRunStatusExplicitFormatInTTYRendersTable(t *testing.T) {
 
 	isTerminalFn = func(io.Writer) bool { return true }
 	tuiCalled := false
-	runStatusUI = func(model.StatusReport, i18n.Language) error {
+	runStatusUI = func(report.StatusReport, i18n.Language) error {
 		tuiCalled = true
 		return nil
 	}

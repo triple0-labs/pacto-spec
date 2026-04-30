@@ -9,7 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"pacto/internal/model"
+	"pacto/internal/domain/claim"
+	"pacto/internal/domain/plan"
 )
 
 type Verifier struct {
@@ -25,20 +26,20 @@ func New(repoRoot, plansRoot string) Verifier {
 	return Verifier{Root: repoRoot, PlansRoot: plansRoot, ExcludedFiles: collectPlanDocs(plansRoot)}
 }
 
-func (v Verifier) VerifyClaim(plan model.PlanRef, c model.ClaimResult) model.ClaimResult {
+func (v Verifier) VerifyClaim(plan plan.PlanRef, c claim.Result) claim.Result {
 	switch c.ClaimType {
-	case model.ClaimPath:
+	case claim.Path:
 		return v.verifyPath(c)
-	case model.ClaimSymbol:
+	case claim.Symbol:
 		return v.verifySearch(c)
-	case model.ClaimEndpoint:
+	case claim.Endpoint:
 		query := c.SourceText
 		if idx := strings.Index(query, " "); idx > 0 {
 			query = strings.TrimSpace(query[idx+1:])
 		}
 		c.SourceText = strings.TrimSpace(c.SourceText)
 		return v.verifySearchToken(c, query)
-	case model.ClaimTestRef:
+	case claim.TestRef:
 		return v.verifyTestRef(c)
 	default:
 		c.Result = "partial"
@@ -46,7 +47,7 @@ func (v Verifier) VerifyClaim(plan model.PlanRef, c model.ClaimResult) model.Cla
 	}
 }
 
-func (v Verifier) verifyPath(c model.ClaimResult) model.ClaimResult {
+func (v Verifier) verifyPath(c claim.Result) claim.Result {
 	raw := strings.TrimSpace(c.SourceText)
 	cand := []string{}
 	if filepath.IsAbs(raw) {
@@ -91,11 +92,11 @@ func (v Verifier) verifyPath(c model.ClaimResult) model.ClaimResult {
 	return c
 }
 
-func (v Verifier) verifySearch(c model.ClaimResult) model.ClaimResult {
+func (v Verifier) verifySearch(c claim.Result) claim.Result {
 	return v.verifySearchToken(c, c.SourceText)
 }
 
-func (v Verifier) verifySearchToken(c model.ClaimResult, token string) model.ClaimResult {
+func (v Verifier) verifySearchToken(c claim.Result, token string) claim.Result {
 	ok, refs, planOnly := v.search(token)
 	if ok {
 		c.Result = "verified"
@@ -114,7 +115,7 @@ func (v Verifier) verifySearchToken(c model.ClaimResult, token string) model.Cla
 	return c
 }
 
-func (v Verifier) verifyTestRef(c model.ClaimResult) model.ClaimResult {
+func (v Verifier) verifyTestRef(c claim.Result) claim.Result {
 	raw := strings.TrimSpace(c.SourceText)
 	if strings.Contains(raw, "/") || strings.HasSuffix(raw, ".py") || strings.HasSuffix(raw, ".go") || strings.HasSuffix(raw, ".ts") || strings.HasSuffix(raw, ".tsx") {
 		return v.verifyPath(c)

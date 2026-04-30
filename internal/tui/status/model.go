@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"pacto/internal/domain/report"
 	"pacto/internal/i18n"
-	"pacto/internal/model"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -13,7 +13,7 @@ import (
 )
 
 type Model struct {
-	report      model.StatusReport
+	report      report.StatusReport
 	lang        i18n.Language
 	cursor      int
 	width       int
@@ -23,7 +23,7 @@ type Model struct {
 	stateFilter string
 }
 
-func New(r model.StatusReport, lang i18n.Language) Model {
+func New(r report.StatusReport, lang i18n.Language) Model {
 	in := textinput.New()
 	in.Placeholder = "search slug..."
 	in.CharLimit = 120
@@ -116,9 +116,9 @@ func nextFilter(state string) string {
 	return "all"
 }
 
-func (m Model) filtered() []model.PlanStatus {
+func (m Model) filtered() []report.PlanStatus {
 	query := strings.TrimSpace(strings.ToLower(m.searchInput.Value()))
-	out := make([]model.PlanStatus, 0, len(m.report.Plans))
+	out := make([]report.PlanStatus, 0, len(m.report.Plans))
 	for _, p := range m.report.Plans {
 		if m.stateFilter != "all" && p.StateFolder != m.stateFilter {
 			continue
@@ -131,7 +131,7 @@ func (m Model) filtered() []model.PlanStatus {
 	return out
 }
 
-func (m Model) selected() *model.PlanStatus {
+func (m Model) selected() *report.PlanStatus {
 	plans := m.filtered()
 	if len(plans) == 0 {
 		return nil

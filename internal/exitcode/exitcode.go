@@ -1,8 +1,8 @@
 package exitcode
 
-import "pacto/internal/model"
+import "pacto/internal/domain/report"
 
-func Evaluate(failOn string, report model.StatusReport) int {
+func Evaluate(failOn string, report report.StatusReport) int {
 	switch failOn {
 	case "none", "":
 		return 0

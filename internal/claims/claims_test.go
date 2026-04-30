@@ -3,7 +3,7 @@ package claims
 import (
 	"testing"
 
-	"pacto/internal/model"
+	"pacto/internal/domain/claim"
 	"pacto/internal/parser"
 )
 
@@ -15,7 +15,7 @@ func TestExtractClaimsDedupesAndClassifies(t *testing.T) {
 	if len(got) == 0 {
 		t.Fatalf("expected claims")
 	}
-	has := func(ct model.ClaimType) bool {
+	has := func(ct claim.Type) bool {
 		for _, c := range got {
 			if c.ClaimType == ct {
 				return true
@@ -23,7 +23,7 @@ func TestExtractClaimsDedupesAndClassifies(t *testing.T) {
 		}
 		return false
 	}
-	if !has(model.ClaimPath) || !has(model.ClaimSymbol) || !has(model.ClaimEndpoint) || !has(model.ClaimTestRef) {
+	if !has(claim.Path) || !has(claim.Symbol) || !has(claim.Endpoint) || !has(claim.TestRef) {
 		t.Fatalf("expected all claim categories, got %#v", got)
 	}
 }

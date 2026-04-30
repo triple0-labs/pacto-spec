@@ -1,22 +1,22 @@
-package report
+package render
 
 import (
 	"strings"
 	"testing"
 	"time"
 
-	"pacto/internal/model"
+	"pacto/internal/domain/report"
 )
 
 func TestRenderJSONAndTable(t *testing.T) {
-	rep := model.StatusReport{
+	rep := report.StatusReport{
 		GeneratedAt:         time.Date(2026, 2, 28, 12, 0, 0, 0, time.UTC),
 		PlansRoot:           "/tmp/plans",
 		RepoRoot:            "/tmp/repo",
 		Mode:                "compat",
 		VerificationEnabled: true,
-		Summary:             model.Summary{TotalPlans: 1, ByVerification: map[string]int{"verified": 1}},
-		Plans: []model.PlanStatus{{
+		Summary:             report.Summary{TotalPlans: 1, ByVerification: map[string]int{"verified": 1}},
+		Plans: []report.PlanStatus{{
 			StateFolder:  "current",
 			Slug:         "sample",
 			Verification: "verified",

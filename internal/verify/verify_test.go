@@ -5,7 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"pacto/internal/model"
+	"pacto/internal/domain/claim"
+	"pacto/internal/domain/plan"
 )
 
 func TestVerifyPathVerifiedInRoot(t *testing.T) {
@@ -13,8 +14,8 @@ func TestVerifyPathVerifiedInRoot(t *testing.T) {
 	writeFile(t, filepath.Join(root, "src", "main.go"), "package main\n")
 
 	v := New(root, root)
-	c := model.ClaimResult{ClaimType: model.ClaimPath, SourceText: "src/main.go"}
-	got := v.VerifyClaim(model.PlanRef{}, c)
+	c := claim.Result{ClaimType: claim.Path, SourceText: "src/main.go"}
+	got := v.VerifyClaim(plan.PlanRef{}, c)
 
 	if got.Result != "verified" {
 		t.Fatalf("expected verified result, got %q", got.Result)
@@ -31,8 +32,8 @@ func TestVerifyPathRejectsTraversalOutsideRoot(t *testing.T) {
 	writeFile(t, filepath.Join(parent, "outside.txt"), "outside\n")
 
 	v := New(root, root)
-	c := model.ClaimResult{ClaimType: model.ClaimPath, SourceText: "../outside.txt"}
-	got := v.VerifyClaim(model.PlanRef{}, c)
+	c := claim.Result{ClaimType: claim.Path, SourceText: "../outside.txt"}
+	got := v.VerifyClaim(plan.PlanRef{}, c)
 
 	if got.Result != "unverified" {
 		t.Fatalf("expected unverified result, got %q", got.Result)
@@ -52,8 +53,8 @@ func TestVerifyPathRejectsAbsoluteOutsideRoot(t *testing.T) {
 	writeFile(t, outsideFile, "outside\n")
 
 	v := New(root, root)
-	c := model.ClaimResult{ClaimType: model.ClaimPath, SourceText: outsideFile}
-	got := v.VerifyClaim(model.PlanRef{}, c)
+	c := claim.Result{ClaimType: claim.Path, SourceText: outsideFile}
+	got := v.VerifyClaim(plan.PlanRef{}, c)
 
 	if got.Result != "unverified" {
 		t.Fatalf("expected unverified result, got %q", got.Result)
@@ -69,8 +70,8 @@ func TestVerifyPathPlanDocOnlyFromFallbackDocs(t *testing.T) {
 	writeFile(t, filepath.Join(root, "current", "plan-a", "DESIGN.md"), "details\n")
 
 	v := New(root, root)
-	c := model.ClaimResult{ClaimType: model.ClaimPath, SourceText: "current/plan-a/DESIGN.md"}
-	got := v.VerifyClaim(model.PlanRef{}, c)
+	c := claim.Result{ClaimType: claim.Path, SourceText: "current/plan-a/DESIGN.md"}
+	got := v.VerifyClaim(plan.PlanRef{}, c)
 
 	if got.Result != "unverified" {
 		t.Fatalf("expected unverified result, got %q", got.Result)
@@ -118,8 +119,8 @@ func TestVerifySearchTokenPlanDocOnlyInFallbackDocs(t *testing.T) {
 	writeFile(t, filepath.Join(root, "current", "plan-a", "DESIGN.md"), "UNIQUE_PLAN_TOKEN\n")
 
 	v := New(root, root)
-	c := model.ClaimResult{ClaimType: model.ClaimSymbol, SourceText: "UNIQUE_PLAN_TOKEN"}
-	got := v.VerifyClaim(model.PlanRef{}, c)
+	c := claim.Result{ClaimType: claim.Symbol, SourceText: "UNIQUE_PLAN_TOKEN"}
+	got := v.VerifyClaim(plan.PlanRef{}, c)
 
 	if got.Result != "unverified" {
 		t.Fatalf("expected unverified result, got %q", got.Result)
@@ -134,8 +135,8 @@ func TestVerifySearchTokenVerifiedInRepoFile(t *testing.T) {
 	writeFile(t, filepath.Join(root, "src", "service.go"), "const UniqueRepoToken = 1\n")
 
 	v := New(root, root)
-	c := model.ClaimResult{ClaimType: model.ClaimSymbol, SourceText: "UniqueRepoToken"}
-	got := v.VerifyClaim(model.PlanRef{}, c)
+	c := claim.Result{ClaimType: claim.Symbol, SourceText: "UniqueRepoToken"}
+	got := v.VerifyClaim(plan.PlanRef{}, c)
 
 	if got.Result != "verified" {
 		t.Fatalf("expected verified result, got %q", got.Result)

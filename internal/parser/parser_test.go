@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"pacto/internal/model"
+	"pacto/internal/domain/plan"
 )
 
 func TestParsePlanStrictRequiresStatus(t *testing.T) {
@@ -228,11 +228,11 @@ func TestParsePlanStructuredTakesPrecedenceOverLegacyHeuristic(t *testing.T) {
 	}
 }
 
-func writePlan(t *testing.T, planText string) model.PlanRef {
+func writePlan(t *testing.T, planText string) plan.PlanRef {
 	return writePlanInState(t, "current", planText)
 }
 
-func writePlanInState(t *testing.T, state, planText string) model.PlanRef {
+func writePlanInState(t *testing.T, state, planText string) plan.PlanRef {
 	t.Helper()
 	root := t.TempDir()
 	dir := filepath.Join(root, state, "sample")
@@ -240,18 +240,18 @@ func writePlanInState(t *testing.T, state, planText string) model.PlanRef {
 		t.Fatal(err)
 	}
 	readme := filepath.Join(dir, "README.md")
-	plan := filepath.Join(dir, "PLAN_SAMPLE.md")
+	planDoc := filepath.Join(dir, "PLAN_SAMPLE.md")
 	if err := os.WriteFile(readme, []byte("# sample\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(plan, []byte(planText), 0o644); err != nil {
+	if err := os.WriteFile(planDoc, []byte(planText), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	return model.PlanRef{
+	return plan.PlanRef{
 		State:    state,
 		Slug:     "sample",
 		Dir:      dir,
 		Readme:   readme,
-		PlanDocs: []string{plan},
+		PlanDocs: []string{planDoc},
 	}
 }

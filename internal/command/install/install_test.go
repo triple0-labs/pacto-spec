@@ -230,6 +230,18 @@ func TestRunUpdateDefaultInstallsBinary(t *testing.T) {
 	if err := os.WriteFile(exePath, []byte("old-binary"), 0o755); err != nil {
 		t.Fatal(err)
 	}
+	// Isolate cwd so artifact auto-detection doesn't pick up the package
+	// source tree (which has its own .agents/ directory) and write into it.
+	oldWD, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = os.Chdir(oldWD) }()
+	if err := os.Chdir(root); err != nil {
+		t.Fatal(err)
+	}
+	// Isolate codex detection to avoid writing to the real ~/.codex.
+	t.Setenv("CODEX_HOME", filepath.Join(root, "_codex_home"))
 	newBinary := []byte("new-binary")
 	archive := buildTarGz(t, map[string][]byte{"pacto": newBinary})
 	artifact := "pacto_1.2.3_linux_amd64.tar.gz"

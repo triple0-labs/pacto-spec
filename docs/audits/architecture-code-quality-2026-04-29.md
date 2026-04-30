@@ -232,24 +232,49 @@ Priority is roughly highest → lowest.
 
 1. **Raise `cmdutil` and `workspace` coverage to ≥60%.** They underpin
    every command; small, focused tests will pay back broadly.
+   _Status (2026-04-29 follow-up): Done. `cmdutil` at 75.8%, `workspace`
+   at 83.6% (commit `90df5bf`)._
 2. **Add JSON-shape tests for `domain/report.StatusReport` and
    `domain/claim.Result`.** Freezes the public contract of
    `pacto status --format=json`.
+   _Status: Done (commit `35c19ee`)._
 3. **Document the "i18n in app layer" policy** in
    [docs/architecture.md](../architecture.md) so the leak is
    intentional rather than accidental.
+   _Status: Done (commit `8297ff6`)._
 4. **Extract sub-helpers from `parser.parseStructuredDeltas` and
    `execplan.applyExecTaskUpdate`.** Lowers cognitive load on the two
    hottest code paths in the plan pipeline.
+   _Status: Done (commits `cd3f1c6`, `abe4101`)._
 5. **Centralize the "ensure init/new before command" bootstrap** in
    `internal/cli` to remove cross-`internal/command` imports.
+   _Status: **Withdrawn.** Re-checked the import graph: every
+   cross-`internal/command` import lives in `*_test.go` (test helpers
+   only). Runtime command packages already have a flat dependency
+   graph, so no refactor is needed. The original audit overstated the
+   coupling._
 6. **Add a smoke test for `internal/tui/init/wizard.go`** that drives a
    handful of `Update` transitions; even 20–30% coverage on the
    wizard would catch the most common regressions.
+   _Status: Done — wizard coverage 0% → 69.5%._
 7. **Add an `ARCHITECTURE.md`-level diagram** of the
    `domain → app → command → cli` flow so the DDD intent is visible
    without grepping imports. (The audits document it; the architecture
    doc should too.)
+   _Status: Open._
+
+### Follow-up bug discovered during implementation
+
+While re-running the suite to validate the refactors above, `git
+status` reported drift in `internal/command/install/.agents/skills/`
+after every `go test ./...` run. Bisection isolated
+`TestRunUpdateDefaultInstallsBinary` in
+[internal/command/install/install_test.go](../../internal/command/install/install_test.go):
+the test invokes `RunUpdate` without changing into a temp directory,
+so the artifact auto-detection pass walked the package source tree
+(which legitimately ships a `.agents/` directory) and rewrote those
+tracked files in place on every run. Fixed by `chdir`-ing into
+`t.TempDir()` and stubbing `CODEX_HOME`.
 
 ## Verdict
 

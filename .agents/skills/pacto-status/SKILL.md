@@ -1,11 +1,10 @@
 ---
 name: pacto-status
 description: Agent contract for the Pacto status workflow.
-compatibility: opencode
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=opencode/skill/pacto-status workflow=status contract=v1 template_sha256=fb0bbcc81d122c585db951f5559ef5ae5e3a5346cd3203293e5c1626ec3c7dfd generated_by=pacto generated_at=2026-04-30T10:35:53Z -->
+<!-- pacto:managed:meta artifact=agents/skill/pacto-status workflow=status contract=v1 template_sha256=b20794b0702f2520047460183ca867108b237713385215f0774dda82b6aadd69 generated_by=pacto generated_at=2026-04-30T10:35:53Z -->
 # Pacto Status Skill
 
 Use this skill as an agent contract for the status workflow in Pacto projects.
@@ -31,7 +30,7 @@ Use when you need a consolidated metadata-first status report for plans. Add `--
 
 ## Execution Contract
 
-- Tool target: opencode
+- Tool target: Cursor Agent and Codex (project skills under .agents/skills/)
 - Recommended command: pacto status --format json
 
 ## Output Contract

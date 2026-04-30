@@ -1,11 +1,10 @@
 ---
 name: pacto-update
 description: Agent contract for the Pacto update workflow.
-compatibility: opencode
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=opencode/skill/pacto-update workflow=update contract=v1 template_sha256=9174cfaba0fc1699e30a16fdcdf4568215586ce7a1151d2081fd0c6e324dc089 generated_by=pacto generated_at=2026-04-30T10:35:53Z -->
+<!-- pacto:managed:meta artifact=claude/skill/pacto-update workflow=update contract=v1 template_sha256=5200453260d476d7b9b109da97baad8c9b19395a6b3a904d63afbf5d8caff09b generated_by=pacto generated_at=2026-04-30T10:35:53Z -->
 # Pacto Update Skill
 
 Use this skill as an agent contract for the update workflow in Pacto projects.
@@ -29,7 +28,7 @@ Use after upgrading Pacto to refresh managed blocks in generated artifacts.
 
 ## Execution Contract
 
-- Tool target: opencode
+- Tool target: claude
 - Recommended command: pacto update --artifacts [--tools <all|none|csv>] [--force]
 
 ## Output Contract

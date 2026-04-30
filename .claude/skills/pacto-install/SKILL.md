@@ -1,11 +1,10 @@
 ---
 name: pacto-install
 description: Agent contract for the Pacto install workflow.
-compatibility: opencode
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=opencode/skill/pacto-install workflow=install contract=v1 template_sha256=d22ca91cd64274e0ad4dd5329ac458bd0b2ddea5b05ca4604d03c1e0d35a30a0 generated_by=pacto generated_at=2026-04-30T10:35:53Z -->
+<!-- pacto:managed:meta artifact=claude/skill/pacto-install workflow=install contract=v1 template_sha256=e2468149e4d7709ef17bea3f5672869f0a31c79e47554fa9056edb284119f28f generated_by=pacto generated_at=2026-04-30T10:35:53Z -->
 # Pacto Install Skill
 
 Use this skill as an agent contract for the install workflow in Pacto projects.
@@ -29,7 +28,7 @@ Use to bootstrap Pacto-generated skills for compatible AI tools.
 
 ## Execution Contract
 
-- Tool target: opencode
+- Tool target: claude
 - Recommended command: pacto install [--tools <all|none|csv>] [--force]
 
 ## Output Contract

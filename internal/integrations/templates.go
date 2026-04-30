@@ -13,7 +13,7 @@ func Workflows() []WorkflowSpec {
 			Title:      "Pacto Status",
 			Summary:    "Report plan status, blockers, freshness, and optional path verification.",
 			Command:    "pacto status --format json",
-			WhenToUse:  "Use when you need a consolidated metadata-first status report for plans. Add `--verify` only when explicit file path claims need repo verification.",
+			WhenToUse:  "Use when you need a consolidated metadata-first status report for plans. Add `--verify` only when explicit file path claims need repo verification. Use `--mode strict` to surface Requirement/Scenario grammar issues before authoring fixes.",
 			RequiredInputs: []string{
 				"None when auto-discovery can resolve plans root from current directory or parents.",
 			},
@@ -27,19 +27,22 @@ func Workflows() []WorkflowSpec {
 				"Produces metadata-first `table` or `json` report with state summary, freshness, blockers, and next actions.",
 				"When `--verify` is enabled, augments output with explicit file path claim verification results.",
 				"Exit code follows `--fail-on` policy for CI automation.",
+				"For plans that declare structured Requirements, includes per-Requirement coverage: each Requirement reports `tasks=N evidence=M`, and Requirements with zero `R-NNN` references in `tasks.md` are flagged `[uncovered]`. JSON output adds a `requirements[]` array per plan with `id`, `name`, `tasks`, `evidence`, `uncovered` fields.",
 			},
 			ValidationChecklist: []string{
 				"Confirm resolved roots are correct for the user's intent.",
 				"Confirm report includes expected plans/states.",
 				"For agent or CI use cases, prefer `--format json`.",
 				"Only enable `--verify` when path verification is intentionally required.",
+				"When `--mode strict` reports `requirement_missing_scenario`, `requirements_grammar`, or `capability_grammar` issues, treat them as authoring bugs in the plan's `spec.md`. Open the file and add the missing `#### Scenario:` block, fix the heading level, or correct the delta op header rather than ignoring the warning.",
+				"When a Requirement is flagged `[uncovered]`, add at least one task in `tasks.md` that references the Requirement ID (e.g. `- [ ] 2.3 implement R-014 sign-out flow`). Optionally add an Evidence line under `## Evidence` referencing the same ID once verified.",
 			},
 			FailureModes: []string{
 				"Root resolution failure when no valid plans root is discoverable.",
 				"Invalid config/flags or unsupported flag values.",
 				"Path verification findings may be incomplete when `--verify` is omitted by design.",
 			},
-			FallbackAction: "Ask for explicit `--root` and `--repo-root` when auto-discovery fails.",
+			FallbackAction: "Ask for explicit `--root` and `--repo-root` when auto-discovery fails. For Requirement coverage gaps, edit the plan's `tasks.md` and `spec.md` directly — never write to `.pacto/specs/` manually; that baseline is maintained exclusively by `pacto move ... done`.",
 			Implemented:    true,
 		},
 		{
@@ -95,18 +98,22 @@ func Workflows() []WorkflowSpec {
 			OutputContract: []string{
 				"Creates `<state>/<slug>/README.md`, `spec.md`, `design.md`, and `tasks.md`.",
 				"Prints created plan artifact paths.",
+				"`spec.md` ships with placeholder `## Capabilities` and `## Requirements` sections — replace with the real Capabilities/Requirements before implementation begins.",
 			},
 			ValidationChecklist: []string{
 				"Verify state and slug validity before execution.",
 				"Confirm plan directory does not already exist.",
 				"Confirm plan appears in `pacto status` output for the target state.",
+				"After scaffolding, expand any prose into structured `### Requirement: <name>` blocks (each with at least one nested `#### Scenario: <name>` containing `- WHEN ...` / `- THEN ...`). Use `The system SHALL <behaviour>.` phrasing (or `El sistema DEBE ...` in Spanish).",
+				"List the capabilities this plan touches under `## Capabilities` (`- New Capabilities: [slug, ...]`, `- Modified Capabilities: [slug, ...]`). For new capabilities, add a `## Capability: <slug>` block with `### ADDED Requirements`. For modifications, use `### MODIFIED|REMOVED|RENAMED Requirements` (RENAMED needs `- to: <new name>` in the body).",
+				"Run `pacto status --mode strict` after editing to surface `requirement_missing_scenario`, `requirements_grammar`, or `capability_grammar` issues; fix them before moving the plan to `current`.",
 			},
 			FailureModes: []string{
 				"Invalid state or invalid slug format.",
 				"Invalid root (missing canonical files/folders) when minimal root is not allowed.",
 				"Plan already exists for the same state/slug.",
 			},
-			FallbackAction: "If root validation fails, retry with explicit `--root` or `--allow-minimal-root` when appropriate.",
+			FallbackAction: "If root validation fails, retry with explicit `--root` or `--allow-minimal-root` when appropriate. If Requirement/Scenario authoring is unclear, leave the placeholders in place and capture the open question under `## Open Questions` rather than inventing structure.",
 			Implemented:    true,
 		},
 		{
@@ -250,7 +257,7 @@ func Workflows() []WorkflowSpec {
 			Title:      "Pacto Move",
 			Summary:    "Move a plan slice between canonical states.",
 			Command:    "pacto move <from-state> <slug> <to-state> [--root <path>] [--reason <text>] [--force]",
-			WhenToUse:  "Use for explicit state transitions such as `to-implement -> current` or `current -> done`.",
+			WhenToUse:  "Use for explicit state transitions such as `to-implement -> current` or `current -> done`. When `<to-state>` is `done`, the move also folds the plan's `## Capability:` deltas into the persistent baseline at `.pacto/specs/<slug>/spec.md`.",
 			RequiredInputs: []string{
 				"`<from-state>` in `current|to-implement|done|outdated`.",
 				"`<slug>` matching `[a-z0-9][a-z0-9-]*`.",
@@ -264,18 +271,22 @@ func Workflows() []WorkflowSpec {
 			OutputContract: []string{
 				"Moves plan directory from source state folder to destination state folder.",
 				"Updates moved plan README `Status` line.",
+				"For `to-state=done` only: pre-validates Capability deltas against the baseline and, on success, atomically writes the merged `.pacto/specs/<slug>/spec.md` per affected capability. On any merge collision the move aborts BEFORE the plan folder is renamed.",
 			},
 			ValidationChecklist: []string{
 				"Confirm source plan exists before moving.",
 				"Confirm destination does not exist unless force overwrite is intended.",
 				"Confirm `pacto status` reflects the new state location.",
+				"Before `move ... done`: verify the plan's `spec.md` contains well-formed `## Capability: <slug>` blocks with `### ADDED|MODIFIED|REMOVED|RENAMED Requirements` subsections, and that every Requirement has at least one `##### Scenario:` (ADDED) or matches an existing baseline entry (MODIFIED/REMOVED/RENAMED). Run `pacto status --mode strict` first to catch grammar issues.",
+				"After `move ... done`: confirm `.pacto/specs/<slug>/spec.md` was created or updated as expected and that the plan slug reference appears in the merged baseline (e.g. removal audit comments include the plan slug).",
 			},
 			FailureModes: []string{
 				"Invalid state values or invalid slug format.",
 				"Source plan missing or destination conflict without `--force`.",
 				"Filesystem move/write failure during transition.",
+				"Baseline merge would fail (ADDED Requirement already exists, MODIFIED/REMOVED target missing, RENAMED missing `- to:` line, unknown delta op). Plan folder is NOT renamed in this case — fix the deltas in `spec.md` and retry.",
 			},
-			FallbackAction: "If transition fails, run `pacto status --root <path>` to verify current filesystem state before retrying.",
+			FallbackAction: "If transition fails, run `pacto status --root <path>` to verify current filesystem state before retrying. For baseline merge failures, read the error message (it names the offending capability + Requirement), edit the plan's `spec.md` Capability block to align with the current baseline, and re-run `pacto move`.",
 			Implemented:    true,
 		},
 		{

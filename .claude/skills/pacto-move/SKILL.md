@@ -1,11 +1,10 @@
 ---
 name: pacto-move
 description: Agent contract for the Pacto move workflow.
-compatibility: opencode
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=opencode/skill/pacto-move workflow=move contract=v1 template_sha256=5feb2afaad0eb8cd153d6d14b90fc4c3541013b6d2682b4bb7ab298011294d0d generated_by=pacto generated_at=2026-04-30T10:35:53Z -->
+<!-- pacto:managed:meta artifact=claude/skill/pacto-move workflow=move contract=v1 template_sha256=523a6ad5ae02aa33f21d105e05517d21a9505961750423a8e22a33785b92b730 generated_by=pacto generated_at=2026-04-30T10:35:53Z -->
 # Pacto Move Skill
 
 Use this skill as an agent contract for the move workflow in Pacto projects.
@@ -32,7 +31,7 @@ Use for explicit state transitions such as `to-implement -> current` or `current
 
 ## Execution Contract
 
-- Tool target: opencode
+- Tool target: claude
 - Recommended command: pacto move <from-state> <slug> <to-state> [--root <path>] [--reason <text>] [--force]
 
 ## Output Contract

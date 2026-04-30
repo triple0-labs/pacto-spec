@@ -1,11 +1,10 @@
 ---
 name: pacto-new
 description: Agent contract for the Pacto new workflow.
-compatibility: opencode
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=opencode/skill/pacto-new workflow=new contract=v1 template_sha256=03decd540f25c573bad4f85e3d1d60622b35f2c5a7cfda1c81cd97388bd73158 generated_by=pacto generated_at=2026-04-30T10:35:53Z -->
+<!-- pacto:managed:meta artifact=claude/skill/pacto-new workflow=new contract=v1 template_sha256=43dcd897a1db239ff4396b94dc107f6c3d595eabbb0ab2f74ad89c54705e52c1 generated_by=pacto generated_at=2026-04-30T10:35:53Z -->
 # Pacto New Skill
 
 Use this skill as an agent contract for the new workflow in Pacto projects.
@@ -31,7 +30,7 @@ Use when a new plan slice must be created in one of the canonical states.
 
 ## Execution Contract
 
-- Tool target: opencode
+- Tool target: claude
 - Recommended command: pacto new to-implement my-plan-slug
 
 ## Output Contract

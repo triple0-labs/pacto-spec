@@ -1,11 +1,10 @@
 ---
 name: pacto-doctor
 description: Agent contract for the Pacto doctor workflow.
-compatibility: opencode
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=opencode/skill/pacto-doctor workflow=doctor contract=v1 template_sha256=22d46c42f2c09a2031040681250166762bd254b1721058cfc6bce7498dd7d568 generated_by=pacto generated_at=2026-04-30T10:35:53Z -->
+<!-- pacto:managed:meta artifact=agents/skill/pacto-doctor workflow=doctor contract=v1 template_sha256=838be0384fdfef8e02d34cd770fe1e798e09a896a655c5934ef070b1d76a949c generated_by=pacto generated_at=2026-04-30T10:35:53Z -->
 # Pacto Doctor Skill
 
 Use this skill as an agent contract for the doctor workflow in Pacto projects.
@@ -31,7 +30,7 @@ Use when generated skills might be stale after manual edits or CLI/template upgr
 
 ## Execution Contract
 
-- Tool target: opencode
+- Tool target: Cursor Agent and Codex (project skills under .agents/skills/)
 - Recommended command: pacto doctor [--root <path>] [--tools <all|none|csv>] [--format table|json] [--fail-on none|drift|legacy|any]
 
 ## Output Contract

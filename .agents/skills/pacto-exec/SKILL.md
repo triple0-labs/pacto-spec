@@ -1,11 +1,10 @@
 ---
 name: pacto-exec
 description: Agent contract for the Pacto exec workflow.
-compatibility: opencode
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=opencode/skill/pacto-exec workflow=exec contract=v1 template_sha256=cbe6eb19abca5cdfcf1a7458acf754c50908cc0b326c189212765d54d7e7a393 generated_by=pacto generated_at=2026-04-30T10:35:53Z -->
+<!-- pacto:managed:meta artifact=agents/skill/pacto-exec workflow=exec contract=v1 template_sha256=bcf480d4c00c1900dbb700bba1061dbf12adba18ccee6b1c175df623eb52f518 generated_by=pacto generated_at=2026-04-30T10:35:53Z -->
 # Pacto Exec Skill
 
 Use this skill as an agent contract for the exec workflow in Pacto projects.
@@ -31,7 +30,7 @@ Use after moving a plan to `current` to advance tasks while keeping execution ev
 
 ## Execution Contract
 
-- Tool target: opencode
+- Tool target: Cursor Agent and Codex (project skills under .agents/skills/)
 - Recommended command: pacto exec <state> <slug> [--root <path>] [--step <phase.task>] [--note <text>] [--blocker <text>] [--evidence <claim>] [--dry-run]
 
 ## Output Contract

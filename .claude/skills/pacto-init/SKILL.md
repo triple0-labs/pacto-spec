@@ -1,11 +1,10 @@
 ---
 name: pacto-init
 description: Agent contract for the Pacto init workflow.
-compatibility: opencode
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=opencode/skill/pacto-init workflow=init contract=v1 template_sha256=bff47ad5343e224ec0bf553b5493b67bb9004c1d430a5d9666588b8a0b371fe4 generated_by=pacto generated_at=2026-04-30T10:35:53Z -->
+<!-- pacto:managed:meta artifact=claude/skill/pacto-init workflow=init contract=v1 template_sha256=e8b3e7a667f17e962952e941107c307e8112faf2d0b30565035dc8ddce9096a2 generated_by=pacto generated_at=2026-04-30T10:35:53Z -->
 # Pacto Init Skill
 
 Use this skill as an agent contract for the init workflow in Pacto projects.
@@ -31,7 +30,7 @@ Use once per project to create canonical `.pacto/plans` workspace scaffolding.
 
 ## Execution Contract
 
-- Tool target: opencode
+- Tool target: claude
 - Recommended command: pacto init
 
 ## Output Contract

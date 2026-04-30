@@ -171,11 +171,6 @@ func createPlanScaffold(req newRequest) ([]string, int) {
 	return created, 0
 }
 
-func normalizeNewArgs(args []string) ([]string, error) {
-	withValue := map[string]bool{"--root": true, "-root": true, "--title": true, "-title": true, "--owner": true, "-owner": true, "--lang": true, "-lang": true}
-	return cmdutil.NormalizeArgs(args, withValue)
-}
-
 func isValidState(state string) bool {
 	switch state {
 	case "current", "to-implement", "done", "outdated":

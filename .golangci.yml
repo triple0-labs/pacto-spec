@@ -1,0 +1,42 @@
+# golangci-lint configuration for the pacto repository.
+#
+# Keep the linter set tight and useful; we deliberately avoid noisy stylistic
+# checkers so the floor is "real bugs and obvious smells" rather than taste.
+
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+
+linters:
+  default: none
+  enable:
+    - errcheck       # unchecked errors
+    - govet          # standard go vet
+    - ineffassign    # ineffective assignments
+    - staticcheck    # broad static analysis (SA*, ST*, S1* rules)
+    - unused         # unused vars/funcs/types
+    - bodyclose      # ensure http.Response.Body is closed
+    - copyloopvar    # Go 1.22+ loop var semantics
+    - unconvert      # redundant type conversions
+
+  exclusions:
+    rules:
+      # Tests legitimately ignore many returns (errors from helpers, etc.).
+      - path: _test\.go$
+        linters:
+          - errcheck
+      # Embedded asset loaders intentionally panic; that's the contract.
+      - path: internal/assets/
+        linters:
+          - errcheck
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+formatters:
+  enable:
+    - gofmt
+    - goimports

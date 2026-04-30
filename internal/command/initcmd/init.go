@@ -75,8 +75,6 @@ func Run(opts Options) int {
 		fmt.Fprintf(os.Stderr, "resolve init profile: %v\n", err)
 		return 2
 	}
-	if strings.TrimSpace(opts.Lang) != "" {
-	}
 	resolvedUILang := i18n.NormalizeLanguage(profile.UILanguage)
 	if strings.TrimSpace(opts.Lang) != "" {
 		resolvedUILang = i18n.NormalizeLanguage(opts.Lang)

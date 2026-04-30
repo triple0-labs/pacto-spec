@@ -201,7 +201,7 @@ func (v Verifier) searchWalk(token string) (bool, []string, bool) {
 		if e != nil {
 			return nil
 		}
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 		s := bufio.NewScanner(f)
 		lineNo := 0
 		for s.Scan() {

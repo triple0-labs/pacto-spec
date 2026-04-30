@@ -1,7 +1,6 @@
 package execmd
 
 import (
-	"io"
 	"regexp"
 
 	"pacto/internal/cmdutil"
@@ -32,22 +31,10 @@ func pathLine(kind, path string) string {
 	return cmdutil.PathLine(kind, path)
 }
 
-func displayPath(path string) string {
-	return cmdutil.DisplayPath(path)
-}
-
-func normalizeArgs(args []string, withValue map[string]bool) ([]string, error) {
-	return cmdutil.NormalizeArgs(args, withValue)
-}
-
 func resolvePlanRoot(path string) (string, bool) {
 	return workspace.ResolvePlanRoot(path)
 }
 
 func resolvePlanRootFrom(path string) (string, string, bool) {
 	return workspace.ResolvePlanRootFrom(path)
-}
-
-func isTerminal(w io.Writer) bool {
-	return cmdutil.IsTerminal(w)
 }

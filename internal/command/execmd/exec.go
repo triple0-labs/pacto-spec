@@ -45,7 +45,7 @@ func Run(opts Options, pos []string) int {
 	}
 	if state != "current" {
 		fmt.Fprintf(os.Stderr, tr(lang, "exec only supports state %q\n", "exec solo soporta el estado %q\n"), "current")
-		fmt.Fprintf(os.Stderr, tr(lang, "next action: move the plan to current, then retry exec\n", "siguiente acción: mueve el plan a current y vuelve a intentar exec\n"))
+		fmt.Fprintln(os.Stderr, tr(lang, "next action: move the plan to current, then retry exec", "siguiente acción: mueve el plan a current y vuelve a intentar exec"))
 		fmt.Fprintf(os.Stderr, tr(lang, "trigger: pacto move %s %s current\n", "comando: pacto move %s %s current\n"), state, slug)
 		return 2
 	}

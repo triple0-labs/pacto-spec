@@ -68,7 +68,7 @@ func RunInstallWithOptions(opts ToolArtifactsOptions) int {
 		return 2
 	}
 
-	tools := make([]string, 0)
+	var tools []string
 	if strings.TrimSpace(opts.Tools) != "" {
 		parsed, err := integrations.ParseToolsArg(opts.Tools)
 		if err != nil {
@@ -306,7 +306,7 @@ func httpGetBytes(url string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
 		return nil, fmt.Errorf("http %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
@@ -351,7 +351,7 @@ func extractPactoBinary(archiveData []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer gz.Close()
+	defer func() { _ = gz.Close() }()
 	tr := tar.NewReader(gz)
 	for {
 		hdr, err := tr.Next()

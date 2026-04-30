@@ -25,11 +25,7 @@ func TestRunBlocksGuardrailOnMutatingCommand(t *testing.T) {
 	os.Args = []string{"pacto", "new", "to-implement", "guarded", "--allow-minimal-root"}
 
 	_, stderr := captureOutput(t, func() {
-		code := Execute()
-		if code != 0 {
-			// Actually Execute() exits on failure natively inside cobra if it's deeply nested, or we return err.
-			// We should probably check stderr for what happened.
-		}
+		_ = Execute()
 	})
 	if !strings.Contains(stderr, "guardrail blocked") {
 		t.Fatalf("expected guardrail blocked message, got %q", stderr)

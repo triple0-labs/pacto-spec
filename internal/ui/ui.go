@@ -17,10 +17,7 @@ var (
 )
 
 func supportsColor() bool {
-	if strings.TrimSpace(os.Getenv("NO_COLOR")) != "" {
-		return false
-	}
-	return true
+	return strings.TrimSpace(os.Getenv("NO_COLOR")) == ""
 }
 
 func render(style lipgloss.Style, text string) string {

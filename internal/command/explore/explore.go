@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"pacto/internal/cmdutil"
 	"pacto/internal/app/explore"
+	"pacto/internal/cmdutil"
 	"pacto/internal/i18n"
 	"pacto/internal/ui"
 	"pacto/internal/workspace"

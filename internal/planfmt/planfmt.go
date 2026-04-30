@@ -31,22 +31,6 @@ var (
 	reLastModified = regexp.MustCompile(`(?im)^\s*[-*]?\s*(last modified|última modificación|ultima modificacion)\s*:\s*(.+)$`)
 )
 
-var requiredCanon = []string{
-	"metadata",
-	"problem",
-	"goals",
-	"non_goals",
-	"user_scenarios",
-	"functional_requirements",
-	"non_functional_requirements",
-	"acceptance_criteria",
-	"technical_context",
-	"implementation_phases",
-	"evidence",
-	"risks",
-	"next_steps",
-}
-
 var canonicalAliases = map[string]string{
 	"metadata":                         "metadata",
 	"metadatos":                        "metadata",
@@ -188,41 +172,6 @@ func Normalize(content string) NormalizeResult {
 		Changes:  dedupe(changes),
 		Warnings: dedupe(warnings),
 	}
-}
-
-func ensureMetadataSection(lines []string, lang string) ([]string, bool) {
-	for _, line := range lines {
-		if m := reHeading.FindStringSubmatch(line); len(m) == 2 {
-			if canon, ok := canonicalAliases[normalizeHeadingText(m[1])]; ok && canon == "metadata" {
-				return lines, false
-			}
-		}
-	}
-
-	insertAt := 0
-	for i, line := range lines {
-		if strings.HasPrefix(strings.TrimSpace(line), "# ") {
-			insertAt = i + 1
-			break
-		}
-	}
-
-	metadata := []string{
-		"",
-		"## " + sectionTitle("metadata", lang),
-		"",
-		"- " + label("status", lang) + ": <pending>",
-		"- " + label("owner", lang) + ": <owner>",
-		"- " + label("created", lang) + ": <YYYY-MM-DD>",
-		"- " + label("last_modified", lang) + ": <YYYY-MM-DD>",
-		"- " + label("state", lang) + ": <current|to-implement|done|outdated>",
-		"- " + label("slug", lang) + ": <slug>",
-	}
-	out := make([]string, 0, len(lines)+len(metadata))
-	out = append(out, lines[:insertAt]...)
-	out = append(out, metadata...)
-	out = append(out, lines[insertAt:]...)
-	return out, true
 }
 
 func collectCanonicalHeadings(content string) map[string]struct{} {
@@ -369,41 +318,6 @@ func detectLanguage(content string) string {
 		return "es"
 	}
 	return "en"
-}
-
-func label(name, lang string) string {
-	if lang == "es" {
-		switch name {
-		case "status":
-			return "Estado"
-		case "owner":
-			return "Responsable"
-		case "created":
-			return "Creado"
-		case "last_modified":
-			return "Última Modificación"
-		case "state":
-			return "Estado de Carpeta"
-		case "slug":
-			return "Slug"
-		}
-	}
-	switch name {
-	case "status":
-		return "Status"
-	case "owner":
-		return "Owner"
-	case "created":
-		return "Created"
-	case "last_modified":
-		return "Last Modified"
-	case "state":
-		return "State"
-	case "slug":
-		return "Slug"
-	default:
-		return name
-	}
 }
 
 func dedupe(in []string) []string {

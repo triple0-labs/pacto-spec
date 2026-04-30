@@ -252,15 +252,6 @@ func buildStatusReport(cfg config.Config, cfgWarnings []string) (report.StatusRe
 	return rep, 0, true
 }
 
-func hasLangArg(args []string) bool {
-	for _, a := range args {
-		if a == "--lang" || a == "-lang" || strings.HasPrefix(a, "--lang=") {
-			return true
-		}
-	}
-	return false
-}
-
 func applyOverrides(cfg *config.Config, provided map[string]bool, root, plansRoot, repoRoot, mode, format, failOn, state string, includeArchive bool, verify bool, maxNext, maxBlockers int) {
 	if provided["root"] {
 		if abs, err := filepath.Abs(root); err == nil {

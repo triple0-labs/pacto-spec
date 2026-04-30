@@ -7,9 +7,9 @@ import (
 	"sort"
 	"strings"
 
+	"pacto/internal/app/move"
 	"pacto/internal/cmdutil"
 	plancontext "pacto/internal/context"
-	"pacto/internal/app/move"
 	"pacto/internal/ui"
 	"pacto/internal/workspace"
 )

@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spf13/cobra"
 	"pacto/internal/cmdutil"
 	doctorcmd "pacto/internal/command/doctor"
 	execmd "pacto/internal/command/execmd"
@@ -18,6 +17,8 @@ import (
 	plugincmd "pacto/internal/command/plugincmd"
 	statuscmd "pacto/internal/command/status"
 	"pacto/internal/i18n"
+
+	"github.com/spf13/cobra"
 )
 
 var exitCode int
@@ -68,7 +69,7 @@ func newRootCommand(rawArgs []string) *cobra.Command {
 
 			noColor, _ := cmd.Flags().GetBool("no-color")
 			if noColor {
-				os.Setenv("NO_COLOR", "1")
+				_ = os.Setenv("NO_COLOR", "1")
 			}
 
 			fullArgs := append([]string{"pacto"}, rawArgs...)

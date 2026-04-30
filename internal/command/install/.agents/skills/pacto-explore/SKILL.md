@@ -4,7 +4,7 @@ description: Agent contract for the Pacto explore workflow.
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=agents/skill/pacto-explore workflow=explore contract=v1 template_sha256=fdf3e3eba7d7b922d21e42d3eaf903e090b2bc4009795738bd35521b290fc23c generated_by=pacto generated_at=2026-04-15T23:09:48Z -->
+<!-- pacto:managed:meta artifact=agents/skill/pacto-explore workflow=explore contract=v1 template_sha256=fdf3e3eba7d7b922d21e42d3eaf903e090b2bc4009795738bd35521b290fc23c generated_by=pacto generated_at=2026-04-30T00:10:24Z -->
 # Pacto Explore Skill
 
 Use this skill as an agent contract for the explore workflow in Pacto projects.

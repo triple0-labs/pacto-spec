@@ -58,6 +58,23 @@ field labels (for example `Historial de deltas`, `Fecha`, `Siguiente delta`).
 
 Canonical code paths, enums, and config remain English-first.
 
+## Domain Context
+
+As plans complete, Pacto accumulates a system source of truth under `.pacto/context/domains/`.
+
+Each domain gets its own folder:
+
+```text
+.pacto/context/domains/
+└── auth/
+    ├── context.md    ← bounded context: purpose, boundary, key terms, rules, collaborators
+    └── decisions.md  ← architectural decisions (ADR-style): why things are the way they are
+```
+
+Pacto creates the folder and stubs when a plan first declares that domain in `## Domains Affected` and moves to `done`. After that, the files are human/agent territory — Pacto never overwrites them.
+
+`pacto status` detects when two active plans declare the same domain and surfaces a warning.
+
 ## Workspace vs Product Docs
 
 - `docs/`: canonical product/user documentation.

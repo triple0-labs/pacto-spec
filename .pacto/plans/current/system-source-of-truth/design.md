@@ -16,7 +16,7 @@
 
 ## Architecture Decisions
 
-1. Decision: Use a directory of per-domain markdown docs under `.pacto/context/domains/`, not a single merged context file | Rationale: domains are the natural unit of ownership and conflict. Per-domain docs reduce merge noise, keep context scoped, and make it easier to enrich one area without touching unrelated system knowledge.
+1. Decision: Use a folder per domain under `.pacto/context/domains/`, each containing `context.md` (bounded context canvas) and `decisions.md` (ADRs), not a single flat file | Rationale: domains are the natural unit of ownership and conflict. Separate files for current-state description vs. temporal decision history keeps each concern focused. Free-form markdown; pacto never parses these files.
 
 2. Decision: Two-tier extraction (mechanical + agent-driven) | Rationale: Domains are declarative and binary — pacto reads them mechanically from a structured section. Decisions and constraints require judgment — pacto surfaces the opportunity and the human/agent enriches. Avoids fragile regex on narrative text.
 
@@ -35,8 +35,12 @@
 ├── context/
 │   ├── README.md            ← Overview and conventions
 │   └── domains/
-│       ├── auth.md          ← Domain-specific context
-│       └── session.md
+│       ├── auth/
+│       │   ├── context.md   ← Bounded context canvas
+│       │   └── decisions.md ← Architectural decisions (ADR-style)
+│       └── session/
+│           ├── context.md
+│           └── decisions.md
 ├── plans/
 │   ├── current/
 │   │   └── add-auth/
@@ -54,39 +58,35 @@ This directory holds the system source of truth for pacto.
 
 ## Structure
 
-- `domains/` contains one markdown file per domain, for example `auth.md` or `billing.md`
-- pacto creates domain docs mechanically from completed plans
-- humans or agents enrich those docs with decisions, constraints, and notable references
+- `domains/` contains one folder per domain, for example `auth/` or `billing/`
+- each domain folder has `context.md` (bounded context) and `decisions.md` (ADRs)
+- pacto creates domain folders mechanically when plans complete
+- humans or agents enrich the files — pacto never overwrites them after creation
 
 ## Conventions
 
-- Use lowercase dash-separated domain filenames
-- Keep one domain per file
-- Preserve manual notes; pacto should only create missing scaffolds or append missing references safely
+- Use lowercase dash-separated domain folder names
+- Keep one domain per folder
+- `context.md`: current-state snapshot — purpose, boundary, key terms, rules, collaborators
+- `decisions.md`: append-only history of architectural decisions (why things are the way they are)
 ```
 
-### Domain Doc Template
+### Domain Folder Templates
 
-Each domain file starts as a small scaffold:
+`context.md` stub:
 
 ```markdown
-# Domain: auth
+# auth
 
-## Summary
+<!-- Bounded context: purpose, boundary, key terms, rules, collaborators. -->
+```
 
-<!-- What this domain owns. -->
+`decisions.md` stub:
 
-## Related Plans
+```markdown
+# auth – Decisions
 
-- <state>/<slug>
-
-## Decisions
-
-<!-- Add key architectural choices for this domain. -->
-
-## Constraints
-
-<!-- Add rules future plans must respect. -->
+<!-- Architectural decisions (ADR-style): date, status, context, consequence. -->
 ```
 
 ### Spec Template Addition
@@ -146,7 +146,7 @@ After collecting active plans, read each plan's spec.md domains via `context.Ext
 
 ### `pacto move done`
 
-After the existing move logic (rename dir, rewrite README), extract domains from the moved plan's spec.md and create/update the corresponding files under `.pacto/context/domains/`. Also add a `Related Plans` reference for the completed plan. Print Tier 2 enrichment prompt to stdout naming the affected domain docs.
+After the existing move logic (rename dir, rewrite README), extract domains from the moved plan's spec.md. For each domain, create `.pacto/context/domains/<slug>/` with `context.md` and `decisions.md` stubs if the folder does not already exist. If it exists, leave it untouched. Print Tier 2 enrichment prompt to stdout naming the affected domain folders.
 
 ## Testing Strategy
 

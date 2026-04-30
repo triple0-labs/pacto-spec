@@ -55,4 +55,3 @@ func TestMetadataDiff(t *testing.T) {
 		t.Fatalf("expected artifact/template diff, got %v", diff)
 	}
 }
-

@@ -4,7 +4,7 @@ description: Agent contract for the Pacto exec workflow.
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=agents/skill/pacto-exec workflow=exec contract=v1 template_sha256=bcf480d4c00c1900dbb700bba1061dbf12adba18ccee6b1c175df623eb52f518 generated_by=pacto generated_at=2026-04-15T23:09:48Z -->
+<!-- pacto:managed:meta artifact=agents/skill/pacto-exec workflow=exec contract=v1 template_sha256=bcf480d4c00c1900dbb700bba1061dbf12adba18ccee6b1c175df623eb52f518 generated_by=pacto generated_at=2026-04-30T00:10:24Z -->
 # Pacto Exec Skill
 
 Use this skill as an agent contract for the exec workflow in Pacto projects.

@@ -74,21 +74,19 @@ func TestRunMoveDoneCreatesDomainDocsAndPrompt(t *testing.T) {
 	if stderr != "" {
 		t.Fatalf("unexpected stderr: %q", stderr)
 	}
-	if !strings.Contains(stdout, "auth.md") || !strings.Contains(stdout, "session.md") {
-		t.Fatalf("expected affected domain docs in output, got %q", stdout)
+	if !strings.Contains(stdout, "auth/") || !strings.Contains(stdout, "session/") {
+		t.Fatalf("expected affected domain folders in output, got %q", stdout)
 	}
-	if !strings.Contains(stdout, "Review design.md and update the affected domain docs") {
+	if !strings.Contains(stdout, "Review design.md and update the affected domain folders") {
 		t.Fatalf("expected enrichment prompt, got %q", stdout)
 	}
 
-	for _, name := range []string{"auth.md", "session.md"} {
-		path := filepath.Join(root, ".pacto", "context", "domains", name)
-		b, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatalf("expected domain doc %s: %v", name, err)
-		}
-		if !strings.Contains(string(b), "- done/domain-move") {
-			t.Fatalf("expected related plan in %s, got %q", name, string(b))
+	for _, slug := range []string{"auth", "session"} {
+		folderPath := filepath.Join(root, ".pacto", "context", "domains", slug)
+		for _, name := range []string{"context.md", "decisions.md"} {
+			if _, err := os.Stat(filepath.Join(folderPath, name)); err != nil {
+				t.Fatalf("expected %s/%s: %v", slug, name, err)
+			}
 		}
 	}
 }

@@ -101,20 +101,16 @@ func ReadContextDomains(contextDir string) []string {
 
 	domains := make([]string, 0, len(entries))
 	for _, entry := range entries {
-		if entry.IsDir() {
+		if !entry.IsDir() {
 			continue
 		}
-		name := entry.Name()
-		if filepath.Ext(name) != ".md" {
-			continue
-		}
-		domains = append(domains, strings.TrimSuffix(name, ".md"))
+		domains = append(domains, entry.Name())
 	}
 	sort.Strings(domains)
 	return domains
 }
 
-func EnsureDomainDocs(contextDir string, domains []string, planRef string) error {
+func EnsureDomainFolders(contextDir string, domains []string) error {
 	domainDir := filepath.Join(contextDir, "domains")
 	if err := os.MkdirAll(domainDir, 0o775); err != nil {
 		return fmt.Errorf("create context domains dir: %w", err)
@@ -131,8 +127,8 @@ func EnsureDomainDocs(contextDir string, domains []string, planRef string) error
 		}
 		unique[slug] = struct{}{}
 
-		path := filepath.Join(domainDir, slug+".md")
-		if err := ensureDomainDoc(path, slug, planRef); err != nil {
+		folderPath := filepath.Join(domainDir, slug)
+		if err := ensureDomainFolder(folderPath, slug); err != nil {
 			return err
 		}
 	}
@@ -195,8 +191,8 @@ func ContextDirFromPlansRoot(plansRoot string) string {
 	return filepath.Join(filepath.Dir(filepath.Clean(plansRoot)), "context")
 }
 
-func DomainDocPath(contextDir, domain string) string {
-	return filepath.Join(contextDir, "domains", NormalizeDomainSlug(domain)+".md")
+func DomainFolderPath(contextDir, domain string) string {
+	return filepath.Join(contextDir, "domains", NormalizeDomainSlug(domain))
 }
 
 const defaultContextReadme = `# System Context
@@ -205,137 +201,39 @@ This directory holds the system source of truth for pacto.
 
 ## Structure
 
-- ` + "`domains/`" + ` contains one markdown file per domain, for example ` + "`auth.md`" + ` or ` + "`billing.md`" + `
-- pacto creates domain docs mechanically from completed plans
-- humans or agents enrich those docs with decisions, constraints, and notable references
+- ` + "`domains/`" + ` contains one folder per domain, for example ` + "`auth/`" + ` or ` + "`billing/`" + `
+- each domain folder has ` + "`context.md`" + ` (bounded context) and ` + "`decisions.md`" + ` (ADRs)
+- pacto creates domain folders mechanically when plans complete
+- humans or agents enrich the files — pacto never overwrites them after creation
 
 ## Conventions
 
-- Use lowercase dash-separated domain filenames
-- Keep one domain per file
-- Preserve manual notes; pacto should only create missing scaffolds or append missing references safely
+- Use lowercase dash-separated domain folder names
+- ` + "`context.md`" + `: current-state snapshot — purpose, boundary, key terms, rules, collaborators
+- ` + "`decisions.md`" + `: append-only history of architectural decisions (why things are the way they are)
 `
 
-func ensureDomainDoc(path, slug, planRef string) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return os.WriteFile(path, []byte(renderDomainDoc(slug, planRef)), 0o664)
-	} else if err != nil {
-		return fmt.Errorf("stat domain doc %q: %w", path, err)
-	}
-
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf("read domain doc %q: %w", path, err)
-	}
-
-	updated := ensureDomainSections(string(b), slug, planRef)
-	if updated == string(b) {
+func ensureDomainFolder(folderPath, slug string) error {
+	if _, err := os.Stat(folderPath); err == nil {
 		return nil
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("stat domain folder %q: %w", folderPath, err)
 	}
-	if err := os.WriteFile(path, []byte(updated), 0o664); err != nil {
-		return fmt.Errorf("write domain doc %q: %w", path, err)
+
+	if err := os.MkdirAll(folderPath, 0o775); err != nil {
+		return fmt.Errorf("create domain folder %q: %w", folderPath, err)
+	}
+
+	stubs := []struct{ name, content string }{
+		{"context.md", fmt.Sprintf("# %s\n\n<!-- Bounded context: purpose, boundary, key terms, rules, collaborators. -->\n", slug)},
+		{"decisions.md", fmt.Sprintf("# %s – Decisions\n\n<!-- Architectural decisions (ADR-style): date, status, context, consequence. -->\n", slug)},
+	}
+	for _, f := range stubs {
+		if err := os.WriteFile(filepath.Join(folderPath, f.name), []byte(f.content), 0o664); err != nil {
+			return fmt.Errorf("write %s for domain %q: %w", f.name, slug, err)
+		}
 	}
 	return nil
-}
-
-func renderDomainDoc(slug, planRef string) string {
-	return fmt.Sprintf(`# Domain: %s
-
-## Summary
-
-<!-- What this domain owns. -->
-
-## Related Plans
-
-- %s
-
-## Decisions
-
-<!-- Add key architectural choices for this domain. -->
-
-## Constraints
-
-<!-- Add rules future plans must respect. -->
-`, slug, planRef)
-}
-
-func ensureDomainSections(text, slug, planRef string) string {
-	updated := strings.ReplaceAll(text, "\r\n", "\n")
-	if strings.TrimSpace(updated) == "" {
-		return renderDomainDoc(slug, planRef)
-	}
-	if !strings.Contains(updated, "# Domain:") {
-		updated = strings.TrimSpace(renderDomainDoc(slug, planRef)) + "\n\n" + strings.TrimSpace(updated)
-	}
-	updated = ensureSection(updated, "## Summary", "<!-- What this domain owns. -->")
-	updated = ensureRelatedPlan(updated, planRef)
-	updated = ensureSection(updated, "## Decisions", "<!-- Add key architectural choices for this domain. -->")
-	updated = ensureSection(updated, "## Constraints", "<!-- Add rules future plans must respect. -->")
-	if !strings.HasSuffix(updated, "\n") {
-		updated += "\n"
-	}
-	return updated
-}
-
-func ensureSection(text, heading, body string) string {
-	if strings.Contains(text, heading) {
-		return text
-	}
-	trimmed := strings.TrimRight(text, "\n")
-	return trimmed + "\n\n" + heading + "\n\n" + body + "\n"
-}
-
-func ensureRelatedPlan(text, planRef string) string {
-	heading := "## Related Plans"
-	if !strings.Contains(text, heading) {
-		trimmed := strings.TrimRight(text, "\n")
-		return trimmed + "\n\n" + heading + "\n\n- " + planRef + "\n"
-	}
-
-	lines := strings.Split(text, "\n")
-	start := -1
-	end := len(lines)
-	for i, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == heading {
-			start = i
-			continue
-		}
-		if start >= 0 && i > start && strings.HasPrefix(trimmed, "## ") {
-			end = i
-			break
-		}
-	}
-	if start < 0 {
-		return text
-	}
-
-	needle := "- " + planRef
-	for i := start + 1; i < end; i++ {
-		if strings.TrimSpace(lines[i]) == needle {
-			return text
-		}
-	}
-
-	insertAt := end
-	for i := end - 1; i > start; i-- {
-		if strings.TrimSpace(lines[i]) != "" {
-			insertAt = i + 1
-			break
-		}
-	}
-	if insertAt < start+1 {
-		insertAt = start + 1
-	}
-
-	newLines := make([]string, 0, len(lines)+1)
-	newLines = append(newLines, lines[:insertAt]...)
-	if insertAt == start+1 && strings.TrimSpace(lines[start+1]) != "" {
-		newLines = append(newLines, "")
-	}
-	newLines = append(newLines, needle)
-	newLines = append(newLines, lines[insertAt:]...)
-	return strings.Join(newLines, "\n")
 }
 
 func isDomainsHeading(line string) bool {

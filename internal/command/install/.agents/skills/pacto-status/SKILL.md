@@ -4,7 +4,7 @@ description: Agent contract for the Pacto status workflow.
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=agents/skill/pacto-status workflow=status contract=v1 template_sha256=8cce30270eb527935e1b18262a933f2706e0ab0ff66f86e54920dee2683ea3de generated_by=pacto generated_at=2026-04-15T23:09:48Z -->
+<!-- pacto:managed:meta artifact=agents/skill/pacto-status workflow=status contract=v1 template_sha256=8cce30270eb527935e1b18262a933f2706e0ab0ff66f86e54920dee2683ea3de generated_by=pacto generated_at=2026-04-30T00:10:24Z -->
 # Pacto Status Skill
 
 Use this skill as an agent contract for the status workflow in Pacto projects.

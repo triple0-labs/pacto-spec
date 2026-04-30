@@ -4,7 +4,7 @@ description: Agent contract for the Pacto new workflow.
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=agents/skill/pacto-new workflow=new contract=v1 template_sha256=6e69345dc3e061db54c9f3b212b5c1f2d1a1f50df4cb96e851e4d25ba63da1cf generated_by=pacto generated_at=2026-04-15T23:09:48Z -->
+<!-- pacto:managed:meta artifact=agents/skill/pacto-new workflow=new contract=v1 template_sha256=6e69345dc3e061db54c9f3b212b5c1f2d1a1f50df4cb96e851e4d25ba63da1cf generated_by=pacto generated_at=2026-04-30T00:10:24Z -->
 # Pacto New Skill
 
 Use this skill as an agent contract for the new workflow in Pacto projects.

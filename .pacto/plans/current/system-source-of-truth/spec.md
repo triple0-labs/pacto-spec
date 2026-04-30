@@ -33,8 +33,8 @@ We need a lightweight, markdown-first shared understanding that makes plan confl
 
 - **GIVEN** a completed plan with `## Domains Affected` listing "auth" and "session"
 - **WHEN** the user runs `pacto move done <slug>`
-- **THEN** pacto mechanically creates or updates `.pacto/context/domains/auth.md` and `.pacto/context/domains/session.md`
-- **AND** prints a prompt suggesting the agent/dev review `design.md` and enrich the relevant domain docs with decisions and constraints worth preserving
+- **THEN** pacto creates `.pacto/context/domains/auth/` and `.pacto/context/domains/session/` if they don't exist, each with `context.md` and `decisions.md` stubs
+- **AND** prints a prompt suggesting the agent/dev review `design.md` and enrich the relevant domain folders with decisions and context worth preserving
 
 ### Scenario: greenfield startup
 
@@ -53,14 +53,14 @@ We need a lightweight, markdown-first shared understanding that makes plan confl
 
 - **GIVEN** a plan moved to done with a non-empty `design.md`
 - **WHEN** the move completes
-- **THEN** pacto prints a Tier 2 prompt: "This plan may contain decisions or constraints worth preserving. Review design.md and update the affected domain docs under `.pacto/context/domains/`"
+- **THEN** pacto prints a Tier 2 prompt: "This plan may contain decisions or constraints worth preserving. Review design.md and update the affected domain folders under `.pacto/context/domains/`"
 
 ## Acceptance Criteria
 
 - AC-001: `pacto init` creates `.pacto/context/README.md` as a context overview and `.pacto/context/domains/` as the per-domain source-of-truth directory.
 - AC-002: `pacto new` generates spec.md with a `## Domains Affected` section containing a placeholder `- <domain>` entry.
 - AC-003: `pacto status` reads `## Domains Affected` from all active plans (current + to-implement) and warns when two or more plans declare the same domain.
-- AC-004: `pacto move done <slug>` extracts domains from spec.md, creates or updates `.pacto/context/domains/<domain>.md` files for each declared domain, and prints a Tier 2 enrichment prompt.
+- AC-004: `pacto move done <slug>` extracts domains from spec.md, creates `.pacto/context/domains/<domain>/` folders with `context.md` and `decisions.md` stubs for each new domain, and prints a Tier 2 enrichment prompt. Existing domain folders are left untouched.
 - AC-005: Plans without `## Domains Affected` are handled gracefully — no crash, no false overlap warnings.
 - AC-006: Overlap warnings include the plan names and domain for easy identification.
 - AC-007: Existing Go unit tests continue passing (no regression in move, status, new, init).

@@ -4,7 +4,7 @@ description: Agent contract for the Pacto init workflow.
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=agents/skill/pacto-init workflow=init contract=v1 template_sha256=230bf1ee55dca4831522c8ab3f21a6330308d70d58adf170ff56f3b9cb6fc77b generated_by=pacto generated_at=2026-04-15T23:09:48Z -->
+<!-- pacto:managed:meta artifact=agents/skill/pacto-init workflow=init contract=v1 template_sha256=230bf1ee55dca4831522c8ab3f21a6330308d70d58adf170ff56f3b9cb6fc77b generated_by=pacto generated_at=2026-04-30T00:10:24Z -->
 # Pacto Init Skill
 
 Use this skill as an agent contract for the init workflow in Pacto projects.

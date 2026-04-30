@@ -48,10 +48,14 @@ func TestReadContextDomains(t *testing.T) {
 	if err := os.MkdirAll(domainsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"auth.md", "billing.md", "notes.txt"} {
-		if err := os.WriteFile(filepath.Join(domainsDir, name), []byte(name), 0o644); err != nil {
+	for _, name := range []string{"auth", "billing"} {
+		if err := os.MkdirAll(filepath.Join(domainsDir, name), 0o755); err != nil {
 			t.Fatal(err)
 		}
+	}
+	// non-directory file should be excluded
+	if err := os.WriteFile(filepath.Join(domainsDir, "notes.txt"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
 	}
 
 	got := ReadContextDomains(contextDir)
@@ -60,58 +64,71 @@ func TestReadContextDomains(t *testing.T) {
 	}
 }
 
-func TestEnsureDomainDocsCreatesAndUpdatesWithoutDuplication(t *testing.T) {
+func TestEnsureDomainFoldersCreatesStubs(t *testing.T) {
 	root := t.TempDir()
 	contextDir := filepath.Join(root, ".pacto", "context")
-	if err := EnsureDomainDocs(contextDir, []string{"auth"}, "done/plan-a"); err != nil {
-		t.Fatal(err)
-	}
-	if err := EnsureDomainDocs(contextDir, []string{"auth"}, "done/plan-b"); err != nil {
-		t.Fatal(err)
-	}
-	if err := EnsureDomainDocs(contextDir, []string{"auth"}, "done/plan-b"); err != nil {
+	if err := EnsureDomainFolders(contextDir, []string{"auth"}); err != nil {
 		t.Fatal(err)
 	}
 
-	b, err := os.ReadFile(filepath.Join(contextDir, "domains", "auth.md"))
+	folderPath := filepath.Join(contextDir, "domains", "auth")
+	for _, name := range []string{"context.md", "decisions.md"} {
+		if _, err := os.Stat(filepath.Join(folderPath, name)); err != nil {
+			t.Fatalf("expected file %s: %v", name, err)
+		}
+	}
+
+	b, err := os.ReadFile(filepath.Join(folderPath, "context.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	text := string(b)
-	if strings.Count(text, "- done/plan-a") != 1 || strings.Count(text, "- done/plan-b") != 1 {
-		t.Fatalf("expected unique related plans, got %q", text)
-	}
-	if !strings.Contains(text, "## Decisions") || !strings.Contains(text, "## Constraints") {
-		t.Fatalf("expected scaffold sections, got %q", text)
+	if !strings.Contains(string(b), "# auth") {
+		t.Fatalf("expected slug heading in context.md, got %q", string(b))
 	}
 }
 
-func TestEnsureDomainDocsPreservesManualContent(t *testing.T) {
+func TestEnsureDomainFoldersIdempotent(t *testing.T) {
 	root := t.TempDir()
 	contextDir := filepath.Join(root, ".pacto", "context")
-	domainPath := filepath.Join(contextDir, "domains", "auth.md")
-	if err := os.MkdirAll(filepath.Dir(domainPath), 0o755); err != nil {
+	if err := EnsureDomainFolders(contextDir, []string{"auth"}); err != nil {
 		t.Fatal(err)
 	}
-	initial := "# Domain: auth\n\n## Summary\n\nManual summary.\n\n## Related Plans\n\n- done/existing\n\n## Decisions\n\nKeep this decision.\n\n## Constraints\n\nKeep this constraint.\n"
-	if err := os.WriteFile(domainPath, []byte(initial), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := EnsureDomainDocs(contextDir, []string{"auth"}, "done/new-plan"); err != nil {
+	if err := EnsureDomainFolders(contextDir, []string{"auth"}); err != nil {
 		t.Fatal(err)
 	}
 
-	b, err := os.ReadFile(domainPath)
+	entries, err := os.ReadDir(filepath.Join(contextDir, "domains", "auth"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	text := string(b)
-	if !strings.Contains(text, "Keep this decision.") || !strings.Contains(text, "Keep this constraint.") {
-		t.Fatalf("expected manual content preserved, got %q", text)
+	if len(entries) != 2 {
+		t.Fatalf("expected exactly 2 files in domain folder, got %d", len(entries))
 	}
-	if !strings.Contains(text, "- done/new-plan") {
-		t.Fatalf("expected new related plan added, got %q", text)
+}
+
+func TestEnsureDomainFoldersPreservesManualContent(t *testing.T) {
+	root := t.TempDir()
+	contextDir := filepath.Join(root, ".pacto", "context")
+	folderPath := filepath.Join(contextDir, "domains", "auth")
+	if err := os.MkdirAll(folderPath, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	manualContent := "# auth\n\nManual bounded context description.\n"
+	if err := os.WriteFile(filepath.Join(folderPath, "context.md"), []byte(manualContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// calling again must not touch the existing folder
+	if err := EnsureDomainFolders(contextDir, []string{"auth"}); err != nil {
+		t.Fatal(err)
+	}
+
+	b, err := os.ReadFile(filepath.Join(folderPath, "context.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != manualContent {
+		t.Fatalf("expected context.md untouched, got %q", string(b))
 	}
 }
 

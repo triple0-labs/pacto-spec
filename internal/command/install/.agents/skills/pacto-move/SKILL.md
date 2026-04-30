@@ -4,7 +4,7 @@ description: Agent contract for the Pacto move workflow.
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=agents/skill/pacto-move workflow=move contract=v1 template_sha256=fac1e847fe1596881acfe9128d561cf4e7f04dda83e327831fc0fe67c9aa099f generated_by=pacto generated_at=2026-04-30T02:06:27Z -->
+<!-- pacto:managed:meta artifact=agents/skill/pacto-move workflow=move contract=v1 template_sha256=fac1e847fe1596881acfe9128d561cf4e7f04dda83e327831fc0fe67c9aa099f generated_by=pacto generated_at=2026-04-30T02:16:42Z -->
 # Pacto Move Skill
 
 Use this skill as an agent contract for the move workflow in Pacto projects.

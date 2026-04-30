@@ -4,7 +4,7 @@ description: Agent contract for the Pacto install workflow.
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=agents/skill/pacto-install workflow=install contract=v1 template_sha256=91f704219e538bfc2c1395772826edd05f74c4dbad7bc0fc7d37b4dc5643f3a2 generated_by=pacto generated_at=2026-04-30T02:06:27Z -->
+<!-- pacto:managed:meta artifact=agents/skill/pacto-install workflow=install contract=v1 template_sha256=91f704219e538bfc2c1395772826edd05f74c4dbad7bc0fc7d37b4dc5643f3a2 generated_by=pacto generated_at=2026-04-30T02:16:42Z -->
 # Pacto Install Skill
 
 Use this skill as an agent contract for the install workflow in Pacto projects.

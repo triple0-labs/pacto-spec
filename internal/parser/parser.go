@@ -176,17 +176,7 @@ func ParsePlan(ref plan.PlanRef, mode string) (ParsedPlan, error) {
 }
 
 func parseStructuredDeltas(lines []string, mode string) ([]ParsedDelta, []string, bool, error) {
-	start := -1
-	for i, line := range lines {
-		if !strings.HasPrefix(strings.TrimSpace(line), "##") {
-			continue
-		}
-		h := normalizeHeading(strings.TrimSpace(line))
-		if h == "delta history" || h == "historial de deltas" {
-			start = i
-			break
-		}
-	}
+	start := findDeltaHistorySection(lines)
 	if start < 0 {
 		return nil, nil, false, nil
 	}
@@ -213,23 +203,9 @@ func parseStructuredDeltas(lines []string, mode string) ([]ParsedDelta, []string
 		if curr == nil {
 			return nil
 		}
-		if curr.ID == "" {
-			return addIssue("missing delta id in heading")
-		}
-		if curr.Date == nil {
-			if err := addIssue("delta " + curr.ID + " missing Date"); err != nil {
+		for _, msg := range validateDelta(curr) {
+			if err := addIssue(msg); err != nil {
 				return err
-			}
-		}
-		if curr.Status != "" {
-			s := strings.ToLower(strings.TrimSpace(curr.Status))
-			switch s {
-			case "applied", "partial", "reverted":
-				curr.Status = s
-			default:
-				if err := addIssue("delta " + curr.ID + " has invalid Status: " + curr.Status); err != nil {
-					return err
-				}
 			}
 		}
 		deltas = append(deltas, *curr)
@@ -265,25 +241,12 @@ func parseStructuredDeltas(lines []string, mode string) ([]ParsedDelta, []string
 		}
 
 		if key, value, ok := parseDeltaField(t); ok {
-			insideChanges = false
-			switch key {
-			case "date":
-				dt, err := parseStructuredDate(value)
-				if err != nil {
-					if err := addIssue("delta " + curr.ID + " has invalid Date: " + value); err != nil {
-						return nil, warnings, true, err
-					}
-				} else {
-					curr.Date = dt
+			nowInsideChanges, issue := applyDeltaField(curr, key, value)
+			insideChanges = nowInsideChanges
+			if issue != "" {
+				if err := addIssue(issue); err != nil {
+					return nil, warnings, true, err
 				}
-			case "type":
-				curr.Type = strings.TrimSpace(value)
-			case "status":
-				curr.Status = strings.TrimSpace(value)
-			case "next delta":
-				curr.NextDelta = strings.TrimSpace(value)
-			case "changes":
-				insideChanges = true
 			}
 			continue
 		}
@@ -303,6 +266,67 @@ func parseStructuredDeltas(lines []string, mode string) ([]ParsedDelta, []string
 		return nil, warnings, true, err
 	}
 	return deltas, warnings, true, nil
+}
+
+// findDeltaHistorySection returns the index of the "## Delta History" /
+// "## Historial de Deltas" heading, or -1 if absent.
+func findDeltaHistorySection(lines []string) int {
+	for i, line := range lines {
+		if !strings.HasPrefix(strings.TrimSpace(line), "##") {
+			continue
+		}
+		h := normalizeHeading(strings.TrimSpace(line))
+		if h == "delta history" || h == "historial de deltas" {
+			return i
+		}
+	}
+	return -1
+}
+
+// validateDelta returns the structural issues for a fully-collected delta
+// (in the order they should be reported). An empty slice means valid.
+// Status is normalized in place when recognized.
+func validateDelta(d *ParsedDelta) []string {
+	issues := make([]string, 0, 2)
+	if d.ID == "" {
+		issues = append(issues, "missing delta id in heading")
+	}
+	if d.Date == nil {
+		issues = append(issues, "delta "+d.ID+" missing Date")
+	}
+	if d.Status != "" {
+		s := strings.ToLower(strings.TrimSpace(d.Status))
+		switch s {
+		case "applied", "partial", "reverted":
+			d.Status = s
+		default:
+			issues = append(issues, "delta "+d.ID+" has invalid Status: "+d.Status)
+		}
+	}
+	return issues
+}
+
+// applyDeltaField writes a parsed (key,value) pair into the current delta
+// and signals whether subsequent unstructured lines should be parsed as
+// change entries. Returns an issue message when a value is rejected.
+func applyDeltaField(curr *ParsedDelta, key, value string) (insideChanges bool, issue string) {
+	switch key {
+	case "date":
+		dt, err := parseStructuredDate(value)
+		if err != nil {
+			return false, "delta " + curr.ID + " has invalid Date: " + value
+		}
+		curr.Date = dt
+	case "type":
+		curr.Type = strings.TrimSpace(value)
+	case "status":
+		curr.Status = strings.TrimSpace(value)
+	case "next delta":
+		curr.NextDelta = strings.TrimSpace(value)
+	case "changes":
+		return true, ""
+	}
+	return false, ""
 }
 
 func parseStructuredDate(value string) (*time.Time, error) {

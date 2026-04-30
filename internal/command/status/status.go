@@ -4,22 +4,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
-	"pacto/internal/analyze"
-	"pacto/internal/claims"
+	appstatus "pacto/internal/app/status"
 	"pacto/internal/config"
-	plancontext "pacto/internal/context"
-	"pacto/internal/discovery"
-	"pacto/internal/domain/claim"
 	"pacto/internal/domain/report"
 	"pacto/internal/exitcode"
 	"pacto/internal/i18n"
-	"pacto/internal/parser"
 	"pacto/internal/render"
 	statusui "pacto/internal/tui/status"
-	"pacto/internal/verify"
 )
 
 type Options struct {
@@ -182,72 +175,21 @@ func resolveStatusRoots(cfg config.Config, provided map[string]bool, cwdAbs stri
 }
 
 func buildStatusReport(cfg config.Config, cfgWarnings []string) (report.StatusReport, int, bool) {
-	plans, err := discovery.FindPlans(cfg.PlansRoot, discovery.Options{StateFilter: cfg.State, IncludeArchive: cfg.IncludeArchive})
+	rep, err := appstatus.BuildReport(appstatus.Input{
+		PlansRoot:      cfg.PlansRoot,
+		RepoRoot:       cfg.RepoRoot,
+		Mode:           cfg.Mode,
+		State:          cfg.State,
+		IncludeArchive: cfg.IncludeArchive,
+		Verify:         cfg.Verify,
+		ClaimsPaths:    cfg.ClaimsPaths,
+		MaxNextActions: cfg.MaxNextActions,
+		MaxBlockers:    cfg.MaxBlockers,
+		Warnings:       cfgWarnings,
+	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "discover plans: %v\n", err)
+		fmt.Fprintf(os.Stderr, "%v\n", err)
 		return report.StatusReport{}, 3, false
-	}
-
-	parsed := make([]parser.ParsedPlan, 0, len(plans))
-	claimsByPlan := map[string][]claim.Result{}
-	warningsByPlan := map[string][]string{}
-	planDomains := map[string][]string{}
-	verifier := verify.New(cfg.RepoRoot, cfg.PlansRoot)
-	claimOpts := claims.Options{Paths: cfg.ClaimsPaths}
-
-	for _, plan := range plans {
-		pp, pErr := parser.ParsePlan(plan, cfg.Mode)
-		if pErr != nil {
-			pp.ParseError = pErr.Error()
-		}
-		parsed = append(parsed, pp)
-		key := plan.State + "/" + plan.Slug
-		verifiedClaims := make([]claim.Result, 0)
-		if cfg.Verify {
-			rawClaims := claims.Extract(pp, claimOpts)
-			verifiedClaims = make([]claim.Result, 0, len(rawClaims))
-			for _, c := range rawClaims {
-				verifiedClaims = append(verifiedClaims, verifier.VerifyClaim(plan, c))
-			}
-		}
-		claimsByPlan[key] = verifiedClaims
-		if len(cfgWarnings) > 0 {
-			warningsByPlan[key] = append(warningsByPlan[key], cfgWarnings...)
-		}
-		if plan.State == "current" || plan.State == "to-implement" {
-			domains := plancontext.ExtractDomains(filepath.Join(plan.Dir, "spec.md"))
-			if len(domains) > 0 {
-				planDomains[key] = domains
-			}
-		}
-	}
-
-	overlaps := plancontext.DetectOverlaps(planDomains)
-	for _, overlap := range overlaps {
-		warning := fmt.Sprintf("domain overlap: %s shared by %s", overlap.Domain, strings.Join(overlap.Plans, ", "))
-		for _, planKey := range overlap.Plans {
-			warningsByPlan[planKey] = appendUniqueString(warningsByPlan[planKey], warning)
-		}
-	}
-
-	rep := analyze.Build(analyze.Input{
-		Root:                cfg.PlansRoot,
-		PlansRoot:           cfg.PlansRoot,
-		RepoRoot:            cfg.RepoRoot,
-		Mode:                cfg.Mode,
-		VerificationEnabled: cfg.Verify,
-		Plans:               parsed,
-		Claims:              claimsByPlan,
-		Warnings:            warningsByPlan,
-	}, analyze.Options{MaxNextActions: cfg.MaxNextActions, MaxBlockers: cfg.MaxBlockers})
-	rep.Overlaps = make([]report.DomainOverlap, 0, len(overlaps))
-	for _, overlap := range overlaps {
-		plans := append([]string{}, overlap.Plans...)
-		sort.Strings(plans)
-		rep.Overlaps = append(rep.Overlaps, report.DomainOverlap{
-			Domain: overlap.Domain,
-			Plans:  plans,
-		})
 	}
 	return rep, 0, true
 }
@@ -339,13 +281,4 @@ func cleanAbs(path string) string {
 		return filepath.Clean(abs)
 	}
 	return filepath.Clean(path)
-}
-
-func appendUniqueString(items []string, value string) []string {
-	for _, item := range items {
-		if item == value {
-			return items
-		}
-	}
-	return append(items, value)
 }

@@ -34,6 +34,30 @@ ports declared by `app`.
 - Packages: `internal/ui`, `internal/tui/*`.
 - Responsibilities: terminal styles and interactive displays only.
 
+## Application Layer Policies
+
+### i18n in use cases
+
+Several `internal/app/*` use cases (`execplan`, `explore`, `move`, `newplan`,
+`initws`) import `internal/i18n`. This is intentional: pacto's text-mutation
+commands must match the language of the plan document they are editing
+(autodetected from the document's headings), so the language selection is a
+**domain rule** ("write the new bullet under the same `## Blockers` /
+`## Bloqueadores` heading the document already uses"), not a presentation
+concern.
+
+The CLI layer still owns the `--lang` flag, but its only job is to set a
+fallback that flows into use-case `Input` structs as `Lang i18n.Language`.
+Use cases must:
+
+- Detect the document's effective language when mutating existing files.
+- Use the supplied fallback only when no markers are present.
+- Never call `fmt.Print*` or write to stdout/stderr — text variants are
+  returned via `Result` for the CLI to render.
+
+This policy keeps `internal/i18n` confined to the rendering of strings; it
+does not turn the application layer into a presentation layer.
+
 ## Design Constraints
 
 1. Markdown-first plan model

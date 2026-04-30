@@ -225,23 +225,67 @@ func resolvePlanRef(plansRoot, state, slug string) (planRef, error) {
 	return ref, nil
 }
 
+// execTaskCandidate is a single phase task discovered while scanning a plan
+// document. It captures enough state for both selection (find the next
+// pending one, or one matching a requested step) and mutation (rewrite the
+// checkbox).
+type execTaskCandidate struct {
+	line  int
+	ref   string
+	phase int
+	task  int
+	done  bool
+}
+
 func applyExecTaskUpdate(content, requestedStep string) (string, string, error) {
+	step, err := normalizeStepRef(requestedStep)
+	if err != nil {
+		return content, "", err
+	}
+
+	lines := strings.Split(content, "\n")
+	candidates := collectExecTaskCandidates(lines)
+	if len(candidates) == 0 {
+		return content, "", fmt.Errorf("no phase tasks found (expected '- [ ] 1.1 ...' under '## Phase N' or '## Fase N' headings)")
+	}
+
+	target, targetID, alreadyDone := pickExecTaskTarget(candidates, step)
+	if alreadyDone {
+		return content, "", nil
+	}
+	if target < 0 {
+		if step != "" {
+			return content, "", fmt.Errorf("task %s not found or already completed", step)
+		}
+		return content, "", nil
+	}
+
+	lines[target] = markCheckboxDone(lines[target])
+	if targetID == "" {
+		targetID = fmt.Sprintf("line %d", target+1)
+	}
+	return strings.Join(lines, "\n"), fmt.Sprintf("completed %s", targetID), nil
+}
+
+// normalizeStepRef validates a raw --step value and returns the canonical
+// "<phase>.<task>" form. An empty input is allowed (means: pick the next
+// pending task).
+func normalizeStepRef(requestedStep string) (string, error) {
 	step := strings.TrimSpace(requestedStep)
 	if strings.HasPrefix(strings.ToUpper(step), "T") {
-		return content, "", fmt.Errorf("legacy --step %q is no longer supported (use <phase>.<task>, e.g. 1.2)", requestedStep)
+		return "", fmt.Errorf("legacy --step %q is no longer supported (use <phase>.<task>, e.g. 1.2)", requestedStep)
 	}
 	if requestedStep != "" && !reStrictStepID.MatchString(step) {
-		return content, "", fmt.Errorf("invalid --step %q (use <phase>.<task>, e.g. 1.2)", requestedStep)
+		return "", fmt.Errorf("invalid --step %q (use <phase>.<task>, e.g. 1.2)", requestedStep)
 	}
-	lines := strings.Split(content, "\n")
-	type candidate struct {
-		line  int
-		ref   string
-		phase int
-		task  int
-		done  bool
-	}
-	candidates := make([]candidate, 0, 16)
+	return step, nil
+}
+
+// collectExecTaskCandidates scans the plan content line by line, tracking
+// the current "## Phase N" / "## Fase N" heading, and returns all phase
+// tasks in document order then resorted by (phase, task, line).
+func collectExecTaskCandidates(lines []string) []execTaskCandidate {
+	candidates := make([]execTaskCandidate, 0, 16)
 	currentPhase := 0
 	for i, line := range lines {
 		t := strings.TrimSpace(line)
@@ -259,7 +303,7 @@ func applyExecTaskUpdate(content, requestedStep string) (string, string, error) 
 		if !ok || phase != currentPhase {
 			continue
 		}
-		candidates = append(candidates, candidate{
+		candidates = append(candidates, execTaskCandidate{
 			line:  i,
 			ref:   fmt.Sprintf("%d.%d", phase, task),
 			phase: phase,
@@ -267,11 +311,6 @@ func applyExecTaskUpdate(content, requestedStep string) (string, string, error) 
 			done:  done,
 		})
 	}
-
-	if len(candidates) == 0 {
-		return content, "", fmt.Errorf("no phase tasks found (expected '- [ ] 1.1 ...' under '## Phase N' or '## Fase N' headings)")
-	}
-
 	sort.Slice(candidates, func(i, j int) bool {
 		if candidates[i].phase == candidates[j].phase {
 			if candidates[i].task == candidates[j].task {
@@ -281,49 +320,41 @@ func applyExecTaskUpdate(content, requestedStep string) (string, string, error) 
 		}
 		return candidates[i].phase < candidates[j].phase
 	})
+	return candidates
+}
 
-	target := -1
-	targetID := ""
+// pickExecTaskTarget chooses which candidate to mark done. When step is
+// non-empty, it must match exactly; when empty, the first pending task
+// wins. Returns the target line index, its "<phase>.<task>" id, and a
+// flag indicating the requested step was already complete (no-op).
+func pickExecTaskTarget(candidates []execTaskCandidate, step string) (int, string, bool) {
 	if step != "" {
 		for _, c := range candidates {
 			if c.ref != step {
 				continue
 			}
 			if c.done {
-				return content, "", nil
+				return -1, "", true
 			}
-			target = c.line
-			targetID = c.ref
-			break
+			return c.line, c.ref, false
 		}
-	} else {
-		for _, c := range candidates {
-			if !c.done {
-				target = c.line
-				targetID = c.ref
-				break
-			}
+		return -1, "", false
+	}
+	for _, c := range candidates {
+		if !c.done {
+			return c.line, c.ref, false
 		}
 	}
+	return -1, "", false
+}
 
-	if target < 0 {
-		if step != "" {
-			return content, "", fmt.Errorf("task %s not found or already completed", step)
-		}
-		return content, "", nil
-	}
-
-	line := lines[target]
+// markCheckboxDone rewrites a markdown checkbox line from "[ ]"/"[  ]" to
+// "[x]". Other line shapes pass through unchanged.
+func markCheckboxDone(line string) string {
 	if strings.Contains(line, "[ ]") {
-		lines[target] = strings.Replace(line, "[ ]", "[x]", 1)
-	} else {
-		lines[target] = strings.Replace(line, "[  ]", "[x]", 1)
+		return strings.Replace(line, "[ ]", "[x]", 1)
 	}
-
-	if targetID == "" {
-		targetID = fmt.Sprintf("line %d", target+1)
-	}
-	return strings.Join(lines, "\n"), fmt.Sprintf("completed %s", targetID), nil
+	return strings.Replace(line, "[  ]", "[x]", 1)
 }
 
 func extractStepRef(text string) (int, int, bool) {

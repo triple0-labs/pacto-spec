@@ -61,8 +61,8 @@ func TestPlanMerge_addedDuplicateErrors(t *testing.T) {
 		Deltas: []Delta{{
 			Op: DeltaAdded,
 			Requirements: []Requirement{{
-				Name: "Sign in",
-				Body: []string{"dup"},
+				Name:      "Sign in",
+				Body:      []string{"dup"},
 				Scenarios: []Scenario{{Name: "B", Lines: []string{"- WHEN x", "- THEN y"}}},
 			}},
 		}},
@@ -87,8 +87,8 @@ func TestPlanMerge_modifiedReplaces(t *testing.T) {
 		Deltas: []Delta{{
 			Op: DeltaModified,
 			Requirements: []Requirement{{
-				Name: "Sign in",
-				Body: []string{"new body"},
+				Name:      "Sign in",
+				Body:      []string{"new body"},
 				Scenarios: []Scenario{{Name: "Updated", Lines: []string{"- WHEN x", "- THEN y"}}},
 			}},
 		}},
@@ -122,8 +122,8 @@ func TestPlanMerge_modifiedMissingErrors(t *testing.T) {
 		Deltas: []Delta{{
 			Op: DeltaModified,
 			Requirements: []Requirement{{
-				Name: "Missing",
-				Body: []string{"x"},
+				Name:      "Missing",
+				Body:      []string{"x"},
 				Scenarios: []Scenario{{Name: "S", Lines: []string{"- WHEN x", "- THEN y"}}},
 			}},
 		}},
@@ -146,7 +146,7 @@ func TestPlanMerge_removedAddsAuditComment(t *testing.T) {
 	caps := []Capability{{
 		Slug: "auth",
 		Deltas: []Delta{{
-			Op: DeltaRemoved,
+			Op:           DeltaRemoved,
 			Requirements: []Requirement{{Name: "Old"}},
 		}},
 	}}
@@ -175,7 +175,7 @@ func TestPlanMerge_renamedRewritesHeader(t *testing.T) {
 	caps := []Capability{{
 		Slug: "auth",
 		Deltas: []Delta{{
-			Op: DeltaRenamed,
+			Op:           DeltaRenamed,
 			Requirements: []Requirement{{Name: "Old name", NewName: "New name"}},
 		}},
 	}}
@@ -199,7 +199,7 @@ func TestCommitMerge_atomicTempCleanup(t *testing.T) {
 		Deltas: []Delta{{
 			Op: DeltaAdded,
 			Requirements: []Requirement{{
-				Name: "X",
+				Name:      "X",
 				Scenarios: []Scenario{{Name: "S", Lines: []string{"- WHEN x", "- THEN y"}}},
 			}},
 		}},

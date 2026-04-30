@@ -57,16 +57,16 @@ func CommitMerge(files []MergeFile) error {
 			return fmt.Errorf("temp %s: %w", f.Path, err)
 		}
 		if _, err := tmp.WriteString(f.Content); err != nil {
-			tmp.Close()
-			os.Remove(tmp.Name())
+			_ = tmp.Close()
+			_ = os.Remove(tmp.Name())
 			return fmt.Errorf("write temp %s: %w", f.Path, err)
 		}
 		if err := tmp.Close(); err != nil {
-			os.Remove(tmp.Name())
+			_ = os.Remove(tmp.Name())
 			return err
 		}
 		if err := os.Rename(tmp.Name(), f.Path); err != nil {
-			os.Remove(tmp.Name())
+			_ = os.Remove(tmp.Name())
 			return fmt.Errorf("rename %s: %w", f.Path, err)
 		}
 	}

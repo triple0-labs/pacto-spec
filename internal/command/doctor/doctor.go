@@ -2,16 +2,16 @@ package doctorcmd
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 
+	"pacto/internal/app/doctor"
 	"pacto/internal/cmdutil"
 	"pacto/internal/integrations"
 	"pacto/internal/ui"
-	"pacto/internal/workspace"
 )
 
 type Options struct {
@@ -23,58 +23,35 @@ type Options struct {
 }
 
 func Run(opts Options) int {
-	opts.Format = strings.ToLower(strings.TrimSpace(opts.Format))
-	if opts.Format == "" {
-		opts.Format = "table"
-	}
-	opts.FailOn = strings.ToLower(strings.TrimSpace(opts.FailOn))
-	if opts.FailOn == "" {
-		opts.FailOn = "none"
-	}
-	if opts.Format != "table" && opts.Format != "json" {
-		fmt.Fprintln(os.Stderr, "invalid --format value (allowed: table|json)")
-		return 2
-	}
-	switch opts.FailOn {
-	case "none", "drift", "legacy", "any":
-	default:
-		fmt.Fprintln(os.Stderr, "invalid --fail-on value (allowed: none|drift|legacy|any)")
-		return 2
-	}
-	projectRoot := strings.TrimSpace(opts.Root)
-	if projectRoot == "" {
-		abs, err := filepath.Abs(".")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "resolve cwd: %v\n", err)
-			return 2
-		}
-		projectRoot = abs
-	}
-	projectRoot = workspace.CleanAbs(projectRoot)
-	lang := cmdutil.EffectiveLanguage(projectRoot)
-
-	tools, err := resolveDoctorTools(projectRoot, strings.TrimSpace(opts.Tools))
+	res, err := doctor.Analyze(doctor.Input{
+		Root:   opts.Root,
+		Tools:  opts.Tools,
+		Format: opts.Format,
+		FailOn: opts.FailOn,
+	})
+	lang := cmdutil.EffectiveLanguage(res.ProjectRoot)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
-		return 2
+		if errors.Is(err, doctor.ErrInvalid) {
+			return 2
+		}
+		return 3
 	}
-	if len(tools) == 0 {
+	if res.NoOp {
 		fmt.Println(ui.Dim(cmdutil.Tr(lang, "No tools selected; nothing to do.", "No se seleccionaron herramientas; nada por hacer.")))
 		return 0
 	}
-	records, err := integrations.AnalyzeDrift(projectRoot, tools)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "doctor analysis: %v\n", err)
-		return 3
-	}
-	summary := summarizeDoctor(records)
 
-	if opts.Format == "json" {
+	format := strings.ToLower(strings.TrimSpace(opts.Format))
+	if format == "" {
+		format = "table"
+	}
+	if format == "json" {
 		out := map[string]any{
-			"root":    projectRoot,
-			"tools":   tools,
-			"summary": summary,
-			"records": records,
+			"root":    res.ProjectRoot,
+			"tools":   res.Tools,
+			"summary": res.Summary,
+			"records": res.Records,
 		}
 		b, err := json.MarshalIndent(out, "", "  ")
 		if err != nil {
@@ -83,92 +60,20 @@ func Run(opts Options) int {
 		}
 		fmt.Println(string(b))
 	} else {
-		fmt.Print(renderDoctorTable(projectRoot, tools, records, summary))
+		fmt.Print(renderDoctorTable(res.ProjectRoot, res.Tools, res.Records, res.Summary))
 	}
 
-	code := evaluateDoctorExit(opts.FailOn, records)
-	if code == 0 && opts.FailOn == "none" && (summary["drift"] > 0 || summary["legacy"] > 0) {
+	if res.HasNonFailingDrift {
 		fmt.Fprintf(os.Stderr, "%s: %s\n", cmdutil.Tr(lang, "warning", "advertencia"), cmdutil.Tr(lang, "drift detected; run `pacto update --artifacts` to refresh managed artifacts", "drift detectado; ejecuta `pacto update --artifacts` para refrescar artefactos gestionados"))
 	}
 	if opts.Verbose {
-		fmt.Fprintf(os.Stderr, "doctor: root=%s tools=%s format=%s fail-on=%s records=%d\n", projectRoot, strings.Join(tools, ","), opts.Format, opts.FailOn, len(records))
-	}
-	return code
-}
-
-func resolveDoctorTools(projectRoot, raw string) ([]string, error) {
-	if strings.TrimSpace(raw) == "" {
-		detected, err := integrations.DetectTools(projectRoot)
-		if err != nil {
-			return nil, err
+		policy := strings.ToLower(strings.TrimSpace(opts.FailOn))
+		if policy == "" {
+			policy = "none"
 		}
-		if len(detected) == 0 {
-			return nil, fmt.Errorf("no tools detected. Use --tools (%s)", strings.Join(integrations.SupportedTools(), ","))
-		}
-		return detected, nil
+		fmt.Fprintf(os.Stderr, "doctor: root=%s tools=%s format=%s fail-on=%s records=%d\n", res.ProjectRoot, strings.Join(res.Tools, ","), format, policy, len(res.Records))
 	}
-	return integrations.ParseToolsArg(raw)
-}
-
-func summarizeDoctor(records []integrations.DriftRecord) map[string]int {
-	summary := map[string]int{
-		"ok":        0,
-		"drift":     0,
-		"legacy":    0,
-		"missing":   0,
-		"unmanaged": 0,
-		"errors":    0,
-	}
-	for _, r := range records {
-		switch r.Status {
-		case integrations.DriftOK:
-			summary["ok"]++
-		case integrations.DriftLegacyPattern:
-			summary["legacy"]++
-		case integrations.DriftMissing:
-			summary["drift"]++
-			summary["missing"]++
-		case integrations.DriftUnmanaged:
-			summary["drift"]++
-			summary["unmanaged"]++
-		case integrations.DriftLegacyManaged, integrations.DriftStale, integrations.DriftMetaMismatch:
-			summary["drift"]++
-		default:
-			summary["errors"]++
-		}
-	}
-	return summary
-}
-
-func evaluateDoctorExit(policy string, records []integrations.DriftRecord) int {
-	if policy == "none" {
-		return 0
-	}
-	hasDrift := false
-	hasLegacy := false
-	for _, r := range records {
-		switch r.Status {
-		case integrations.DriftLegacyPattern:
-			hasLegacy = true
-		case integrations.DriftMissing, integrations.DriftUnmanaged, integrations.DriftLegacyManaged, integrations.DriftStale, integrations.DriftMetaMismatch:
-			hasDrift = true
-		}
-	}
-	switch policy {
-	case "drift":
-		if hasDrift {
-			return 1
-		}
-	case "legacy":
-		if hasLegacy {
-			return 1
-		}
-	case "any":
-		if hasDrift || hasLegacy {
-			return 1
-		}
-	}
-	return 0
+	return res.ExitCode
 }
 
 func renderDoctorTable(projectRoot string, tools []string, records []integrations.DriftRecord, summary map[string]int) string {

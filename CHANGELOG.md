@@ -6,6 +6,7 @@ All notable changes to this project are documented in this file.
 
 ### Changed
 
+- **Internal refactor (no behavior change):** introduced `internal/app/` as the application/use-case layer. Moved the previously vestigial `internal/move` and `internal/explore` helper packages into `internal/app/move` and `internal/app/explore`, and added direct test coverage (`internal/app/move` 77.6%, `internal/app/explore` 85.1% — both were 0%). Wave 1 of light DDD layering.
 - **Internal refactor (no behavior change):** introduced `internal/domain/{plan,claim,report}` as pure domain packages and split out the former `internal/model` umbrella package. Renamed `internal/report` → `internal/render` to disambiguate the renderer from domain DTOs. Removed empty `internal/resolve` package. First step of a light DDD layering (cli → app → domain ← infra). See [`docs/architecture.md`](./docs/architecture.md).
 
 ### Added

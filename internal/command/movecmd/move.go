@@ -9,7 +9,7 @@ import (
 
 	"pacto/internal/cmdutil"
 	plancontext "pacto/internal/context"
-	"pacto/internal/move"
+	"pacto/internal/app/move"
 	"pacto/internal/ui"
 	"pacto/internal/workspace"
 )
@@ -59,15 +59,14 @@ func Run(opts Options, pos []string) int {
 			contextDir := plancontext.ContextDirFromPlansRoot(plansRoot)
 			docActions := map[string]string{}
 			for _, domain := range domains {
-				docPath := plancontext.DomainDocPath(contextDir, domain)
+				docPath := plancontext.DomainFolderPath(contextDir, domain)
 				if _, err := os.Stat(docPath); err == nil {
-					docActions[docPath] = "updated"
+					docActions[docPath] = "exists"
 				} else {
 					docActions[docPath] = "created"
 				}
 			}
-			planRef := toState + "/" + slug
-			if err := plancontext.EnsureDomainDocs(contextDir, domains, planRef); err != nil {
+			if err := plancontext.EnsureDomainFolders(contextDir, domains); err != nil {
 				fmt.Fprintf(os.Stderr, "move error: update context domains: %v\n", err)
 				return 3
 			}
@@ -82,12 +81,12 @@ func Run(opts Options, pos []string) int {
 
 			docNames := make([]string, 0, len(docPaths))
 			for _, path := range docPaths {
-				docNames = append(docNames, filepath.Base(path))
+				docNames = append(docNames, filepath.Base(path)+"/")
 			}
 			fmt.Println(move.Tr(
 				lang,
-				fmt.Sprintf("This plan may contain decisions or constraints worth preserving. Review design.md and update the affected domain docs under `.pacto/context/domains/`: %s", strings.Join(docNames, ", ")),
-				fmt.Sprintf("Este plan puede contener decisiones o restricciones que conviene preservar. Revisa design.md y actualiza los documentos de dominio afectados en `.pacto/context/domains/`: %s", strings.Join(docNames, ", ")),
+				fmt.Sprintf("This plan may contain decisions or constraints worth preserving. Review design.md and update the affected domain folders under `.pacto/context/domains/`: %s", strings.Join(docNames, ", ")),
+				fmt.Sprintf("Este plan puede contener decisiones o restricciones que conviene preservar. Revisa design.md y actualiza las carpetas de dominio afectadas en `.pacto/context/domains/`: %s", strings.Join(docNames, ", ")),
 			))
 		}
 	}

@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"pacto/internal/cmdutil"
-	"pacto/internal/explore"
+	"pacto/internal/app/explore"
 	"pacto/internal/i18n"
 	"pacto/internal/ui"
 	"pacto/internal/workspace"

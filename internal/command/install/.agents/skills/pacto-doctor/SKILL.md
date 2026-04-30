@@ -4,7 +4,7 @@ description: Agent contract for the Pacto doctor workflow.
 ---
 
 <!-- pacto:managed:start -->
-<!-- pacto:managed:meta artifact=agents/skill/pacto-doctor workflow=doctor contract=v1 template_sha256=838be0384fdfef8e02d34cd770fe1e798e09a896a655c5934ef070b1d76a949c generated_by=pacto generated_at=2026-04-30T00:22:28Z -->
+<!-- pacto:managed:meta artifact=agents/skill/pacto-doctor workflow=doctor contract=v1 template_sha256=838be0384fdfef8e02d34cd770fe1e798e09a896a655c5934ef070b1d76a949c generated_by=pacto generated_at=2026-04-30T02:06:27Z -->
 # Pacto Doctor Skill
 
 Use this skill as an agent contract for the doctor workflow in Pacto projects.

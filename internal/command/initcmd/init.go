@@ -1,21 +1,22 @@
 package initcmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
-	"pacto/internal/assets"
-	plancontext "pacto/internal/context"
+	"pacto/internal/app/initws"
 	"pacto/internal/i18n"
-	"pacto/internal/integrations"
 	"pacto/internal/onboarding"
 	initui "pacto/internal/tui/init"
 	"pacto/internal/ui"
 )
 
+// Re-exported here for the package-internal test suite which references the
+// AGENTS.md managed-block markers directly.
 const (
 	agentsManagedStart = "<!-- pacto:init:start -->"
 	agentsManagedEnd   = "<!-- pacto:init:end -->"
@@ -115,107 +116,58 @@ func Run(opts Options) int {
 		return 0
 	}
 
-	var created, updated, skipped []string
-	if err := bootstrapWorkspace(plansRoot, profile.UILanguage, opts.Force, &created, &updated, &skipped); err != nil {
+	// Decide whether to defer the install step behind a confirmation prompt.
+	skipInstallNow := opts.NoInstall
+	deferredInstall := false
+	if !opts.NoInstall && interactive && !opts.Yes && len(profile.Tools) > 0 {
+		fmt.Printf("%s %s ? [Y/n]: ", tr(lang, "Install tool artifacts for:", "¿Instalar artefactos para herramientas:"), strings.Join(profile.Tools, ", "))
+		if promptYesNo(true) {
+			deferredInstall = true
+		}
+		// In either case we don't want the use case to install yet — we
+		// either run it ourselves below (deferredInstall) or skip entirely.
+		skipInstallNow = true
+	}
+
+	res, err := initws.Apply(initws.Input{
+		ProjectRoot: projectRoot,
+		Profile:     profile,
+		WithAgents:  opts.WithAgents,
+		Force:       opts.Force,
+		NoInstall:   skipInstallNow,
+	})
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
+		if errors.Is(err, initws.ErrInvalid) {
+			return 2
+		}
 		return 3
 	}
-	contextDir := plancontext.ContextDirFromPlansRoot(plansRoot)
-	contextReadme := filepath.Join(contextDir, "README.md")
-	contextDomains := filepath.Join(contextDir, "domains")
-	readmeExists := pathExists(contextReadme)
-	domainsExists := pathExists(contextDomains)
-	if err := plancontext.InitContext(plansRoot); err != nil {
-		fmt.Fprintf(os.Stderr, "init context: %v\n", err)
+	if len(res.InstallFailed) > 0 {
+		for _, e := range res.InstallFailed {
+			fmt.Fprintf(os.Stderr, "install error: %s\n", e)
+		}
 		return 3
-	}
-	if pathExists(contextReadme) {
-		if readmeExists {
-			skipped = append(skipped, contextReadme)
-		} else {
-			created = append(created, contextReadme)
-		}
-	}
-	if pathExists(contextDomains) {
-		if domainsExists {
-			skipped = append(skipped, contextDomains)
-		} else {
-			created = append(created, contextDomains)
-		}
 	}
 
-	cfgPath := filepath.Join(projectRoot, ".pacto", "config.yaml")
-	cfgExisted := pathExists(cfgPath)
-	cfgWritten, err := onboarding.WriteConfig(projectRoot, profile)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "write .pacto/config.yaml: %v\n", err)
-		return 3
-	}
-	if cfgExisted {
-		updated = append(updated, cfgWritten)
-	} else {
-		created = append(created, cfgWritten)
-	}
-
-	prdPath := filepath.Join(projectRoot, "prd.md")
-	prdExisted := pathExists(prdPath)
-	writtenPRD, prdChanged, err := onboarding.WritePRD(projectRoot, profile)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "write prd.md: %v\n", err)
-		return 3
-	}
-	if prdChanged {
-		if prdExisted {
-			updated = append(updated, writtenPRD)
-		} else {
-			created = append(created, writtenPRD)
-		}
-	} else {
-		skipped = append(skipped, writtenPRD)
-	}
-
-	if opts.WithAgents {
-		agentsPath := filepath.Join(projectRoot, "AGENTS.md")
-		act, aerr := writeAgentsManagedBlock(agentsPath, assets.MustTemplateLang(profile.UILanguage, "AGENTS.md"))
-		if aerr != nil {
-			fmt.Fprintf(os.Stderr, "update AGENTS.md: %v\n", aerr)
+	if deferredInstall {
+		c, u, s, f := initws.ApplyInstall(projectRoot, profile.Tools, opts.Force)
+		res.Created = append(res.Created, c...)
+		res.Updated = append(res.Updated, u...)
+		res.Skipped = append(res.Skipped, s...)
+		if len(f) > 0 {
+			for _, e := range f {
+				fmt.Fprintf(os.Stderr, "install error: %s\n", e)
+			}
 			return 3
 		}
-		switch act {
-		case "created":
-			created = append(created, agentsPath)
-		case "updated":
-			updated = append(updated, agentsPath)
-		case "skipped":
-			skipped = append(skipped, agentsPath)
-		}
 	}
 
-	if !opts.NoInstall && len(profile.Tools) > 0 {
-		approve := true
-		if interactive && !opts.Yes {
-			fmt.Printf("%s %s ? [Y/n]: ", tr(lang, "Install tool artifacts for:", "¿Instalar artefactos para herramientas:"), strings.Join(profile.Tools, ", "))
-			approve = promptYesNo(true)
-		}
-		if approve {
-			installCreated, installUpdated, installSkipped, installFailed := applyInstallPlan(projectRoot, profile.Tools, opts.Force)
-			created = append(created, installCreated...)
-			updated = append(updated, installUpdated...)
-			skipped = append(skipped, installSkipped...)
-			if len(installFailed) > 0 {
-				for _, e := range installFailed {
-					fmt.Fprintf(os.Stderr, "install error: %s\n", e)
-				}
-				return 3
-			}
-		}
-	}
+	sort.Strings(res.Created)
+	sort.Strings(res.Updated)
+	sort.Strings(res.Skipped)
 
-	sort.Strings(created)
-	sort.Strings(updated)
-	sort.Strings(skipped)
-
-	printInitSummary(lang, plansRoot, profile, created, updated, skipped)
+	printInitSummary(lang, res.PlansRoot, profile, res.Created, res.Updated, res.Skipped)
 	return 0
 }
 
@@ -235,129 +187,6 @@ func applyInitFallbacks(profile *onboarding.Profile) {
 	if strings.TrimSpace(profile.UILanguage) == "" {
 		profile.UILanguage = string(i18n.English)
 	}
-}
-
-func bootstrapWorkspace(plansRoot, lang string, force bool, created, updated, skipped *[]string) error {
-	for _, st := range []string{"current", "to-implement", "done", "outdated"} {
-		p := filepath.Join(plansRoot, st)
-		if info, err := os.Stat(p); err == nil {
-			if !info.IsDir() {
-				return fmt.Errorf("state path exists but is not a directory: %s", p)
-			}
-			*skipped = append(*skipped, p)
-			continue
-		}
-		if err := os.MkdirAll(p, 0o775); err != nil {
-			return fmt.Errorf("create state dir %q: %w", p, err)
-		}
-		*created = append(*created, p)
-	}
-
-	workspaceFiles := map[string]string{
-		filepath.Join(plansRoot, "README.md"): assets.MustTemplateLang(lang, "README.md"),
-		filepath.Join(plansRoot, "PACTO.md"):  assets.MustTemplateLang(lang, "PACTO.md"),
-	}
-
-	for path, content := range workspaceFiles {
-		wc, wu, ws, werr := writeManagedFile(path, content, force)
-		if werr != nil {
-			return fmt.Errorf("write file %q: %w", path, werr)
-		}
-		if wc {
-			*created = append(*created, path)
-		}
-		if wu {
-			*updated = append(*updated, path)
-		}
-		if ws {
-			*skipped = append(*skipped, path)
-		}
-	}
-	return nil
-}
-
-func writeManagedFile(path, content string, force bool) (created, updated, skipped bool, err error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0o775); err != nil {
-		return false, false, false, err
-	}
-	_, statErr := os.Stat(path)
-	exists := statErr == nil
-	if exists && !force {
-		return false, false, true, nil
-	}
-	if err := os.WriteFile(path, []byte(content), 0o664); err != nil {
-		return false, false, false, err
-	}
-	if exists {
-		return false, true, false, nil
-	}
-	return true, false, false, nil
-}
-
-func applyInstallPlan(projectRoot string, tools []string, force bool) (created []string, updated []string, skipped []string, failed []string) {
-	for _, toolID := range tools {
-		results := integrations.GenerateForTool(projectRoot, toolID, force)
-		for _, r := range results {
-			if r.Err != nil {
-				failed = append(failed, fmt.Sprintf("tool=%s kind=%s workflow=%s err=%v", r.Tool, r.Kind, r.WorkflowID, r.Err))
-				continue
-			}
-			switch r.Outcome {
-			case integrations.OutcomeCreated:
-				created = append(created, r.Path)
-			case integrations.OutcomeUpdated:
-				updated = append(updated, r.Path)
-			case integrations.OutcomeSkipped:
-				skipped = append(skipped, r.Path)
-			}
-		}
-	}
-	return created, updated, skipped, failed
-}
-
-func writeAgentsManagedBlock(path, template string) (string, error) {
-	block := agentsManagedStart + "\n" + strings.TrimSpace(template) + "\n" + agentsManagedEnd + "\n"
-
-	b, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			if err := os.WriteFile(path, []byte(block), 0o664); err != nil {
-				return "", err
-			}
-			return "created", nil
-		}
-		return "", err
-	}
-
-	s := string(b)
-	start := strings.Index(s, agentsManagedStart)
-	end := strings.Index(s, agentsManagedEnd)
-	if start >= 0 && end >= 0 && end > start {
-		end += len(agentsManagedEnd)
-		next := s[:start] + block + s[end:]
-		if next == s {
-			return "skipped", nil
-		}
-		if err := os.WriteFile(path, []byte(next), 0o664); err != nil {
-			return "", err
-		}
-		return "updated", nil
-	}
-
-	trimmed := strings.TrimRight(s, "\n")
-	next := trimmed + "\n\n" + block
-	if next == s {
-		return "skipped", nil
-	}
-	if err := os.WriteFile(path, []byte(next), 0o664); err != nil {
-		return "", err
-	}
-	return "updated", nil
-}
-
-func pathExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
 }
 
 func promptYesNo(defaultYes bool) bool {

@@ -10,7 +10,7 @@ ports declared by `app`.
 ## Layers
 
 1. CLI orchestration (presentation)
-- Packages: `cmd/pacto`, `cmd/pacto-engine`, `internal/cli`, `internal/command/<cmd>/`.
+- Packages: `cmd/pacto`, `internal/cli`, `internal/command/<cmd>/`.
 - Responsibilities: Cobra root command, persistent flags (`--root`, `--lang`, guardrail bypasses), command registration, delegating to use cases, exit codes.
 - Rule: thin wiring only — keep heavy parsing and domain logic out.
 
@@ -54,8 +54,7 @@ ports declared by `app`.
 
 ## Binary Policy
 
-`cmd/pacto` is the primary CLI binary.  
-`cmd/pacto-engine` currently acts as a compatibility alias and intentionally shares the same runtime entrypoint.
+`cmd/pacto` is the canonical CLI binary. The legacy `pacto-engine` alias has been retired.
 
 ## Non-goals
 

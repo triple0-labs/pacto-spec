@@ -14,7 +14,6 @@ Build binaries locally:
 
 ```bash
 go build -o pacto ./cmd/pacto
-go build -o pacto-engine ./cmd/pacto-engine
 ```
 
 ## Tiny Smoke

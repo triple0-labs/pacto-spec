@@ -21,19 +21,6 @@ builds:
       - arm64
     ldflags:
       - -s -w -X pacto/internal/cmdutil.Version={{.Version}}
-  - id: pacto-engine
-    main: ./cmd/pacto-engine
-    binary: pacto-engine
-    env:
-      - CGO_ENABLED=0
-    goos:
-      - linux
-      - darwin
-    goarch:
-      - amd64
-      - arm64
-    ldflags:
-      - -s -w -X pacto/internal/cmdutil.Version={{.Version}}
 
 archives:
   - id: default

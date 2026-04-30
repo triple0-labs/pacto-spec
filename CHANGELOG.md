@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file.
 
 ## Unreleased
 
+## v0.1.26 - 2026-04-30
+
 ### Removed
 
 - **Breaking:** dropped the `pacto-engine` alias binary. `pacto` is the canonical and only CLI entrypoint going forward — anyone invoking `pacto-engine` should switch to `pacto`. The `.pacto-engine.yaml` config filename is preserved for backward compatibility.
